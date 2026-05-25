@@ -1,0 +1,96 @@
+openapi: 3.1.0
+info:
+  title: Concierge modelserver (internal)
+  version: 1.0.0
+  description: |
+    Internal HTTP contract between the FastAPI backend and the lean
+    classifier serving container. The modelserver runs onnxruntime
+    (DL path) and scikit-learn + joblib (classical path); image size
+    budget 500 MB; NO torch.
+
+    Authentication: service credential (X-Service-Token) issued from
+    Vault. Internal network only — not exposed publicly.
+
+servers:
+  - url: http://modelserver:8001
+    description: Internal compose network
+
+security:
+  - serviceToken: []
+
+paths:
+  /healthz:
+    get:
+      summary: Liveness — also asserts artifact hash matches model_card.yaml
+      security: []
+      responses:
+        "200":
+          description: Healthy and artifact verified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+                  artifact_sha256: { type: string }
+                  model_card_version: { type: string }
+        "503":
+          description: Artifact hash mismatch or model not loaded — process should also exit
+
+  /readyz:
+    get:
+      security: []
+      summary: Readiness — process is accepting traffic
+      responses:
+        "200": { description: Ready }
+        "503": { description: Not ready }
+
+  /predict:
+    post:
+      summary: Classify a single message into the router label taxonomy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                message:
+                  type: string
+                  maxLength: 4000
+                tenant_id:
+                  type: string
+                  format: uuid
+                  description: |
+                    Provided for logging/observability only. The
+                    classifier itself is tenant-agnostic; tenant_id
+                    does NOT alter the prediction.
+      responses:
+        "200":
+          description: Prediction
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [label, confidence, per_class]
+                properties:
+                  label:
+                    type: string
+                    enum: [spam, faq, lead_intent, escalate, ambiguous]
+                  confidence:
+                    type: number
+                    format: float
+                  per_class:
+                    type: object
+                    additionalProperties: { type: number, format: float }
+                  artifact_sha256: { type: string }
+        "401": { description: Missing or invalid service token }
+
+components:
+  securitySchemes:
+    serviceToken:
+      type: apiKey
+      in: header
+      name: X-Service-Token
+      description: Shared service credential from Vault
