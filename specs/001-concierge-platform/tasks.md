@@ -102,8 +102,8 @@
 - [ ] T024 [B] Create `src/use_cases/protocols/lead_repository.py`: Protocol for CaptureLead, ListLeads, RateLimitLeads
 - [ ] T025 [B] Create `src/use_cases/protocols/llm_client.py`: Protocol for CallLLM(system, messages, tools, max_tokens, temp) → ToolChoice result
 - [ ] T026 [B] Create `src/use_cases/protocols/embedding_client.py`: Protocol for EmbedTexts(texts) → List[Vector]
-- [ ] T027 [C] Create `src/use_cases/protocols/classifier_client.py`: Protocol for Classify(message, tenant_id) → Label, confidence, per_class scores
-- [ ] T028 [C] Create `src/use_cases/protocols/guardrails_client.py`: Protocol for Check(tenant_id, role, content) → action (allow|redact|refuse), redacted_content, triggered_rails
+- [X] T027 [C] Create `src/use_cases/protocols/classifier_client.py`: Protocol for Classify(message, tenant_id) → Label, confidence, per_class scores
+- [X] T028 [C] Create `src/use_cases/protocols/guardrails_client.py`: Protocol for Check(tenant_id, role, content) → action (allow|redact|refuse), redacted_content, triggered_rails
 - [ ] T029 [B] Create `src/use_cases/protocols/session_store.py`: Protocol for StoreSession(key, value, ttl), RetrieveSession(key), DeleteSession(key) (Redis backend)
 - [ ] T030 [D] Create `src/use_cases/protocols/token_signer.py`: Protocol for SignToken(claims, ttl) → JWT, VerifyToken(jwt) → claims
 - [ ] T031 [D] Create `src/use_cases/protocols/object_storage.py`: Protocol for StoreObject(tenant_id, path, data), FetchObject(tenant_id, path) → bytes, DeleteObject(tenant_id, path), DeletePrefix(tenant_id, prefix)
@@ -113,7 +113,7 @@
 
 - [ ] T033 [A] Create `src/frameworks/api/middleware/tenant_context.py`: TenantContextMiddleware extracts tenant_id from JWT (widget) or session (admin/manager), calls `SET LOCAL app.tenant_id`, resets at response end
 - [ ] T034 [A] Create `src/frameworks/api/middleware/origin_check.py`: OriginCheckMiddleware validates request Origin header against tenant.allowed_origins from DB
-- [ ] T035 [C] Create `src/frameworks/api/middleware/pii_redaction.py`: PIIRedactionMiddleware wraps logger, tracer, Redis writer to redact outbound data via guardrails_client
+- [X] T035 [C] Create `src/frameworks/api/middleware/pii_redaction.py`: PIIRedactionMiddleware wraps logger, tracer, Redis writer to redact outbound data via guardrails_client
 - [X] T036 [ALL] Create `src/frameworks/api/deps.py`: Composition root. Wires concrete adapters (PostgresRepository, RedisSession, AnthropicLLM, HostedEmbeddings, ModelserverClassifier, NeMoGuardrails, PyJWTSigner, MinIOStorage, VaultClient) into use-case protocols. No use case imports a concrete adapter.
 - [X] T037 [ALL] Wire static import-linter rule in CI (or custom ruff rule) to enforce: no file in `src/entities/` or `src/use_cases/` imports from `src/adapters/` or `src/frameworks/`
 
@@ -124,8 +124,8 @@
 
 ### Observability Wiring
 
-- [ ] T040 [C] Create `src/frameworks/observability/logging.py`: Structured JSON logger with redaction-aware filter; log level from env (INFO default)
-- [ ] T041 [C] Create `src/frameworks/observability/tracing.py`: Tracer (e.g., OpenTelemetry) with egress-side redaction interceptor; exports to console (dev) or backend (via env)
+- [X] T040 [C] Create `src/frameworks/observability/logging.py`: Structured JSON logger with redaction-aware filter; log level from env (INFO default)
+- [X] T041 [C] Create `src/frameworks/observability/tracing.py`: Tracer (e.g., OpenTelemetry) with egress-side redaction interceptor; exports to console (dev) or backend (via env)
 
 ### GitHub Actions CI Skeleton
 
@@ -140,8 +140,8 @@
 
 ### Classifier & Guardrails HTTP Clients
 
-- [ ] T047 [C] Create `src/adapters/classifier/modelserver_client.py`: Stub implementing ClassifierClient; POSTs to `http://modelserver:8001/predict` with service token. Actual impl in Slice C.
-- [ ] T048 [C] Create `src/adapters/guardrails/nemo_client.py`: Stub implementing GuardrailsClient; POSTs to `http://guardrails:8002/check` with service token. Actual impl in Slice C.
+- [X] T047 [C] Create `src/adapters/classifier/modelserver_client.py`: Stub implementing ClassifierClient; POSTs to `http://modelserver:8001/predict` with service token. Actual impl in Slice C.
+- [X] T048 [C] Create `src/adapters/guardrails/nemo_client.py`: Stub implementing GuardrailsClient; POSTs to `http://guardrails:8002/check` with service token. Actual impl in Slice C.
 
 ### Token & Storage Adapters
 
