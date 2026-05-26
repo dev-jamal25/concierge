@@ -186,3 +186,84 @@ def test_tenant_admin_cannot_access_manager(client: TestClient) -> None:
         "/manager/tenants", headers={"Authorization": f"Bearer {_admin_token(str(uuid4()))}"}
     )
     assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_expired_invitation_rejected(client: TestClient, owner_engine) -> None:
+    """Invitation past its expiry must be rejected (T149 negative gate)."""
+    tenant_id = uuid4()
+    raw_token = f"expired-token-{tenant_id.hex}"
+    async with owner_engine.begin() as conn:
+        await conn.execute(
+            text("INSERT INTO tenants (id, slug, display_name) VALUES (:id, :slug, 'X')"),
+            {"id": str(tenant_id), "slug": f"t-exp-{tenant_id.hex[:8]}"},
+        )
+        await conn.execute(
+            text(
+                "INSERT INTO invitations (tenant_id, email, token_hash, expires_at, created_by) "
+                "VALUES (:t, :email, :h, now() - interval '1 hour', :by)"
+            ),
+            {
+                "t": str(tenant_id),
+                "email": f"exp-{tenant_id.hex[:8]}@x.test",
+                "h": hash_token(raw_token),
+                "by": str(MANAGER_ID),
+            },
+        )
+
+    resp = client.post(
+        f"/auth/invitations/{raw_token}/accept", json={"password": "s3cret-pass"}
+    )
+    assert resp.status_code in (400, 404, 410, 422), (
+        f"Expired invitation must be rejected; got {resp.status_code}: {resp.text}"
+    )
+
+
+@pytest.mark.asyncio
+async def test_invalid_invitation_token_rejected(client: TestClient, owner_engine) -> None:
+    """A token that was never issued must be rejected (T149 negative gate)."""
+    resp = client.post(
+        "/auth/invitations/totally-nonexistent-token-xyz/accept",
+        json={"password": "s3cret-pass"},
+    )
+    assert resp.status_code in (400, 404, 422), (
+        f"Unknown token must be rejected; got {resp.status_code}: {resp.text}"
+    )
+
+
+@pytest.mark.asyncio
+async def test_accepted_invitation_cannot_be_reused(
+    client: TestClient, owner_engine
+) -> None:
+    """An already-accepted invitation token must be rejected on re-use (T149 negative gate)."""
+    tenant_id = uuid4()
+    raw_token = f"reuse-token-{tenant_id.hex}"
+    async with owner_engine.begin() as conn:
+        await conn.execute(
+            text("INSERT INTO tenants (id, slug, display_name) VALUES (:id, :slug, 'X')"),
+            {"id": str(tenant_id), "slug": f"t-reuse-{tenant_id.hex[:8]}"},
+        )
+        await conn.execute(
+            text(
+                "INSERT INTO invitations (tenant_id, email, token_hash, expires_at, created_by) "
+                "VALUES (:t, :email, :h, now() + interval '1 day', :by)"
+            ),
+            {
+                "t": str(tenant_id),
+                "email": f"reuse-{tenant_id.hex[:8]}@x.test",
+                "h": hash_token(raw_token),
+                "by": str(MANAGER_ID),
+            },
+        )
+
+    first = client.post(
+        f"/auth/invitations/{raw_token}/accept", json={"password": "s3cret-pass"}
+    )
+    assert first.status_code == 201, f"First acceptance must succeed; got {first.text}"
+
+    second = client.post(
+        f"/auth/invitations/{raw_token}/accept", json={"password": "s3cret-pass2"}
+    )
+    assert second.status_code in (400, 404, 409, 410, 422), (
+        f"Re-use of accepted token must be rejected; got {second.status_code}: {second.text}"
+    )
