@@ -8,9 +8,12 @@
     "escalate": 0.9051878354203936,
     "ambiguous": 0.8931116389548693
   },
-  "latency_ms_per_prediction": 1.1146231000020634,
+  "latency_ms_per_prediction": 0.08294809999642894,
+  "latency_runtime": "onnxruntime_cpu",
   "cost_per_1k_predictions": 0.0,
   "artifact_path": "../services/modelserver/artifacts/cnn_intent.onnx",
   "artifact_sha256": "6cfbc65825235efc576a35dec062a116078cd229dad82bddf7c402db6fabe437",
-  "vocab_path": "../services/modelserver/artifacts/cnn_vocab.json"
+  "vocab_path": "../services/modelserver/artifacts/cnn_vocab.json",
+  "vocab_sha256": "ac00cac61e2f8fce37607cde73bb3ba65a643015e4b99dc5ce8ecaf049bc0996",
+  "onnx_match_rate": 1.0
 }
