@@ -1,0 +1,15 @@
+{
+  "model": "tfidf_logreg",
+  "macro_f1": 0.7619951251667114,
+  "per_class_f1": {
+    "spam": 0.5518731988472623,
+    "faq": 0.7332782824112304,
+    "lead_intent": 0.7316561844863732,
+    "escalate": 0.90625,
+    "ambiguous": 0.8869179600886918
+  },
+  "latency_ms_per_prediction": 2.5661474999942584,
+  "cost_per_1k_predictions": 0.0,
+  "artifact_path": "../services/modelserver/artifacts/tfidf_logreg.joblib",
+  "artifact_sha256": "8eeee9d254cddcb6190031c28b109e5c035c4ac2acdcaa3725f48be98ed7c557"
+}
