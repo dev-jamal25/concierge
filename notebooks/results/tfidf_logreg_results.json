@@ -1,15 +1,23 @@
 {
   "model": "tfidf_logreg",
-  "macro_f1": 0.7619951251667114,
+  "variant": "tfidf_charwb_3_5_logreg",
+  "analyzer": "char_wb",
+  "ngram_range": [
+    3,
+    5
+  ],
+  "C": 3.0,
+  "val_macro_f1": 0.9050769049782786,
+  "macro_f1": 0.8328625293192131,
   "per_class_f1": {
-    "spam": 0.5518731988472623,
-    "faq": 0.7332782824112304,
-    "lead_intent": 0.7316561844863732,
-    "escalate": 0.90625,
-    "ambiguous": 0.8869179600886918
+    "spam": 0.7513880320789637,
+    "faq": 0.7981566820276498,
+    "lead_intent": 0.830952380952381,
+    "escalate": 0.9357142857142857,
+    "ambiguous": 0.8481012658227848
   },
-  "latency_ms_per_prediction": 2.5661474999942584,
+  "latency_ms_per_prediction": 1.5938008000084665,
   "cost_per_1k_predictions": 0.0,
   "artifact_path": "../services/modelserver/artifacts/tfidf_logreg.joblib",
-  "artifact_sha256": "8eeee9d254cddcb6190031c28b109e5c035c4ac2acdcaa3725f48be98ed7c557"
+  "artifact_sha256": "7bc725315e0bf1d0be2abd51916a544ea7564c52b8634c848c0c07c51c297517"
 }
