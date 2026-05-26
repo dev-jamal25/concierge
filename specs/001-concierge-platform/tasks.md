@@ -113,7 +113,7 @@
 
 - [ ] T033 [A] Create `src/frameworks/api/middleware/tenant_context.py`: TenantContextMiddleware extracts tenant_id from JWT (widget) or session (admin/manager), calls `SET LOCAL app.tenant_id`, resets at response end
 - [ ] T034 [A] Create `src/frameworks/api/middleware/origin_check.py`: OriginCheckMiddleware validates request Origin header against tenant.allowed_origins from DB
-- [ ] T035 [C] Create `src/frameworks/api/middleware/pii_redaction.py`: PIIRedactionMiddleware wraps logger, tracer, Redis writer to redact outbound data via guardrails_client
+- [X] T035 [C] Create `src/frameworks/api/middleware/pii_redaction.py`: PIIRedactionMiddleware wraps logger, tracer, Redis writer to redact outbound data via guardrails_client
 - [X] T036 [ALL] Create `src/frameworks/api/deps.py`: Composition root. Wires concrete adapters (PostgresRepository, RedisSession, AnthropicLLM, HostedEmbeddings, ModelserverClassifier, NeMoGuardrails, PyJWTSigner, MinIOStorage, VaultClient) into use-case protocols. No use case imports a concrete adapter.
 - [X] T037 [ALL] Wire static import-linter rule in CI (or custom ruff rule) to enforce: no file in `src/entities/` or `src/use_cases/` imports from `src/adapters/` or `src/frameworks/`
 
