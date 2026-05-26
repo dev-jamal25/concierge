@@ -411,7 +411,7 @@
 
 - [X] T130 [C] Create `notebooks/01_label_taxonomy.ipynb`: Defines 5-label taxonomy (spam, faq, lead_intent, escalate, ambiguous) with label definitions, seed examples per label
 - [X] T131 [C] Create `notebooks/02_tfidf_logreg_baseline.ipynb`: TF-IDF + logistic regression baseline; trains on seed set; evaluates on held-out test set; reports macro-F1, per-class F1, latency, cost
-- [ ] T132 [C] Create `notebooks/03_small_dl_onnx.ipynb`: Small DL model (e.g., CNN + word embeddings) exported to ONNX; evaluates on held-out set
+- [X] T132 [C] Create `notebooks/03_small_dl_onnx.ipynb`: Small DL model (e.g., CNN + word embeddings) exported to ONNX; evaluates on held-out set
 - [ ] T133 [C] Create `notebooks/04_llm_zero_shot.ipynb`: LLM zero-shot classification (e.g., claude-sonnet-4-6 with prompt); evaluates on held-out set
 - [ ] T134 [C] Create `notebooks/05_compare_and_export.ipynb`: Side-by-side comparison of all three; picks the best by macro-F1 (likely classical baseline or ONNX for speed + size); exports artifact to `services/modelserver/artifacts/model.{onnx|joblib}`; updates `services/modelserver/model_card.yaml` with SHA-256, training data source, comparison results, deployment choice with rationale
 - [ ] T135 [C] Create `tests/evals/classifier/test_classifier_macro_f1.py`: Loads model_card.yaml, computes macro-F1 on held-out test set, asserts ≥ classifier_macro_f1 threshold from eval_thresholds.yaml. Exits non-zero on regression. Committed to CI.
