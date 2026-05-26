@@ -102,8 +102,8 @@
 - [ ] T024 [B] Create `src/use_cases/protocols/lead_repository.py`: Protocol for CaptureLead, ListLeads, RateLimitLeads
 - [ ] T025 [B] Create `src/use_cases/protocols/llm_client.py`: Protocol for CallLLM(system, messages, tools, max_tokens, temp) → ToolChoice result
 - [ ] T026 [B] Create `src/use_cases/protocols/embedding_client.py`: Protocol for EmbedTexts(texts) → List[Vector]
-- [ ] T027 [C] Create `src/use_cases/protocols/classifier_client.py`: Protocol for Classify(message, tenant_id) → Label, confidence, per_class scores
-- [ ] T028 [C] Create `src/use_cases/protocols/guardrails_client.py`: Protocol for Check(tenant_id, role, content) → action (allow|redact|refuse), redacted_content, triggered_rails
+- [X] T027 [C] Create `src/use_cases/protocols/classifier_client.py`: Protocol for Classify(message, tenant_id) → Label, confidence, per_class scores
+- [X] T028 [C] Create `src/use_cases/protocols/guardrails_client.py`: Protocol for Check(tenant_id, role, content) → action (allow|redact|refuse), redacted_content, triggered_rails
 - [ ] T029 [B] Create `src/use_cases/protocols/session_store.py`: Protocol for StoreSession(key, value, ttl), RetrieveSession(key), DeleteSession(key) (Redis backend)
 - [ ] T030 [D] Create `src/use_cases/protocols/token_signer.py`: Protocol for SignToken(claims, ttl) → JWT, VerifyToken(jwt) → claims
 - [ ] T031 [D] Create `src/use_cases/protocols/object_storage.py`: Protocol for StoreObject(tenant_id, path, data), FetchObject(tenant_id, path) → bytes, DeleteObject(tenant_id, path), DeletePrefix(tenant_id, prefix)
@@ -140,8 +140,8 @@
 
 ### Classifier & Guardrails HTTP Clients
 
-- [ ] T047 [C] Create `src/adapters/classifier/modelserver_client.py`: Stub implementing ClassifierClient; POSTs to `http://modelserver:8001/predict` with service token. Actual impl in Slice C.
-- [ ] T048 [C] Create `src/adapters/guardrails/nemo_client.py`: Stub implementing GuardrailsClient; POSTs to `http://guardrails:8002/check` with service token. Actual impl in Slice C.
+- [X] T047 [C] Create `src/adapters/classifier/modelserver_client.py`: Stub implementing ClassifierClient; POSTs to `http://modelserver:8001/predict` with service token. Actual impl in Slice C.
+- [X] T048 [C] Create `src/adapters/guardrails/nemo_client.py`: Stub implementing GuardrailsClient; POSTs to `http://guardrails:8002/check` with service token. Actual impl in Slice C.
 
 ### Token & Storage Adapters
 
