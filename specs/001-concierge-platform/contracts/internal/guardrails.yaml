@@ -1,0 +1,84 @@
+openapi: 3.1.0
+info:
+  title: Concierge guardrails sidecar (internal)
+  version: 1.0.0
+  description: |
+    Internal HTTP contract between the FastAPI backend and the
+    NeMo Guardrails sidecar. Two layers of rails:
+      * PLATFORM rails — locked; identical for every tenant; cannot
+        be weakened (prompt injection, jailbreak, cross-tenant
+        refusal, PII redaction).
+      * TENANT rails — per-tenant configurable (allowed/blocked
+        topics, refusal tone, persona, enabled tools).
+
+    Authentication: service credential (X-Service-Token) issued from
+    Vault.
+
+servers:
+  - url: http://guardrails:8002
+
+security:
+  - serviceToken: []
+
+paths:
+  /healthz:
+    get:
+      security: []
+      responses:
+        "200": { description: Healthy }
+        "503": { description: Unhealthy }
+
+  /check:
+    post:
+      summary: |
+        Apply platform rails + the named tenant's rails to a piece of
+        text. Returns the (possibly redacted) text plus an action.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenant_id, role, content]
+              properties:
+                tenant_id:
+                  type: string
+                  format: uuid
+                role:
+                  type: string
+                  enum: [visitor_input, agent_output, tool_input, tool_output]
+                content:
+                  type: string
+                  maxLength: 16000
+      responses:
+        "200":
+          description: Check result
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [action, content]
+                properties:
+                  action:
+                    type: string
+                    enum: [allow, redact, refuse]
+                  content:
+                    type: string
+                    description: |
+                      For `allow`: original content. For `redact`:
+                      content with PII / sensitive tokens replaced.
+                      For `refuse`: the refusal message from the rail.
+                  triggered_rails:
+                    type: array
+                    items: { type: string }
+                  rail_layer:
+                    type: string
+                    enum: [platform, tenant]
+        "401": { description: Missing or invalid service token }
+
+components:
+  securitySchemes:
+    serviceToken:
+      type: apiKey
+      in: header
+      name: X-Service-Token

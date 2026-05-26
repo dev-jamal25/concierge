@@ -1,0 +1,48 @@
+# Graphify should not index its own output
+graphify-out/
+
+# Git / local env
+.git/
+.venv/
+venv/
+.env
+.env.*
+*.pem
+*.key
+credentials.json
+service-account*.json
+
+# Python generated
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node / widget generated
+node_modules/
+dist/
+build/
+coverage/
+
+# Local service data
+postgres-data/
+redis-data/
+minio-data/
+vault-data/
+.local/
+tmp/
+logs/
+*.log
+
+# Large/generated artifacts
+*.onnx
+*.joblib
+*.pkl
+*.pt
+*.bin
+*.parquet
+*.sqlite
+*.db

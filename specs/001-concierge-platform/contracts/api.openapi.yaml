@@ -1,0 +1,681 @@
+openapi: 3.1.0
+info:
+  title: Concierge Platform API
+  version: 1.0.0
+  description: |
+    Public-facing HTTP API for the Concierge multi-tenant AI SaaS platform.
+    Endpoints are grouped by ownership slice (A/B/C/D in plan.md). Internal
+    sidecar contracts (modelserver, guardrails) are in contracts/internal/.
+
+    Auth:
+      * Visitor / widget endpoints use a short-lived signed JWT
+        (`Authorization: Bearer <jwt>`). The JWT's `tenant_id` claim
+        is the SINGLE source of truth — body fields claiming a tenant
+        are ignored and request is rejected if they conflict.
+      * Admin / manager endpoints use fastapi-users session cookies
+        (login flow under `/auth/*`).
+
+servers:
+  - url: https://{host}/api/v1
+    variables:
+      host:
+        default: concierge.local
+
+tags:
+  - name: widget
+    description: Widget loader + token issuance (Slice D)
+  - name: chat
+    description: Visitor chat turn (Slice B)
+  - name: cms
+    description: Tenant CMS content management (Slice B)
+  - name: leads
+    description: Lead review and export (Slice B)
+  - name: admin
+    description: Tenant admin self-service (Slices A/B/D)
+  - name: manager
+    description: Platform tenant_manager operations (Slice A)
+  - name: auth
+    description: Auth flows (Slice A — fastapi-users)
+
+security:
+  - widgetJWT: []
+  - sessionCookie: []
+
+paths:
+  # =========================================================================
+  # SLICE D — Widget / Embed
+  # =========================================================================
+  /widget/token:
+    post:
+      tags: [widget]
+      summary: Exchange widget public_id + origin for a short-lived JWT
+      security: []  # Public — but origin + public_id are both validated
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [widget_id, origin]
+              properties:
+                widget_id:
+                  type: string
+                  description: Public widget identifier (from data-widget-id)
+                origin:
+                  type: string
+                  format: uri
+                  description: The host page's origin (validated server-side too)
+      responses:
+        "200":
+          description: Token issued
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [token, expires_in_seconds]
+                properties:
+                  token: { type: string }
+                  expires_in_seconds: { type: integer, example: 300 }
+        "403":
+          description: Origin not in tenant's allowed_origins, or widget disabled
+        "404":
+          description: Unknown widget_id
+
+  /widget/config:
+    get:
+      tags: [widget]
+      summary: Return theme + greeting + persona summary for the widget
+      responses:
+        "200":
+          description: Widget configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WidgetConfig"
+        "401": { description: Missing or invalid JWT }
+        "403": { description: Origin mismatch }
+
+  # =========================================================================
+  # SLICE B — Chat (visitor turn)
+  # =========================================================================
+  /chat:
+    post:
+      tags: [chat]
+      summary: Submit a visitor message; receive an agent / router response
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [conversation_id, message]
+              properties:
+                conversation_id:
+                  type: string
+                  format: uuid
+                  description: Client-generated UUID; reused across turns within a session
+                message:
+                  type: string
+                  maxLength: 4000
+      responses:
+        "200":
+          description: A turn was processed (response may be empty for dropped spam)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatTurnResponse"
+        "401": { description: Missing or invalid JWT }
+        "403": { description: Origin mismatch }
+        "409": { description: Tenant in `erasing` or `erased` state }
+        "429": { description: Rate-limited }
+        "503":
+          description: Upstream LLM unavailable after bounded retries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpstreamUnavailableResponse"
+
+  # =========================================================================
+  # SLICE B — CMS
+  # =========================================================================
+  /cms/pages:
+    get:
+      tags: [cms]
+      summary: List CMS pages for this tenant
+      parameters:
+        - in: query
+          name: state
+          schema:
+            type: string
+            enum: [draft, published, unpublished]
+      responses:
+        "200":
+          description: Page list (tenant-scoped)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/CMSPage" }
+    post:
+      tags: [cms]
+      summary: Create a new CMS page (defaults to `draft`)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CMSPageCreate" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CMSPage" }
+
+  /cms/pages/{page_id}:
+    parameters:
+      - $ref: "#/components/parameters/PageId"
+    get:
+      tags: [cms]
+      responses:
+        "200":
+          description: Single page
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CMSPage" }
+        "404": { description: Not found (or not visible to this tenant) }
+    put:
+      tags: [cms]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CMSPageUpdate" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CMSPage" }
+        "409": { description: Illegal state transition (e.g., draft → unpublished) }
+    delete:
+      tags: [cms]
+      summary: Hard-delete a `draft`. Published pages must be unpublished first.
+      responses:
+        "204": { description: Deleted }
+        "409": { description: Cannot delete a non-draft page }
+
+  /cms/pages/{page_id}/publish:
+    parameters: [{ $ref: "#/components/parameters/PageId" }]
+    post:
+      tags: [cms]
+      summary: Transition page to `published`; reindex chunks asynchronously
+      responses:
+        "202":
+          description: Publish accepted; chunk index updated within freshness window
+        "409":
+          description: Illegal source state
+
+  /cms/pages/{page_id}/unpublish:
+    parameters: [{ $ref: "#/components/parameters/PageId" }]
+    post:
+      tags: [cms]
+      summary: Transition page to `unpublished`; remove chunks
+      responses:
+        "202": { description: Unpublish accepted }
+        "409": { description: Illegal source state }
+
+  # =========================================================================
+  # SLICE B — Leads
+  # =========================================================================
+  /leads:
+    get:
+      tags: [leads]
+      summary: List leads captured for this tenant
+      parameters:
+        - in: query
+          name: since
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          description: Lead list (tenant-scoped)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Lead" }
+
+  /leads/export:
+    get:
+      tags: [leads]
+      summary: Export leads as CSV
+      responses:
+        "200":
+          description: CSV export
+          content:
+            text/csv: {}
+
+  # =========================================================================
+  # SLICE A / D — Admin (per-tenant)
+  # =========================================================================
+  /admin/tenant:
+    get:
+      tags: [admin]
+      summary: Read this tenant's settings (persona, theme, plan)
+      responses:
+        "200":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TenantSettings" }
+    put:
+      tags: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TenantSettingsUpdate" }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TenantSettings" }
+
+  /admin/guardrails:
+    get:
+      tags: [admin]
+      summary: Read tenant rails (allowed/blocked topics, refusal tone, enabled tools)
+      responses:
+        "200":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TenantGuardrailConfig" }
+    put:
+      tags: [admin]
+      summary: Update tenant rails. Cannot weaken platform rails — those edits return 403.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TenantGuardrailConfig" }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TenantGuardrailConfig" }
+        "403":
+          description: Attempted to weaken a platform rail (audit-logged)
+
+  /admin/origins:
+    get:
+      tags: [admin]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AllowedOrigin" }
+    post:
+      tags: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [origin]
+              properties:
+                origin: { type: string, format: uri }
+      responses:
+        "201":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AllowedOrigin" }
+        "409": { description: Origin already present for this tenant }
+
+  /admin/origins/{origin_id}:
+    parameters:
+      - in: path
+        name: origin_id
+        required: true
+        schema: { type: string, format: uuid }
+    delete:
+      tags: [admin]
+      responses:
+        "204": { description: Removed }
+
+  /admin/escalations:
+    get:
+      tags: [admin]
+      summary: List conversations flagged for human follow-up
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/EscalatedConversation" }
+
+  # =========================================================================
+  # SLICE A — Manager (platform-level)
+  # =========================================================================
+  /manager/tenants:
+    get:
+      tags: [manager]
+      summary: List all tenants (manager only)
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/TenantSummary" }
+    post:
+      tags: [manager]
+      summary: Provision a new tenant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [display_name, slug, first_admin_email]
+              properties:
+                display_name: { type: string }
+                slug: { type: string }
+                first_admin_email: { type: string, format: email }
+                seed_allowed_origins:
+                  type: array
+                  items: { type: string, format: uri }
+      responses:
+        "201":
+          description: Tenant created; invitation email dispatched
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TenantSummary" }
+
+  /manager/tenants/{tenant_id}:
+    parameters:
+      - in: path
+        name: tenant_id
+        required: true
+        schema: { type: string, format: uuid }
+    delete:
+      tags: [manager]
+      summary: Erase a tenant (right to erasure). Asynchronous; status visible via audit log.
+      responses:
+        "202": { description: Erasure accepted; completion within SLA }
+
+  /manager/audit:
+    get:
+      tags: [manager]
+      summary: Read the audit log
+      parameters:
+        - in: query
+          name: target_tenant_id
+          schema: { type: string, format: uuid }
+        - in: query
+          name: since
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AuditEntry" }
+
+  /manager/usage:
+    get:
+      tags: [manager]
+      summary: Aggregate cost / usage across all tenants
+      responses:
+        "200":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UsageAggregate" }
+
+  # =========================================================================
+  # SLICE A — Auth (fastapi-users)
+  # =========================================================================
+  /auth/login:
+    post:
+      tags: [auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string, format: email }
+                password: { type: string, format: password }
+      responses:
+        "200": { description: Session cookie set }
+        "400": { description: Bad credentials }
+
+  /auth/logout:
+    post:
+      tags: [auth]
+      responses:
+        "204": { description: Logged out }
+
+  /auth/invitations/{token}/accept:
+    parameters:
+      - in: path
+        name: token
+        required: true
+        schema: { type: string }
+    post:
+      tags: [auth]
+      security: []
+      summary: Accept an invitation; create tenant_admin account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                password: { type: string, format: password }
+      responses:
+        "201": { description: Account created; session established }
+        "410": { description: Invitation expired or already used }
+
+components:
+  parameters:
+    PageId:
+      in: path
+      name: page_id
+      required: true
+      schema: { type: string, format: uuid }
+
+  securitySchemes:
+    widgetJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Short-lived (≤ 5 min) Ed25519-signed widget JWT
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: fastapiusersauth
+
+  schemas:
+    WidgetConfig:
+      type: object
+      required: [tenant_display_name, theme, greeting]
+      properties:
+        tenant_display_name: { type: string }
+        theme: { type: object, additionalProperties: true }
+        greeting: { type: string }
+        consent_notice: { type: string }
+        persona_summary: { type: string }
+
+    ChatTurnResponse:
+      type: object
+      properties:
+        route:
+          type: string
+          enum: [spam, faq, lead_intent, escalate, agent, unavailable]
+        reply:
+          type: string
+          nullable: true
+        escalated:
+          type: boolean
+        retrieved_chunks:
+          type: array
+          items:
+            type: object
+            properties:
+              cms_page_id: { type: string, format: uuid }
+              snippet: { type: string }
+        capture_lead_status:
+          type: string
+          enum: [not_captured, captured, rate_limited]
+          nullable: true
+
+    UpstreamUnavailableResponse:
+      type: object
+      required: [message, escalated]
+      properties:
+        message:
+          type: string
+          example: "Service temporarily unavailable. Please try again shortly or contact us directly."
+        escalated:
+          type: boolean
+          description: Always true — the conversation is auto-flagged
+        contact:
+          type: string
+          nullable: true
+
+    CMSPage:
+      type: object
+      required: [id, tenant_id, title, body, state, slug, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        title: { type: string }
+        body: { type: string }
+        state:
+          type: string
+          enum: [draft, published, unpublished]
+        slug: { type: string }
+        published_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    CMSPageCreate:
+      type: object
+      required: [title, body, slug]
+      properties:
+        title: { type: string }
+        body: { type: string }
+        slug: { type: string }
+
+    CMSPageUpdate:
+      type: object
+      properties:
+        title: { type: string }
+        body: { type: string }
+
+    Lead:
+      type: object
+      required: [id, tenant_id, conversation_id, contact, intent, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        conversation_id: { type: string, format: uuid }
+        name: { type: string, nullable: true }
+        contact: { type: string }
+        intent: { type: string }
+        created_at: { type: string, format: date-time }
+
+    EscalatedConversation:
+      type: object
+      properties:
+        conversation_id: { type: string, format: uuid }
+        escalated_at: { type: string, format: date-time }
+        escalation_reason: { type: string }
+        last_visitor_message: { type: string }
+
+    AllowedOrigin:
+      type: object
+      required: [id, tenant_id, origin]
+      properties:
+        id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        origin: { type: string, format: uri }
+
+    TenantSettings:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        display_name: { type: string }
+        slug: { type: string }
+        plan: { type: string }
+        persona_config: { type: object, additionalProperties: true }
+        theme_config: { type: object, additionalProperties: true }
+
+    TenantSettingsUpdate:
+      type: object
+      properties:
+        display_name: { type: string }
+        persona_config: { type: object, additionalProperties: true }
+        theme_config: { type: object, additionalProperties: true }
+
+    TenantGuardrailConfig:
+      type: object
+      description: Tenant rails ONLY (platform rails are not editable here)
+      properties:
+        allowed_topics:
+          type: array
+          items: { type: string }
+        blocked_topics:
+          type: array
+          items: { type: string }
+        refusal_tone: { type: string }
+        enabled_tools:
+          type: array
+          items:
+            type: string
+            enum: [rag_search, capture_lead, escalate]
+
+    TenantSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        display_name: { type: string }
+        slug: { type: string }
+        plan: { type: string }
+        status:
+          type: string
+          enum: [active, erasing, erased]
+        created_at: { type: string, format: date-time }
+
+    AuditEntry:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        actor_user_id: { type: string, format: uuid, nullable: true }
+        target_tenant_id: { type: string, format: uuid, nullable: true }
+        action: { type: string }
+        outcome:
+          type: string
+          enum: [success, denied, failure]
+        details: { type: object, additionalProperties: true }
+        created_at: { type: string, format: date-time }
+
+    UsageAggregate:
+      type: object
+      description: Read-only aggregate. No per-tenant conversation content.
+      properties:
+        tenant_count: { type: integer }
+        active_tenant_count: { type: integer }
+        total_conversations_30d: { type: integer }
+        total_leads_30d: { type: integer }
+        total_llm_input_tokens_30d: { type: integer }
+        total_llm_output_tokens_30d: { type: integer }
+        total_embedding_tokens_30d: { type: integer }
