@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  backend:
+    name: Backend baseline
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: uv sync --extra dev --locked
+
+      - name: Run backend lint
+        working-directory: backend
+        run: |
+          uv run --extra dev ruff check .
+          uv run --extra dev lint-imports
+
+      - name: Run backend tests
+        working-directory: backend
+        run: uv run --extra dev pytest tests/unit tests/contract
+
+      - name: Validate compose config
+        run: |
+          if docker compose version >/dev/null 2>&1; then
+            docker compose -f docker-compose.yml -f docker-compose.dev.yml config
+          else
+            docker-compose -f docker-compose.yml -f docker-compose.dev.yml config
+          fi

@@ -60,7 +60,11 @@ async def login(
     return TokenResponse(access_token=issue_session_token(principal))
 
 
-@router.post("/invitations/{token}/accept", response_model=TokenResponse)
+@router.post(
+    "/invitations/{token}/accept",
+    response_model=TokenResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def accept_invitation(
     token: str,
     body: AcceptInvitationRequest,

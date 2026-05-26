@@ -10,18 +10,19 @@ import pytest
 import pytest_asyncio
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.pool import NullPool
 
 from app.frameworks.config import get_settings
 
 
 def _engine(url: str):
-    return create_async_engine(url, poolclass=None, future=True)
+    return create_async_engine(url, poolclass=NullPool, future=True)
 
 
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture
 async def owner_engine():
     settings = get_settings()
-    eng = create_async_engine(settings.migration_database_url, future=True)
+    eng = _engine(settings.migration_database_url)
     try:
         async with eng.connect() as conn:
             await conn.execute(text("SELECT 1"))
@@ -32,18 +33,16 @@ async def owner_engine():
     await eng.dispose()
 
 
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture
 async def app_engine():
-    eng = create_async_engine(get_settings().database_url, future=True)
+    eng = _engine(get_settings().database_url)
     yield eng
     await eng.dispose()
 
 
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture
 async def manager_engine():
     settings = get_settings()
-    eng = create_async_engine(
-        settings.manager_database_url or settings.database_url, future=True
-    )
+    eng = _engine(settings.manager_database_url or settings.database_url)
     yield eng
     await eng.dispose()
