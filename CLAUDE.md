@@ -11,6 +11,7 @@ at `specs/001-concierge-platform/plan.md`. Supporting artifacts:
 - Internal contracts: `specs/001-concierge-platform/contracts/internal/`
 - Quickstart (compose-up to first chat turn): `specs/001-concierge-platform/quickstart.md`
 - Constitution (NON-NEGOTIABLE principles): `.specify/memory/constitution.md`
+- Tasks (owner implementation checklist): `specs/001-concierge-platform/tasks.md`
 <!-- SPECKIT END -->
 
 ## graphify
@@ -22,3 +23,6 @@ Rules:
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+
+# Owner A skills
+Use `.claude/skills/tenant-isolation-auditor/SKILL.md` before and after Owner A tenancy/RLS/provisioning changes.
