@@ -30,9 +30,11 @@ def create_app() -> FastAPI:
     # --- Routers (registered as slices land) ---
     from app.frameworks.api.routes import auth as auth_routes
     from app.frameworks.api.routes import manager as manager_routes
+    from app.frameworks.api.routes import widget as widget_routes
 
     app.include_router(auth_routes.router)
     app.include_router(manager_routes.router)
+    app.include_router(widget_routes.router)
 
     return app
 
