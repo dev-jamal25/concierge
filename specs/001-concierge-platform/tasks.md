@@ -124,8 +124,8 @@
 
 ### Observability Wiring
 
-- [ ] T040 [C] Create `src/frameworks/observability/logging.py`: Structured JSON logger with redaction-aware filter; log level from env (INFO default)
-- [ ] T041 [C] Create `src/frameworks/observability/tracing.py`: Tracer (e.g., OpenTelemetry) with egress-side redaction interceptor; exports to console (dev) or backend (via env)
+- [X] T040 [C] Create `src/frameworks/observability/logging.py`: Structured JSON logger with redaction-aware filter; log level from env (INFO default)
+- [X] T041 [C] Create `src/frameworks/observability/tracing.py`: Tracer (e.g., OpenTelemetry) with egress-side redaction interceptor; exports to console (dev) or backend (via env)
 
 ### GitHub Actions CI Skeleton
 

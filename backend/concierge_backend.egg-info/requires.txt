@@ -10,6 +10,8 @@ hvac>=2.1
 pyjwt[crypto]>=2.8
 pgvector>=0.3
 httpx>=0.27
+opentelemetry-api>=1.25
+opentelemetry-sdk>=1.25
 
 [dev]
 import-linter>=2.0
