@@ -409,7 +409,7 @@
 
 ### Classifier Training & Eval Gate
 
-- [ ] T130 [C] Create `notebooks/01_label_taxonomy.ipynb`: Defines 5-label taxonomy (spam, faq, lead_intent, escalate, ambiguous) with label definitions, seed examples per label
+- [X] T130 [C] Create `notebooks/01_label_taxonomy.ipynb`: Defines 5-label taxonomy (spam, faq, lead_intent, escalate, ambiguous) with label definitions, seed examples per label
 - [ ] T131 [C] Create `notebooks/02_tfidf_logreg_baseline.ipynb`: TF-IDF + logistic regression baseline; trains on seed set; evaluates on held-out test set; reports macro-F1, per-class F1, latency, cost
 - [ ] T132 [C] Create `notebooks/03_small_dl_onnx.ipynb`: Small DL model (e.g., CNN + word embeddings) exported to ONNX; evaluates on held-out set
 - [ ] T133 [C] Create `notebooks/04_llm_zero_shot.ipynb`: LLM zero-shot classification (e.g., claude-sonnet-4-6 with prompt); evaluates on held-out set

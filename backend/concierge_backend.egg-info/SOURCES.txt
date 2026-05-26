@@ -25,6 +25,7 @@ app/frameworks/api/main.py
 app/frameworks/api/session_auth.py
 app/frameworks/api/middleware/__init__.py
 app/frameworks/api/middleware/origin_check.py
+app/frameworks/api/middleware/pii_redaction.py
 app/frameworks/api/middleware/tenant_context.py
 app/frameworks/api/routes/__init__.py
 app/frameworks/api/routes/auth.py
@@ -40,6 +41,7 @@ app/frameworks/db/alembic/versions/001_init_tenants_users_audit.py
 app/frameworks/db/alembic/versions/003_add_invitations_allowed_origins_widgets.py
 app/frameworks/observability/__init__.py
 app/frameworks/observability/logging.py
+app/frameworks/observability/tracing.py
 app/frameworks/secrets/__init__.py
 app/frameworks/secrets/vault_client.py
 app/use_cases/__init__.py
