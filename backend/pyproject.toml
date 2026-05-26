@@ -39,6 +39,7 @@ notebooks = [
     "torch>=2.0,<3.0",
     "onnx>=1.15",
     "onnxruntime>=1.18",
+    "openai>=1.30",
 ]
 
 [build-system]
