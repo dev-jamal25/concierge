@@ -12,6 +12,27 @@
   Owner A adapters. B/C/D provider hooks are explicit `NotImplementedError`
   placeholders.
 
+## Baseline CI Scaffold
+
+`.github/workflows/ci.yml` now runs on pull requests to `main` and pushes to
+`main`. It currently checks:
+
+- Python 3.11 backend setup with `uv`.
+- Backend dependency installation from `backend/pyproject.toml` with the `dev`
+  extra.
+- Backend lint:
+  - `uv run --extra dev ruff check .`
+  - `uv run --extra dev lint-imports`
+- Backend unit and contract tests:
+  - `uv run --extra dev pytest tests/unit tests/contract`
+- Root compose config validity:
+  - `docker compose -f docker-compose.yml -f docker-compose.dev.yml config`
+  - Falls back to `docker-compose` when the Docker Compose plugin is not
+    available.
+
+No secrets, deployment credentials, eval gates, image-size gates, or frontend /
+sidecar build checks are configured in this baseline.
+
 ## Blocking Matrix Status
 
 | Consumer | Needs from A | Task | Status |
@@ -29,6 +50,9 @@
 - Tracing is T041 and remains pending Owner C work.
 - Token signing is T049 and remains pending Owner D work.
 - Modelserver, guardrails, admin, and widget containers are placeholders only.
+- Owner D still owns expanding CI to full eval gates, stack smoke tests,
+  modelserver/guardrails/widget/admin build checks, deployment workflows, and
+  production secret wiring once those surfaces exist.
 
 Do not add `backend/app/core/`. Shared settings stay in
 `backend/app/frameworks/config.py`; logging/redaction/security work belongs in

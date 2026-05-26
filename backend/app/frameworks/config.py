@@ -44,6 +44,13 @@ class Settings(BaseSettings):
     vault_token: str = Field(default="dev-root-token", alias="VAULT_DEV_ROOT_TOKEN_ID")
     vault_kv_mount: str = Field(default="secret")
 
+    # Internal services (Owner C) — modelserver classifier + NeMo guardrails sidecar.
+    # service_token is the shared X-Service-Token issued from Vault in T151;
+    # the stub adapters accept an empty default so unit tests can construct them.
+    classifier_url: str = Field(default="http://localhost:8001")
+    guardrails_url: str = Field(default="http://localhost:8002")
+    service_token: str = Field(default="")
+
     # Auth / session
     session_secret: str = Field(default="change-me-in-prod")
     invitation_ttl_hours: int = Field(default=72)

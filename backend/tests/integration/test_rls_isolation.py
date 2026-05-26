@@ -30,7 +30,10 @@ USER_B = uuid4()
 
 async def _seed(owner_engine) -> None:
     async with owner_engine.begin() as conn:
-        for tid, slug in ((TENANT_A, "tenant-a"), (TENANT_B, "tenant-b")):
+        for tid, slug in (
+            (TENANT_A, f"tenant-a-{TENANT_A.hex[:8]}"),
+            (TENANT_B, f"tenant-b-{TENANT_B.hex[:8]}"),
+        ):
             await conn.execute(
                 text(
                     "INSERT INTO tenants (id, slug, display_name) "
@@ -59,7 +62,8 @@ async def _seed(owner_engine) -> None:
             await conn.execute(
                 text(
                     "INSERT INTO invitations (tenant_id, email, token_hash, expires_at, created_by) "
-                    "VALUES (:tid, :email, 'h', now() + interval '1 day', :uid)"
+                    "VALUES (:tid, :email, 'h', now() + interval '1 day', :uid) "
+                    "ON CONFLICT DO NOTHING"
                 ),
                 {"tid": str(tid), "email": f"inv-{email}", "uid": str(uid)},
             )

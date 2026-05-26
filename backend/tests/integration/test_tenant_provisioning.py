@@ -6,14 +6,17 @@ unavailable. Exercises the real manager session (concierge_manager role).
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator, Iterator
 from uuid import uuid4
 
 import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.entities.user import UserRole
+from app.frameworks.api.deps import manager_db_session
 from app.frameworks.api.main import create_app
 from app.frameworks.api.session_auth import Principal, issue_session_token
 from app.use_cases.invitation_tokens import hash_token
@@ -46,8 +49,19 @@ async def _seed_manager(owner_engine):
 
 
 @pytest.fixture
-def client() -> TestClient:
-    return TestClient(create_app())
+def client(manager_engine) -> Iterator[TestClient]:
+    app = create_app()
+    sessionmaker = async_sessionmaker(manager_engine, expire_on_commit=False)
+
+    async def override_manager_db_session() -> AsyncIterator[AsyncSession]:
+        async with sessionmaker() as session:
+            async with session.begin():
+                yield session
+
+    app.dependency_overrides[manager_db_session] = override_manager_db_session
+    with TestClient(app) as test_client:
+        yield test_client
+    app.dependency_overrides.clear()
 
 
 def _manager_token() -> str:
@@ -115,7 +129,8 @@ async def test_provision_creates_all_rows(client: TestClient, owner_engine) -> N
 async def test_invitation_acceptance_binds_admin(client: TestClient, owner_engine) -> None:
     # Seed a tenant + a known-token invitation directly.
     tenant_id = uuid4()
-    raw_token = "test-invite-token-123"
+    invitee_email = f"invitee-{tenant_id.hex[:8]}@acme.example.com"
+    raw_token = f"test-invite-token-{tenant_id.hex}"
     async with owner_engine.begin() as conn:
         await conn.execute(
             text(
@@ -130,7 +145,7 @@ async def test_invitation_acceptance_binds_admin(client: TestClient, owner_engin
             ),
             {
                 "t": str(tenant_id),
-                "email": "invitee@acme.example.com",
+                "email": invitee_email,
                 "h": hash_token(raw_token),
                 "by": str(MANAGER_ID),
             },
@@ -147,10 +162,10 @@ async def test_invitation_acceptance_binds_admin(client: TestClient, owner_engin
                 text(
                     "SELECT count(*) FROM user_tenant_roles utr "
                     "JOIN users u ON u.id = utr.user_id "
-                    "WHERE utr.tenant_id = :t AND u.email = 'invitee@acme.example.com' "
+                    "WHERE utr.tenant_id = :t AND u.email = :email "
                     "AND u.role = 'tenant_admin'"
                 ),
-                {"t": str(tenant_id)},
+                {"t": str(tenant_id), "email": invitee_email},
             )
         ).scalar_one()
         accepted = (
