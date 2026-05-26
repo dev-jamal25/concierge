@@ -1,16 +1,16 @@
 # Graph Report - concierge  (2026-05-26)
 
 ## Corpus Check
-- 117 files · ~77,742 words
+- 112 files · ~76,495 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1417 nodes · 2025 edges · 127 communities (108 shown, 19 thin omitted)
-- Extraction: 79% EXTRACTED · 21% INFERRED · 0% AMBIGUOUS · INFERRED: 424 edges (avg confidence: 0.56)
+- 1371 nodes · 1949 edges · 118 communities (100 shown, 18 thin omitted)
+- Extraction: 80% EXTRACTED · 20% INFERRED · 0% AMBIGUOUS · INFERRED: 398 edges (avg confidence: 0.56)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `8d394906`
+- Built from commit: `34b8903f`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -115,24 +115,15 @@
 - [[_COMMUNITY_Community 103|Community 103]]
 - [[_COMMUNITY_Community 104|Community 104]]
 - [[_COMMUNITY_Community 105|Community 105]]
-- [[_COMMUNITY_Community 118|Community 118]]
-- [[_COMMUNITY_Community 119|Community 119]]
-- [[_COMMUNITY_Community 120|Community 120]]
-- [[_COMMUNITY_Community 121|Community 121]]
-- [[_COMMUNITY_Community 122|Community 122]]
-- [[_COMMUNITY_Community 123|Community 123]]
-- [[_COMMUNITY_Community 124|Community 124]]
-- [[_COMMUNITY_Community 125|Community 125]]
-- [[_COMMUNITY_Community 126|Community 126]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `Concierge Implementation Plan` - 41 edges
 2. `AuditOutcome` - 30 edges
-3. `UserRole` - 29 edges
-4. `Concierge Platform Feature Specification` - 29 edges
-5. `PostgresTenantRepository` - 26 edges
-6. `Tenant` - 25 edges
-7. `ManagerContext` - 25 edges
+3. `Concierge Platform Feature Specification` - 29 edges
+4. `UserRole` - 28 edges
+5. `Tenant` - 25 edges
+6. `ManagerContext` - 25 edges
+7. `PostgresTenantRepository` - 24 edges
 8. `Tasks: Concierge Multi-Tenant AI SaaS Platform` - 24 edges
 9. `TenantStatus` - 23 edges
 10. `Principal` - 23 edges
@@ -140,21 +131,21 @@
 ## Surprising Connections (you probably didn't know these)
 - `Clean Architecture & Dependency Rule` --conceptually_related_to--> `AgentTurnUseCase`  [INFERRED]
   .specify/memory/constitution.md → specs/001-concierge-platform/plan.md
-- `bootstrap_manager()` --calls--> `async_sessionmaker`  [INFERRED]
-  backend/app/frameworks/cli/bootstrap_manager.py → backend/app/frameworks/db/session.py
 - `graphify Skill Reference` --references--> `/graphify`  [EXTRACTED]
   CLAUDE.md → .claude/skills/graphify/SKILL.md
 - `Speckit Plan Context Reference` --references--> `Concierge Implementation Plan`  [EXTRACTED]
   CLAUDE.md → specs/001-concierge-platform/plan.md
 - `speckit-analyze Skill` --references--> `Concierge Constitution`  [EXTRACTED]
   .claude/skills/speckit-analyze/SKILL.md → .specify/memory/constitution.md
+- `speckit-constitution Skill` --references--> `Concierge Constitution`  [EXTRACTED]
+  .claude/skills/speckit-constitution/SKILL.md → .specify/memory/constitution.md
 
 ## Hyperedges (group relationships)
 - **Tenant Isolation Defense-in-Depth** — framework_tenant_context_middleware, infra_postgres_rls, adapter_tenant_repo, concept_tenant_isolation [INFERRED]
 - **Agent Tool-Calling Triad** — usecase_rag_search, usecase_capture_lead, usecase_escalate, usecase_agent_turn [INFERRED]
 - **Four CI Eval Gates** — eval_classifier_gate, eval_tool_selection_gate, eval_rag_gate, eval_redteam_gate [INFERRED]
 
-## Communities (127 total, 19 thin omitted)
+## Communities (118 total, 18 thin omitted)
 
 ### Community 0 - "Community 0"
 Cohesion: 0.06
@@ -197,16 +188,16 @@ Cohesion: 0.21
 Nodes (9): _find_project_root(), auto-commit.sh script, ConvertTo-CleanBranchName(), Get-BranchName(), Get-HighestNumberFromBranches(), Get-HighestNumberFromNames(), Get-HighestNumberFromRemoteRefs(), Get-HighestNumberFromSpecs() (+1 more)
 
 ### Community 10 - "Community 10"
-Cohesion: 0.23
-Nodes (15): AuditEntryModel, AsyncSession, AuditEntry, AuditOutcome, str, UUID, AuditOutcome, str (+7 more)
+Cohesion: 0.06
+Nodes (48): get_app_settings(), get_current_tenant_id(), get_manager_context(), Composition root (T036) — the single place concrete adapters are wired into use-, Reject requests whose body/path claims a tenant different from the token's., Builds all Owner-A repos + use cases on ONE concierge_manager session so a     p, require_matching_tenant(), AuditEntryModel (+40 more)
 
 ### Community 11 - "Community 11"
 Cohesion: 0.20
 Nodes (3): _extract_highest_number(), get_highest_from_branches(), create-new-feature.sh script
 
 ### Community 12 - "Community 12"
-Cohesion: 0.10
-Nodes (47): ManagerContext, decode_session_token(), get_principal(), hash_password(), issue_session_token(), Principal, Session auth for the admin/manager surface (supports T113).  Password hashing, require_manager() (+39 more)
+Cohesion: 0.08
+Nodes (57): ManagerContext, decode_session_token(), get_principal(), hash_password(), issue_session_token(), Principal, Session auth for the admin/manager surface (supports T113).  Password hashing re, require_manager() (+49 more)
 
 ### Community 13 - "Community 13"
 Cohesion: 0.20
@@ -230,19 +221,19 @@ Nodes (31): AllowedOriginModel, AllowedOrigin, AsyncSession, object, str, Tenant
 
 ### Community 32 - "Community 32"
 Cohesion: 0.07
-Nodes (37): create_app(), FastAPI application (T012 — [ALL] skeleton).  Owner A wires the tenant_context, ASGIApp, str, str, TestClient, str, bytes (+29 more)
+Nodes (38): create_app(), FastAPI application (T012 — [ALL] skeleton).  Owner A wires the tenant_context +, ASGIApp, str, str, TestClient, str, bytes (+30 more)
 
 ### Community 33 - "Community 33"
-Cohesion: 0.08
-Nodes (37): AsyncEngine, AsyncSession, object, str, User, UserRole, UUID, str (+29 more)
+Cohesion: 0.10
+Nodes (28): AsyncSession, object, str, User, UserRole, UUID, object, str (+20 more)
 
 ### Community 34 - "Community 34"
 Cohesion: 0.05
 Nodes (42): code:powershell (& (Get-Content graphify-out\.graphify_python) -c "), code:powershell (@'), code:powershell (@'), code:powershell (@'), code:powershell (New-Item -ItemType Directory -Force -Path graphify-out | Out), code:powershell (@'), code:powershell (@'), code:powershell (@') (+34 more)
 
 ### Community 35 - "Community 35"
-Cohesion: 0.08
-Nodes (29): Any, db_session(), manager_db_session(), async_sessionmaker, ASGIApp, Receive, Scope, Send (+21 more)
+Cohesion: 0.07
+Nodes (33): Any, db_session(), manager_db_session(), async_sessionmaker, AsyncEngine, ASGIApp, Receive, Scope (+25 more)
 
 ### Community 36 - "Community 36"
 Cohesion: 0.06
@@ -265,8 +256,8 @@ Cohesion: 0.07
 Nodes (26): 1. Clone and configure, 2. Bring up the stack, 3. Migrate the database, 4. Bootstrap a tenant_manager and seed a demo tenant, 5. Embed the widget on the test host page, 6. Open the admin UI, 7. Run the smoke test, 8. Run the eval gates locally (+18 more)
 
 ### Community 41 - "Community 41"
-Cohesion: 0.15
-Nodes (11): datetime, str, UUID, str, InvitationRecord, InvitationRepository, InvitationRepository protocol — Owner A domain aggregate (supports T108/T109/T11, Return an un-accepted, unexpired invitation matching the token hash. (+3 more)
+Cohesion: 0.14
+Nodes (12): datetime, str, UUID, str, Protocol, InvitationRecord, InvitationRepository, InvitationRepository protocol — Owner A domain aggregate (supports T108/T109/T11 (+4 more)
 
 ### Community 42 - "Community 42"
 Cohesion: 0.11
@@ -326,7 +317,7 @@ Nodes (12): Assumptions, Edge Cases, Feature Specification: [FEATURE NAME], Func
 
 ### Community 56 - "Community 56"
 Cohesion: 0.38
-Nodes (10): str, RLS isolation tests (T146) — the cross-tenant red-team gate for Owner A tables., Manager must not be able to read visitor content. Verified against a probe, _scoped_query(), _seed(), test_app_role_denied_on_audit(), test_manager_denied_on_content_tables(), test_manager_reads_all_tenants_and_audit() (+2 more)
+Nodes (10): str, RLS isolation tests (T146) — the cross-tenant red-team gate for Owner A tables., Manager must not be able to read visitor content. Verified against a probe     t, _scoped_query(), _seed(), test_app_role_denied_on_audit(), test_manager_denied_on_content_tables(), test_manager_reads_all_tenants_and_audit() (+2 more)
 
 ### Community 57 - "Community 57"
 Cohesion: 0.18
@@ -484,57 +475,25 @@ Nodes (3): Erasure Integration Test (Critical Gate), Erasure Use Case (Already i
 Cohesion: 0.67
 Nodes (3): Integration Tests, Leads Routes, Phase 7: User Story 5 — Tenant admin reviews captured leads (Priority: P2)
 
-### Community 105 - "Community 105"
-Cohesion: 0.17
-Nodes (11): Bootstrap Manager, code:sh (docker compose -f docker-compose.yml -f docker-compose.dev.y), code:sh (make migrate), code:sh (make bootstrap-manager), Compose-Up, Migrations, On-Call, Postgres Roles (+3 more)
-
-### Community 118 - "Community 118"
-Cohesion: 0.14
-Nodes (13): get_manager_context(), Builds all Owner-A repos + use cases on ONE concierge_manager session so a, Builds all Owner-A repos + use cases on ONE concierge_manager session so a     p, str, AsyncSession, UUID, AuditRepository, TenantRepository (+5 more)
-
-### Community 119 - "Community 119"
-Cohesion: 0.17
-Nodes (14): get_app_settings(), get_vault_client(), Settings, str, BaseSettings, get_settings(), Typed application settings (T011 — minimal [ALL] stub).  Reads from environmen, Settings (+6 more)
-
-### Community 120 - "Community 120"
-Cohesion: 0.24
-Nodes (11): get_current_tenant_id(), str, AuditRepository, str, TenantRepository, UUID, InviteAdminUseCase, InviteAdminUseCase (+3 more)
-
-### Community 121 - "Community 121"
-Cohesion: 0.23
-Nodes (12): get_classifier_client(), get_embedding_client(), get_guardrails_client(), get_llm_client(), get_object_storage(), get_session_store(), get_token_signer(), Composition root (T036) — the single place concrete adapters are wired into use (+4 more)
-
-### Community 122 - "Community 122"
-Cohesion: 0.22
-Nodes (7): AuditEntry, UUID, Protocol, AuditRepository, AuditRepository protocol (T021) — Layer 2 interface. Append-only., Append one audit entry. Never updates or deletes., Manager-only: every audit entry, unscoped by tenant.
-
-### Community 123 - "Community 123"
-Cohesion: 0.25
-Nodes (7): code:sh (cp .env.example .env), code:sh (docker compose -f docker-compose.yml -f docker-compose.dev.y), code:sh (make migrate), Concierge, Local Runtime, Prerequisites, Project Docs
-
-### Community 124 - "Community 124"
-Cohesion: 0.33
-Nodes (5): Blocking Matrix Status, Day-1 Owner Checklist, Done, Shared Foundation Handoff, Still Owned Elsewhere
-
 ## Knowledge Gaps
-- **558 isolated node(s):** `PreToolUse`, `feature_directory`, `ai`, `ai_skills`, `branch_numbering` (+553 more)
+- **543 isolated node(s):** `PreToolUse`, `feature_directory`, `ai`, `ai_skills`, `branch_numbering` (+538 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **19 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **18 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `FastAPI` connect `Community 32` to `Community 121`, `Community 12`?**
-  _High betweenness centrality (0.019) - this node is a cross-community bridge._
-- **Why does `TenantContextMiddleware` connect `Community 32` to `Community 35`?**
+- **Why does `FastAPI` connect `Community 32` to `Community 10`, `Community 12`?**
   _High betweenness centrality (0.018) - this node is a cross-community bridge._
-- **Why does `PostgresUserRepository` connect `Community 33` to `Community 12`, `Community 118`, `Community 119`, `Community 120`, `Community 121`?**
-  _High betweenness centrality (0.017) - this node is a cross-community bridge._
+- **Why does `UserRole` connect `Community 12` to `Community 33`, `Community 31`?**
+  _High betweenness centrality (0.013) - this node is a cross-community bridge._
+- **Why does `PostgresUserRepository` connect `Community 33` to `Community 10`, `Community 12`?**
+  _High betweenness centrality (0.012) - this node is a cross-community bridge._
 - **Are the 28 inferred relationships involving `AuditOutcome` (e.g. with `AuditEntryModel` and `AuditEntry`) actually correct?**
   _`AuditOutcome` has 28 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 27 inferred relationships involving `UserRole` (e.g. with `UserModel` and `User`) actually correct?**
-  _`UserRole` has 27 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 14 inferred relationships involving `PostgresTenantRepository` (e.g. with `AllowedOrigin` and `Tenant`) actually correct?**
-  _`PostgresTenantRepository` has 14 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 26 inferred relationships involving `UserRole` (e.g. with `UserModel` and `User`) actually correct?**
+  _`UserRole` has 26 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 24 inferred relationships involving `Tenant` (e.g. with `TenantModel` and `Tenant`) actually correct?**
+  _`Tenant` has 24 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `PreToolUse`, `feature_directory`, `ai` to the rest of the system?**
-  _615 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _596 weakly-connected nodes found - possible documentation gaps or missing edges._

@@ -31,6 +31,7 @@ from app.frameworks.db.session import (
     get_session,
     tenant_id_ctx,
 )
+from app.frameworks.secrets.vault_client import HvacVaultClient
 from app.use_cases.erase_tenant import EraseTenantUseCase
 from app.use_cases.invite_admin import InviteAdminUseCase
 from app.use_cases.provision_tenant import ProvisionTenantUseCase
@@ -40,6 +41,38 @@ from app.use_cases.provision_tenant import ProvisionTenantUseCase
 
 def get_app_settings() -> Settings:
     return get_settings()
+
+
+def get_vault_client() -> HvacVaultClient:
+    return HvacVaultClient(get_settings())
+
+
+def get_llm_client() -> object:
+    raise NotImplementedError("LLM client provider is owned by Owner B tasks T025/T044")
+
+
+def get_embedding_client() -> object:
+    raise NotImplementedError("embedding client provider is owned by Owner B tasks T026/T045")
+
+
+def get_session_store() -> object:
+    raise NotImplementedError("session store provider is owned by Owner B tasks T029/T046")
+
+
+def get_classifier_client() -> object:
+    raise NotImplementedError("classifier client provider is owned by Owner C tasks T027/T047")
+
+
+def get_guardrails_client() -> object:
+    raise NotImplementedError("guardrails client provider is owned by Owner C tasks T028/T048")
+
+
+def get_token_signer() -> object:
+    raise NotImplementedError("token signer provider is owned by Owner D tasks T030/T049")
+
+
+def get_object_storage() -> object:
+    raise NotImplementedError("object storage provider is owned by Owner D tasks T031/T050")
 
 
 # --- DB sessions (re-exported as FastAPI dependencies) ---

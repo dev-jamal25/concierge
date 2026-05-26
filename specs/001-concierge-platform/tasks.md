@@ -65,11 +65,11 @@
 - [ ] T002 [ALL] Create `pyproject.toml` with workspace setup (src/, services/modelserver, services/guardrails) and Python 3.11 pins
 - [ ] T003 [P] [ALL] Create the four-layer `src/` tree structure (entities/, use_cases/, adapters/, frameworks/) with `__init__.py` files
 - [ ] T004 [P] [ALL] Initialize `pytest`, `pytest-asyncio`, `pytest-cov`, `ruff`, `mypy`, and `vitest` configs (setup.cfg, pyproject.toml)
-- [ ] T005 [ALL] Create `README.md` with project overview, prereqs, and link to quickstart.md
-- [ ] T006 [ALL] Create `.env.example` with required env vars (ANTHROPIC_API_KEY, EMBEDDING_PROVIDER, EMBEDDING_API_KEY, POSTGRES_PASSWORD, VAULT_DEV_ROOT_TOKEN_ID, RERANK_PROVIDER, RERANK_API_KEY)
-- [ ] T007 [ALL] Create `Makefile` with targets: `migrate`, `seed-demo-tenant`, `serve-test-host`, `smoke`, `eval`, `eval-classifier`, `eval-agent`, `eval-rag`, `eval-redteam`
-- [ ] T008 [ALL] Create `docker-compose.yml` with services: postgres (5432), redis (6379), minio (9000), vault (8200), modelserver (8001), guardrails (8002), api (8000), admin (8501), widget-static (8003)
-- [ ] T009 [ALL] Create `docker-compose.dev.yml` override with Vault dev-mode, hot-reload, exposed ports
+- [X] T005 [ALL] Create `README.md` with project overview, prereqs, and link to quickstart.md
+- [X] T006 [ALL] Create `.env.example` with required env vars (ANTHROPIC_API_KEY, EMBEDDING_PROVIDER, EMBEDDING_API_KEY, POSTGRES_PASSWORD, VAULT_DEV_ROOT_TOKEN_ID, RERANK_PROVIDER, RERANK_API_KEY)
+- [X] T007 [ALL] Create `Makefile` with targets: `migrate`, `seed-demo-tenant`, `serve-test-host`, `smoke`, `eval`, `eval-classifier`, `eval-agent`, `eval-rag`, `eval-redteam`
+- [X] T008 [ALL] Create `docker-compose.yml` with services: postgres (5432), redis (6379), minio (9000), vault (8200), modelserver (8001), guardrails (8002), api (8000), admin (8501), widget-static (8003)
+- [X] T009 [ALL] Create `docker-compose.dev.yml` override with Vault dev-mode, hot-reload, exposed ports
 
 ---
 
@@ -79,10 +79,10 @@
 
 ### Shared Infrastructure & Integration Points
 
-- [ ] T010 [ALL] Create `eval_thresholds.yaml` at repo root with thresholds: classifier_macro_f1 ≥ 0.80, agent_tool_selection_macro_f1 ≥ 0.80, rag_golden_set_recall_at_5 ≥ 0.85, rag_golden_set_answer_grounded_rate ≥ 0.85, cross_tenant_redteam_success_rate = 1.0, injection_redteam_success_rate ≥ 0.95, pii_redaction_rate = 1.0
-- [ ] T011 [ALL] Create `src/frameworks/config.py`: settings class for database, redis, minio, vault, llm, embedding, classifier, guardrails URLs + credentials (read from env/.env, then Vault via hvac)
-- [ ] T012 [ALL] Create `src/frameworks/api/main.py`: FastAPI app skeleton with CORS, middleware hooks (app startup/shutdown), health endpoints `/healthz`, `/readyz`
-- [ ] T013 [ALL] Create `src/frameworks/db/base.py`: SQLAlchemy base model, async sessionmaker, alembic config for migrations under `src/frameworks/db/alembic/versions/`
+- [X] T010 [ALL] Create `eval_thresholds.yaml` at repo root with thresholds: classifier_macro_f1 ≥ 0.80, agent_tool_selection_macro_f1 ≥ 0.80, rag_golden_set_recall_at_5 ≥ 0.85, rag_golden_set_answer_grounded_rate ≥ 0.85, cross_tenant_redteam_success_rate = 1.0, injection_redteam_success_rate ≥ 0.95, pii_redaction_rate = 1.0
+- [X] T011 [ALL] Create `src/frameworks/config.py`: settings class for database, redis, minio, vault, llm, embedding, classifier, guardrails URLs + credentials (read from env/.env, then Vault via hvac)
+- [X] T012 [ALL] Create `src/frameworks/api/main.py`: FastAPI app skeleton with CORS, middleware hooks (app startup/shutdown), health endpoints `/healthz`, `/readyz`
+- [X] T013 [ALL] Create `src/frameworks/db/base.py`: SQLAlchemy base model, async sessionmaker, alembic config for migrations under `src/frameworks/db/alembic/versions/`
 
 ### Isolation Reference Pattern (Slice A leads; all consume)
 
@@ -114,13 +114,13 @@
 - [ ] T033 [A] Create `src/frameworks/api/middleware/tenant_context.py`: TenantContextMiddleware extracts tenant_id from JWT (widget) or session (admin/manager), calls `SET LOCAL app.tenant_id`, resets at response end
 - [ ] T034 [A] Create `src/frameworks/api/middleware/origin_check.py`: OriginCheckMiddleware validates request Origin header against tenant.allowed_origins from DB
 - [ ] T035 [C] Create `src/frameworks/api/middleware/pii_redaction.py`: PIIRedactionMiddleware wraps logger, tracer, Redis writer to redact outbound data via guardrails_client
-- [ ] T036 [ALL] Create `src/frameworks/api/deps.py`: Composition root. Wires concrete adapters (PostgresRepository, RedisSession, AnthropicLLM, HostedEmbeddings, ModelserverClassifier, NeMoGuardrails, PyJWTSigner, MinIOStorage, VaultClient) into use-case protocols. No use case imports a concrete adapter.
-- [ ] T037 [ALL] Wire static import-linter rule in CI (or custom ruff rule) to enforce: no file in `src/entities/` or `src/use_cases/` imports from `src/adapters/` or `src/frameworks/`
+- [X] T036 [ALL] Create `src/frameworks/api/deps.py`: Composition root. Wires concrete adapters (PostgresRepository, RedisSession, AnthropicLLM, HostedEmbeddings, ModelserverClassifier, NeMoGuardrails, PyJWTSigner, MinIOStorage, VaultClient) into use-case protocols. No use case imports a concrete adapter.
+- [X] T037 [ALL] Wire static import-linter rule in CI (or custom ruff rule) to enforce: no file in `src/entities/` or `src/use_cases/` imports from `src/adapters/` or `src/frameworks/`
 
 ### Vault & Service-to-Service Auth
 
-- [ ] T038 [A] Create `src/frameworks/secrets/vault_client.py`: HvacClient wrapper for KV v2. At startup, generate or retrieve Ed25519 signing key from `secret/jwt/widget/active` and store in deps. Service credential issued to modelserver and guardrails sidecar.
-- [ ] T039 [ALL] Document in `.env.example` and RUNBOOK.md: Vault dev-mode bootstrap (VAULT_DEV_ROOT_TOKEN_ID), unsealing, KV v2 mount at `secret/`
+- [X] T038 [A] Create `src/frameworks/secrets/vault_client.py`: HvacClient wrapper for KV v2. At startup, generate or retrieve Ed25519 signing key from `secret/jwt/widget/active` and store in deps. Service credential issued to modelserver and guardrails sidecar.
+- [X] T039 [ALL] Document in `.env.example` and RUNBOOK.md: Vault dev-mode bootstrap (VAULT_DEV_ROOT_TOKEN_ID), unsealing, KV v2 mount at `secret/`
 
 ### Observability Wiring
 

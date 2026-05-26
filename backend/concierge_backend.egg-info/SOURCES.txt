@@ -25,6 +25,8 @@ app/frameworks/api/middleware/tenant_context.py
 app/frameworks/api/routes/__init__.py
 app/frameworks/api/routes/auth.py
 app/frameworks/api/routes/manager.py
+app/frameworks/cli/__init__.py
+app/frameworks/cli/bootstrap_manager.py
 app/frameworks/db/__init__.py
 app/frameworks/db/base.py
 app/frameworks/db/models.py

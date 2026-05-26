@@ -20,6 +20,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    "import-linter>=2.0",
     "pytest>=8.2",
     "pytest-asyncio>=0.23",
     "pytest-cov>=5.0",
@@ -45,3 +46,25 @@ line-length = 100
 [tool.mypy]
 python_version = "3.11"
 plugins = ["pydantic.mypy"]
+
+[tool.importlinter]
+root_package = "app"
+
+[[tool.importlinter.contracts]]
+name = "entities must not import outer layers"
+type = "forbidden"
+source_modules = ["app.entities"]
+forbidden_modules = [
+    "app.use_cases",
+    "app.adapters",
+    "app.frameworks",
+]
+
+[[tool.importlinter.contracts]]
+name = "use cases must not import adapters or frameworks"
+type = "forbidden"
+source_modules = ["app.use_cases"]
+forbidden_modules = [
+    "app.adapters",
+    "app.frameworks",
+]

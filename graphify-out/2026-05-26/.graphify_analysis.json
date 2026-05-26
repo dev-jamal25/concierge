@@ -1,0 +1,550 @@
+{
+  "communities": {
+    "0": [
+      "adapter_chunk_repo",
+      "adapter_classifier",
+      "adapter_conversation_repo",
+      "adapter_embeddings",
+      "adapter_guardrails",
+      "adapter_lead_repo",
+      "adapter_llm_anthropic",
+      "adapter_minio",
+      "adapter_pyjwt",
+      "adapter_redis_session",
+      "adapter_tenant_repo",
+      "claude_md_speckit_context",
+      "concept_clean_architecture",
+      "concept_defense_in_depth",
+      "concept_evals_ci",
+      "concept_hosted_inference",
+      "concept_solid_di",
+      "concept_spec_driven",
+      "concept_tenant_isolation",
+      "constitution_md",
+      "eval_classifier_gate",
+      "eval_rag_gate",
+      "eval_redteam_gate",
+      "eval_tool_selection_gate",
+      "framework_fastapi",
+      "framework_pii_redaction",
+      "framework_tenant_context_middleware",
+      "infra_minio",
+      "infra_postgres_rls",
+      "infra_redis",
+      "infra_vault",
+      "plan_md",
+      "service_admin_ui",
+      "service_guardrails",
+      "service_modelserver",
+      "service_widget",
+      "speckit_analyze_skill",
+      "usecase_agent_turn",
+      "usecase_capture_lead",
+      "usecase_classify_message",
+      "usecase_erase_tenant",
+      "usecase_escalate",
+      "usecase_issue_widget_token",
+      "usecase_provision_tenant",
+      "usecase_publish_cms",
+      "usecase_rag_search",
+      "usecase_reindex_chunks"
+    ],
+    "1": [
+      "checklist_requirements_checklist",
+      "research_chunking_strategy",
+      "research_classifier_taxonomy",
+      "research_concierge_research",
+      "research_cross_encoder_rerank",
+      "research_decisions_doc",
+      "research_embedding_client",
+      "research_embedding_provider",
+      "research_eval_thresholds",
+      "research_fastapi_users_multitenancy",
+      "research_llm_client_protocol",
+      "research_llm_provider",
+      "research_plan",
+      "research_redis_session_ttl",
+      "research_rls_isolation_test",
+      "research_rls_pattern",
+      "research_spec",
+      "research_tenant_context_middleware",
+      "research_user_tenant_roles",
+      "spec_concierge_spec",
+      "spec_edge_bounded_loop",
+      "spec_edge_cross_tenant",
+      "spec_edge_pii_paste",
+      "spec_edge_prompt_injection",
+      "spec_fr001_roles",
+      "spec_fr006_tenant_isolation",
+      "spec_fr007_token_tenant_id",
+      "spec_fr009_router",
+      "spec_fr012_agent_tools",
+      "spec_fr013_bounded_loop",
+      "spec_fr014a_llm_failure",
+      "spec_fr015_cms_states",
+      "spec_fr016_freshness_window",
+      "spec_fr017_retrieval_filter",
+      "spec_fr018_chunking",
+      "spec_fr019_retrieval_improvement",
+      "spec_fr020_classifier",
+      "spec_fr035_pii_redaction",
+      "spec_gdpr_consent",
+      "spec_us1_visitor_answer",
+      "spec_us2_cms_management",
+      "spec_us3_widget_embed",
+      "spec_us4_tenant_provisioning",
+      "spec_us5_leads_review",
+      "spec_us6_persona_config",
+      "spec_us7_erasure"
+    ],
+    "2": [
+      "api_openapi_admin_origins_endpoint",
+      "api_openapi_admin_tenant_endpoint",
+      "api_openapi_auth_endpoints",
+      "api_openapi_chat_endpoint",
+      "api_openapi_cms_pages_endpoint",
+      "api_openapi_concierge_platform_api",
+      "api_openapi_leads_endpoint",
+      "api_openapi_manager_tenants_endpoint",
+      "api_openapi_schema_allowedorigin",
+      "api_openapi_schema_chatturnresponse",
+      "api_openapi_schema_cmspage",
+      "api_openapi_schema_lead",
+      "api_openapi_schema_tenantsettings",
+      "api_openapi_schema_tenantsummary",
+      "api_openapi_schema_upstreamunavailableresponse",
+      "api_openapi_schema_widgetconfig",
+      "api_openapi_session_cookie_scheme",
+      "api_openapi_slice_a",
+      "api_openapi_slice_b",
+      "api_openapi_slice_d",
+      "api_openapi_widget_config_endpoint",
+      "api_openapi_widget_token_endpoint",
+      "concept_chat_route_labels",
+      "concept_fastapi_users",
+      "concept_origin_validation",
+      "concept_tenant_erasure",
+      "modelserver_yaml_predict_endpoint",
+      "modelserver_yaml_router_label_taxonomy",
+      "widget_loader_contract",
+      "widget_loader_csp_framing",
+      "widget_loader_failure_modes",
+      "widget_loader_iframe_injection",
+      "widget_loader_postmessage_protocol",
+      "widget_loader_script",
+      "widget_loader_versioning"
+    ],
+    "3": [
+      "quickstart_admin",
+      "quickstart_alembic",
+      "quickstart_api",
+      "quickstart_concierge_quickstart",
+      "quickstart_docker_compose",
+      "quickstart_guardrails",
+      "quickstart_minio",
+      "quickstart_model_card",
+      "quickstart_modelserver",
+      "quickstart_notebook_01",
+      "quickstart_notebook_02",
+      "quickstart_notebook_03",
+      "quickstart_notebook_04",
+      "quickstart_notebook_05",
+      "quickstart_postgres",
+      "quickstart_redis",
+      "quickstart_runbook",
+      "quickstart_vault",
+      "quickstart_widget_static",
+      "research_artifact_verification",
+      "research_guardrails_client",
+      "research_jwt_algorithm",
+      "research_pii_canary_test",
+      "research_pii_redactor",
+      "spec_sc001_30min_quickstart",
+      "spec_sc006_5sec_response"
+    ],
+    "4": [
+      "api_openapi_admin_guardrails_endpoint",
+      "api_openapi_schema_tenantguardrailconfig",
+      "api_openapi_widget_jwt_scheme",
+      "concept_nemo_guardrails",
+      "concept_tenant_id_claim",
+      "concept_vault_key_management",
+      "guardrails_yaml_check_endpoint",
+      "guardrails_yaml_guardrails_sidecar",
+      "guardrails_yaml_healthz_endpoint",
+      "guardrails_yaml_platform_rails",
+      "guardrails_yaml_service_token_scheme",
+      "guardrails_yaml_tenant_rails",
+      "modelserver_yaml_healthz_endpoint",
+      "modelserver_yaml_modelserver_api",
+      "modelserver_yaml_onnxruntime_runtime",
+      "modelserver_yaml_readyz_endpoint",
+      "modelserver_yaml_service_token_scheme",
+      "modelserver_yaml_sklearn_joblib_runtime",
+      "widget_loader_token_contract"
+    ],
+    "5": [
+      "specify_init_options_ai",
+      "specify_init_options_ai_skills",
+      "specify_init_options_branch_numbering",
+      "specify_init_options_context_file",
+      "specify_init_options_here",
+      "specify_init_options_json",
+      "specify_init_options_script",
+      "specify_init_options_speckit_version",
+      "specify_integration_claude_invoke_separator",
+      "specify_integration_claude_script",
+      "specify_integration_default_integration",
+      "specify_integration_installed_integrations",
+      "specify_integration_integration_settings",
+      "specify_integration_integration_settings_claude",
+      "specify_integration_integration_state_schema",
+      "specify_integration_json",
+      "specify_integration_version"
+    ],
+    "6": [
+      "powershell_common_find_featuredirbyprefix",
+      "powershell_common_find_specifyroot",
+      "powershell_common_get_currentbranch",
+      "powershell_common_get_featuredirfrombranchprefixorexit",
+      "powershell_common_get_featurepathsenv",
+      "powershell_common_get_python3command",
+      "powershell_common_get_reporoot",
+      "powershell_common_get_speckiteffectivebranchname",
+      "powershell_common_resolve_template",
+      "powershell_common_resolve_templatecontent",
+      "powershell_common_test_dirhasfiles",
+      "powershell_common_test_featurebranch",
+      "powershell_common_test_featurejsonmatchesfeaturedir",
+      "powershell_common_test_fileexists",
+      "powershell_common_test_hasgit",
+      "specify_scripts_powershell_common_ps1"
+    ],
+    "7": [
+      "extensions_yml_config",
+      "git_cmd_commit",
+      "git_cmd_feature",
+      "git_cmd_initialize",
+      "git_cmd_remote",
+      "git_cmd_validate",
+      "git_config_template",
+      "git_config_yml",
+      "git_extension_yml",
+      "speckit_git_commit_skill",
+      "speckit_git_feature_skill",
+      "speckit_git_initialize_skill",
+      "speckit_git_remote_skill",
+      "speckit_git_validate_skill",
+      "speckit_taskstoissues_skill"
+    ],
+    "8": [
+      "integrations_speckit_manifest_files",
+      "integrations_speckit_manifest_files_specify_scripts_powershell_check_prerequisites_ps1",
+      "integrations_speckit_manifest_files_specify_scripts_powershell_common_ps1",
+      "integrations_speckit_manifest_files_specify_scripts_powershell_create_new_feature_ps1",
+      "integrations_speckit_manifest_files_specify_scripts_powershell_setup_plan_ps1",
+      "integrations_speckit_manifest_files_specify_templates_checklist_template_md",
+      "integrations_speckit_manifest_files_specify_templates_constitution_template_md",
+      "integrations_speckit_manifest_files_specify_templates_plan_template_md",
+      "integrations_speckit_manifest_files_specify_templates_tasks_template_md",
+      "integrations_speckit_manifest_installed_at",
+      "integrations_speckit_manifest_integration",
+      "integrations_speckit_manifest_version",
+      "specify_integrations_speckit_manifest_json"
+    ],
+    "9": [
+      "bash_auto_commit_find_project_root",
+      "c_users_jamal_documents_bootcamps_aie_week_8_concierge_specify_extensions_git_scripts_bash_auto_commit_sh__entry",
+      "specify_extensions_git_scripts_bash_auto_commit_sh",
+      "specify_extensions_git_scripts_powershell_auto_commit_ps1",
+      "specify_extensions_git_scripts_powershell_create_new_feature_ps1",
+      "specify_extensions_git_scripts_powershell_create_new_feature_ps1_powershell_create_new_feature_convertto_cleanbranchname",
+      "specify_extensions_git_scripts_powershell_create_new_feature_ps1_powershell_create_new_feature_get_branchname",
+      "specify_extensions_git_scripts_powershell_create_new_feature_ps1_powershell_create_new_feature_get_highestnumberfrombranches",
+      "specify_extensions_git_scripts_powershell_create_new_feature_ps1_powershell_create_new_feature_get_highestnumberfromnames",
+      "specify_extensions_git_scripts_powershell_create_new_feature_ps1_powershell_create_new_feature_get_highestnumberfromremoterefs",
+      "specify_extensions_git_scripts_powershell_create_new_feature_ps1_powershell_create_new_feature_get_highestnumberfromspecs",
+      "specify_extensions_git_scripts_powershell_create_new_feature_ps1_powershell_create_new_feature_get_nextbranchnumber"
+    ],
+    "10": [
+      "checklist_template",
+      "constitution_template",
+      "plan_template",
+      "spec_template",
+      "speckit_checklist_skill",
+      "speckit_constitution_skill",
+      "speckit_implement_skill",
+      "speckit_plan_skill",
+      "speckit_specify_skill",
+      "speckit_tasks_skill",
+      "speckit_workflow",
+      "tasks_template"
+    ],
+    "11": [
+      "bash_create_new_feature_byte_length",
+      "bash_create_new_feature_check_existing_branches",
+      "bash_create_new_feature_clean_branch_name",
+      "bash_create_new_feature_extract_highest_number",
+      "bash_create_new_feature_find_project_root",
+      "bash_create_new_feature_generate_branch_name",
+      "bash_create_new_feature_get_highest_from_branches",
+      "bash_create_new_feature_get_highest_from_remote_refs",
+      "bash_create_new_feature_get_highest_from_specs",
+      "c_users_jamal_documents_bootcamps_aie_week_8_concierge_specify_extensions_git_scripts_bash_create_new_feature_sh__entry",
+      "specify_extensions_git_scripts_bash_create_new_feature_sh"
+    ],
+    "12": [
+      "data_model_md",
+      "entity_allowed_origin",
+      "entity_audit_entry",
+      "entity_chunk",
+      "entity_cms_page",
+      "entity_conversation",
+      "entity_lead",
+      "entity_tenant",
+      "entity_user",
+      "entity_widget",
+      "framework_origin_check_middleware"
+    ],
+    "13": [
+      "specify_workflows_workflow_registry_json",
+      "workflows_workflow_registry_schema_version",
+      "workflows_workflow_registry_speckit_description",
+      "workflows_workflow_registry_speckit_installed_at",
+      "workflows_workflow_registry_speckit_name",
+      "workflows_workflow_registry_speckit_source",
+      "workflows_workflow_registry_speckit_updated_at",
+      "workflows_workflow_registry_speckit_version",
+      "workflows_workflow_registry_workflows",
+      "workflows_workflow_registry_workflows_speckit"
+    ],
+    "14": [
+      "integrations_claude_manifest_files",
+      "integrations_claude_manifest_files_claude_skills_speckit_clarify_skill_md",
+      "integrations_claude_manifest_files_claude_skills_speckit_implement_skill_md",
+      "integrations_claude_manifest_files_claude_skills_speckit_plan_skill_md",
+      "integrations_claude_manifest_files_claude_skills_speckit_taskstoissues_skill_md",
+      "integrations_claude_manifest_installed_at",
+      "integrations_claude_manifest_integration",
+      "integrations_claude_manifest_version",
+      "specify_integrations_claude_manifest_json"
+    ],
+    "15": [
+      "specify_scripts_powershell_create_new_feature_ps1",
+      "specify_scripts_powershell_create_new_feature_ps1_powershell_create_new_feature_convertto_cleanbranchname",
+      "specify_scripts_powershell_create_new_feature_ps1_powershell_create_new_feature_get_branchname",
+      "specify_scripts_powershell_create_new_feature_ps1_powershell_create_new_feature_get_highestnumberfrombranches",
+      "specify_scripts_powershell_create_new_feature_ps1_powershell_create_new_feature_get_highestnumberfromnames",
+      "specify_scripts_powershell_create_new_feature_ps1_powershell_create_new_feature_get_highestnumberfromremoterefs",
+      "specify_scripts_powershell_create_new_feature_ps1_powershell_create_new_feature_get_highestnumberfromspecs",
+      "specify_scripts_powershell_create_new_feature_ps1_powershell_create_new_feature_get_nextbranchnumber"
+    ],
+    "16": [
+      "bash_git_common_check_feature_branch",
+      "bash_git_common_has_git",
+      "bash_git_common_spec_kit_effective_branch_name",
+      "c_users_jamal_documents_bootcamps_aie_week_8_concierge_specify_extensions_git_scripts_bash_git_common_sh__entry",
+      "specify_extensions_git_scripts_bash_git_common_sh"
+    ],
+    "17": [
+      "powershell_git_common_get_speckiteffectivebranchname",
+      "powershell_git_common_test_featurebranch",
+      "powershell_git_common_test_hasgit",
+      "specify_extensions_git_scripts_powershell_git_common_ps1"
+    ],
+    "18": [
+      "claude_settings_hooks",
+      "claude_settings_hooks_pretooluse",
+      "claude_settings_json"
+    ],
+    "19": [
+      "api_openapi_manager_audit_endpoint",
+      "api_openapi_schema_auditentry"
+    ],
+    "20": [
+      "api_openapi_manager_usage_endpoint",
+      "api_openapi_schema_usageaggregate"
+    ],
+    "21": [
+      "api_openapi_admin_escalations_endpoint",
+      "api_openapi_schema_escalatedconversation"
+    ],
+    "22": [
+      "claude_md_graphify_skill",
+      "graphify_skill_graphify"
+    ],
+    "23": [
+      "bash_initialize_repo_find_project_root",
+      "specify_extensions_git_scripts_bash_initialize_repo_sh"
+    ],
+    "24": [
+      "powershell_initialize_repo_find_projectroot",
+      "specify_extensions_git_scripts_powershell_initialize_repo_ps1"
+    ],
+    "25": [
+      "specify_feature_feature_directory",
+      "specify_feature_json"
+    ],
+    "26": [
+      "specify_scripts_powershell_check_prerequisites_ps1"
+    ],
+    "27": [
+      "specify_scripts_powershell_setup_plan_ps1"
+    ],
+    "28": [
+      "specify_scripts_powershell_setup_tasks_ps1"
+    ],
+    "29": [
+      "speckit_clarify_skill"
+    ],
+    "30": [
+      "git_readme"
+    ]
+  },
+  "cohesion": {
+    "0": 0.06938020351526364,
+    "1": 0.0647342995169082,
+    "2": 0.06722689075630252,
+    "3": 0.08307692307692308,
+    "4": 0.13450292397660818,
+    "5": 0.11764705882352941,
+    "6": 0.225,
+    "7": 0.1619047619047619,
+    "8": 0.15384615384615385,
+    "9": 0.25757575757575757,
+    "10": 0.21212121212121213,
+    "11": 0.2,
+    "12": 0.36363636363636365,
+    "13": 0.2,
+    "14": 0.2222222222222222,
+    "15": 0.4642857142857143,
+    "16": 0.4,
+    "17": 0.6666666666666666,
+    "18": 0.6666666666666666,
+    "19": 1.0,
+    "20": 1.0,
+    "21": 1.0,
+    "22": 1.0,
+    "23": 1.0,
+    "24": 1.0,
+    "25": 1.0,
+    "26": 1.0,
+    "27": 1.0,
+    "28": 1.0,
+    "29": 1.0,
+    "30": 1.0
+  },
+  "gods": [
+    {
+      "id": "plan_md",
+      "label": "Concierge Implementation Plan",
+      "degree": 41
+    },
+    {
+      "id": "spec_concierge_spec",
+      "label": "Concierge Platform Feature Specification",
+      "degree": 29
+    },
+    {
+      "id": "research_concierge_research",
+      "label": "Concierge Phase 0 Research & Decisions",
+      "degree": 14
+    },
+    {
+      "id": "constitution_md",
+      "label": "Concierge Constitution",
+      "degree": 11
+    },
+    {
+      "id": "data_model_md",
+      "label": "Concierge Data Model",
+      "degree": 11
+    },
+    {
+      "id": "quickstart_docker_compose",
+      "label": "Docker Compose Stack",
+      "degree": 10
+    },
+    {
+      "id": "integrations_speckit_manifest_files",
+      "label": "files",
+      "degree": 9
+    },
+    {
+      "id": "entity_tenant",
+      "label": "Tenant Entity",
+      "degree": 9
+    },
+    {
+      "id": "quickstart_concierge_quickstart",
+      "label": "Concierge Quickstart Guide",
+      "degree": 9
+    },
+    {
+      "id": "workflows_workflow_registry_workflows_speckit",
+      "label": "speckit",
+      "degree": 7
+    }
+  ],
+  "surprises": [
+    {
+      "source": "Concierge Data Model",
+      "target": "Tenant Isolation",
+      "source_files": [
+        "specs/001-concierge-platform/data-model.md",
+        ".specify/memory/constitution.md"
+      ],
+      "confidence": "INFERRED",
+      "relation": "conceptually_related_to",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "Clean Architecture & Dependency Rule",
+      "target": "AgentTurnUseCase",
+      "source_files": [
+        ".specify/memory/constitution.md",
+        "specs/001-concierge-platform/plan.md"
+      ],
+      "confidence": "INFERRED",
+      "relation": "conceptually_related_to",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; peripheral node `Clean Architecture & Dependency Rule` unexpectedly reaches hub `AgentTurnUseCase`"
+    },
+    {
+      "source": "Defense-in-Depth Security",
+      "target": "OriginCheckMiddleware",
+      "source_files": [
+        ".specify/memory/constitution.md",
+        "specs/001-concierge-platform/plan.md"
+      ],
+      "confidence": "INFERRED",
+      "relation": "conceptually_related_to",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "Speckit Plan Context Reference",
+      "target": "Concierge Implementation Plan",
+      "source_files": [
+        "CLAUDE.md",
+        "specs/001-concierge-platform/plan.md"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "connects across different repos/directories; peripheral node `Speckit Plan Context Reference` unexpectedly reaches hub `Concierge Implementation Plan`"
+    },
+    {
+      "source": "speckit-analyze Skill",
+      "target": "Concierge Constitution",
+      "source_files": [
+        ".claude/skills/speckit-analyze/SKILL.md",
+        ".specify/memory/constitution.md"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "connects across different repos/directories; peripheral node `speckit-analyze Skill` unexpectedly reaches hub `Concierge Constitution`"
+    }
+  ],
+  "tokens": {
+    "input": 7109,
+    "output": 16413
+  }
+}
