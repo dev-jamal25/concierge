@@ -1,0 +1,12 @@
+platform_rails:
+  locked: true
+  refusal:
+    - prompt_injection
+    - jailbreak
+    - cross_tenant
+  redaction:
+    - pii_credit_card
+    - pii_email
+    - pii_openai_key
+    - pii_google_api_key
+    - pii_ssn
