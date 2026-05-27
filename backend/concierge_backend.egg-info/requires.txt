@@ -32,3 +32,4 @@ torch<3.0,>=2.0
 onnx>=1.15
 onnxruntime>=1.18
 openai>=1.30
+tabulate>=0.9

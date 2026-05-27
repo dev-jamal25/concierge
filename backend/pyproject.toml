@@ -40,6 +40,7 @@ notebooks = [
     "onnx>=1.15",
     "onnxruntime>=1.18",
     "openai>=1.30",
+    "tabulate>=0.9",
 ]
 
 [build-system]
