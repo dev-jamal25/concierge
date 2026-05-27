@@ -20,6 +20,7 @@ from uuid import UUID
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.adapters.guardrails.nemo_client import NeMoGuardrails
 from app.adapters.tokens.pyjwt_signer import PyJWTSigner
 from app.adapters.email.console_email import ConsoleEmailSender
 from app.adapters.repositories.audit_repository import PostgresAuditRepository
@@ -65,8 +66,12 @@ def get_classifier_client() -> object:
     raise NotImplementedError("classifier client provider is owned by Owner C tasks T027/T047")
 
 
-def get_guardrails_client() -> object:
-    raise NotImplementedError("guardrails client provider is owned by Owner C tasks T028/T048")
+def get_guardrails_client() -> NeMoGuardrails:
+    settings = get_settings()
+    return NeMoGuardrails(
+        base_url=settings.guardrails_url,
+        service_token=settings.service_token,
+    )
 
 
 async def get_token_signer() -> PyJWTSigner:

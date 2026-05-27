@@ -23,8 +23,11 @@ def create_app() -> FastAPI:
         return {"status": "ready"}
 
     # --- Middleware (registered in Phase 2; outermost first) ---
+    from app.frameworks.api.deps import get_guardrails_client
+    from app.frameworks.api.middleware.pii_redaction import PIIRedactionMiddleware
     from app.frameworks.api.middleware.tenant_context import TenantContextMiddleware
 
+    app.add_middleware(PIIRedactionMiddleware, guardrails=get_guardrails_client())
     app.add_middleware(TenantContextMiddleware)
 
     # --- Routers (registered as slices land) ---
