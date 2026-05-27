@@ -20,18 +20,20 @@ from uuid import UUID
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.adapters.tokens.pyjwt_signer import PyJWTSigner
 from app.adapters.email.console_email import ConsoleEmailSender
 from app.adapters.repositories.audit_repository import PostgresAuditRepository
 from app.adapters.repositories.invitation_repository import PostgresInvitationRepository
 from app.adapters.repositories.tenant_repository import PostgresTenantRepository
 from app.adapters.repositories.user_repository import PostgresUserRepository
+from app.adapters.storage.minio_object_storage import MinIOObjectStorage
 from app.frameworks.config import Settings, get_settings
 from app.frameworks.db.session import (
     get_manager_session,
     get_session,
     tenant_id_ctx,
 )
-from app.frameworks.secrets.vault_client import HvacVaultClient
+from app.frameworks.secrets.vault_client import HvacVaultClient, WIDGET_SIGNING_KEY_PATH
 from app.use_cases.erase_tenant import EraseTenantUseCase
 from app.use_cases.invite_admin import InviteAdminUseCase
 from app.use_cases.provision_tenant import ProvisionTenantUseCase
@@ -67,12 +69,13 @@ def get_guardrails_client() -> object:
     raise NotImplementedError("guardrails client provider is owned by Owner C tasks T028/T048")
 
 
-def get_token_signer() -> object:
-    raise NotImplementedError("token signer provider is owned by Owner D tasks T030/T049")
+async def get_token_signer() -> PyJWTSigner:
+    pem = await get_vault_client().ensure_widget_signing_key()
+    return PyJWTSigner(pem, key_id=WIDGET_SIGNING_KEY_PATH)
 
 
-def get_object_storage() -> object:
-    raise NotImplementedError("object storage provider is owned by Owner D tasks T031/T050")
+def get_object_storage() -> MinIOObjectStorage:
+    return MinIOObjectStorage()
 
 
 # --- DB sessions (re-exported as FastAPI dependencies) ---
