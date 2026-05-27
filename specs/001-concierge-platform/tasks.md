@@ -428,8 +428,8 @@
 
 ### Red-Team Set: Injection, Cross-Tenant, PII
 
-- [ ] T140 [P] [C] Create `tests/evals/redteam/injection.jsonl`: 10+ prompt-injection probes; each row: {"message": "...", "expected_action": "refuse|redact"}
-- [ ] T141 [P] [C] Create `tests/evals/redteam/cross_tenant.jsonl`: 5+ cross-tenant probes; visitor on Tenant A asks a question only answered in Tenant B's content; expected: agent refuses or returns "I don't know" (does NOT leak Tenant B content)
+- [X] T140 [P] [C] Create `tests/evals/redteam/injection.jsonl`: 10+ prompt-injection probes; each row: {"message": "...", "expected_action": "refuse|redact"}
+- [X] T141 [P] [C] Create `tests/evals/redteam/cross_tenant.jsonl`: 5+ cross-tenant probes; visitor on Tenant A asks a question only answered in Tenant B's content; expected: agent refuses or returns "I don't know" (does NOT leak Tenant B content)
 - [ ] T142 [P] [C] Create `tests/evals/redteam/test_redteam.py`: Runs each probe; asserts injection probes are refused ≥ 95% (or 100% for critical ones), cross-tenant probes are 100% refused. Exits non-zero on regression.
 
 ### PII Redaction Canary Test
