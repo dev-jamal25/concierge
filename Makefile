@@ -20,5 +20,8 @@ lint:
 test:
 	cd $(BACKEND_DIR) && $(UV) run --extra dev pytest
 
-seed-demo-tenant serve-test-host smoke eval eval-classifier eval-agent eval-rag eval-redteam:
+eval-classifier:
+	cd $(BACKEND_DIR) && $(UV) run --extra dev --extra notebooks pytest ../tests/evals/classifier/ -v -s
+
+seed-demo-tenant serve-test-host smoke eval eval-agent eval-rag eval-redteam:
 	@echo "$@ pending Owner C/D"
