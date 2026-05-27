@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
+from functools import lru_cache
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
@@ -66,11 +67,24 @@ def get_classifier_client() -> object:
     raise NotImplementedError("classifier client provider is owned by Owner C tasks T027/T047")
 
 
+@lru_cache(maxsize=1)
+def _resolve_service_token() -> str:
+    """Resolve the shared sidecar X-Service-Token (T151).
+
+    Source of truth is Vault at SERVICE_TOKEN_PATH. The env var SERVICE_TOKEN
+    is a dev-only override (tests, no-Vault local runs).
+    """
+    settings = get_settings()
+    if settings.service_token:
+        return settings.service_token
+    return HvacVaultClient(settings).ensure_service_token_sync()
+
+
 def get_guardrails_client() -> NeMoGuardrails:
     settings = get_settings()
     return NeMoGuardrails(
         base_url=settings.guardrails_url,
-        service_token=settings.service_token,
+        service_token=_resolve_service_token(),
     )
 
 

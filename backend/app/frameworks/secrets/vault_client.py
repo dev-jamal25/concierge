@@ -10,6 +10,7 @@ service credential shared with the modelserver / guardrails sidecars (Owner C).
 from __future__ import annotations
 
 import asyncio
+import secrets
 
 import hvac
 from cryptography.hazmat.primitives import serialization
@@ -18,6 +19,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from app.frameworks.config import Settings, get_settings
 
 WIDGET_SIGNING_KEY_PATH = "jwt/widget/active"
+SERVICE_TOKEN_PATH = "service/internal-token"
 
 
 class HvacVaultClient:
@@ -64,6 +66,30 @@ class HvacVaultClient:
         pem = _generate_ed25519_pem()
         await self.set_secret(WIDGET_SIGNING_KEY_PATH, {"private_key_pem": pem})
         return pem
+
+    def ensure_service_token_sync(self) -> str:
+        """Idempotently provision the X-Service-Token shared between api and the
+        internal sidecars (modelserver, guardrails). Sync variant so it can run
+        during FastAPI app construction, before middleware is registered.
+        """
+        try:
+            resp = self._client.secrets.kv.v2.read_secret_version(
+                path=SERVICE_TOKEN_PATH,
+                mount_point=self._mount,
+                raise_on_deleted_version=False,
+            )
+            existing = resp["data"]["data"]
+        except hvac.exceptions.InvalidPath:
+            existing = None
+        if existing and existing.get("token"):
+            return existing["token"]
+        token = secrets.token_urlsafe(32)
+        self._client.secrets.kv.v2.create_or_update_secret(
+            path=SERVICE_TOKEN_PATH,
+            secret={"token": token},
+            mount_point=self._mount,
+        )
+        return token
 
 
 def _generate_ed25519_pem() -> str:

@@ -74,7 +74,9 @@ services:
       SESSION_SECRET: ${SESSION_SECRET:-change-me-in-prod}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
       GUARDRAILS_URL: http://guardrails:8002
-      SERVICE_TOKEN: ${SERVICE_TOKEN:-dev-service-token}
+      # SERVICE_TOKEN is a dev-only fallback; api fetches it from Vault at
+      # startup (T151). Leave unset in prod so Vault is the only source.
+      SERVICE_TOKEN: ${SERVICE_TOKEN:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -99,7 +101,14 @@ services:
     build:
       context: ./services/guardrails
     environment:
-      SERVICE_TOKEN: ${SERVICE_TOKEN:-dev-service-token}
+      VAULT_ADDR: http://vault:8200
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_DEV_ROOT_TOKEN_ID:-dev-root-token}
+      # SERVICE_TOKEN env is a dev-only fallback; the real token is fetched
+      # from Vault at startup (T151).
+      SERVICE_TOKEN: ${SERVICE_TOKEN:-}
+    depends_on:
+      vault:
+        condition: service_started
     ports:
       - "8002:8002"
     healthcheck:
