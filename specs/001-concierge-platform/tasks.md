@@ -362,11 +362,11 @@
 
 ### Guardrail Config Entity
 
-- [ ] T122 [US6] [C] Create `src/entities/guardrail_config.py`: GuardrailConfig dataclass with allowed_topics, blocked_topics, refusal_tone, enabled_tools (subset of [rag_search, capture_lead, escalate])
+- [X] T122 [US6] [C] Create `src/entities/guardrail_config.py`: GuardrailConfig dataclass with allowed_topics, blocked_topics, refusal_tone, enabled_tools (subset of [rag_search, capture_lead, escalate])
 
 ### Guardrail Management Use Case
 
-- [ ] T123 [US6] [C] Create `src/use_cases/update_guardrail_config.py`: UpdateGuardrailConfigUseCase; validates tenant cannot weaken platform rails; persists to tenant.guardrail_config JSONB; audit-logs any attempt to weaken (403 + logged).
+- [X] T123 [US6] [C] Create `src/use_cases/update_guardrail_config.py`: UpdateGuardrailConfigUseCase; validates tenant cannot weaken platform rails; persists to tenant.guardrail_config JSONB; audit-logs any attempt to weaken (403 + logged).
 
 ### Admin Routes (Extended)
 
