@@ -159,12 +159,12 @@
 - [ ] T054 [A] Create `docs/DESIGN.md` stub: sections for isolation strategy, scaling story, cost-per-tenant model, role model, erasure path; populated as Slice A completes
 - [ ] T055 [B] Create `docs/DECISIONS.md` stub with header and structure; to be appended by all slices with numbered decisions. Entries: agent-vs-workflow-vs-hybrid [B], embedder choice [B], reranker choice [B], classifier algorithm [C], others TBD
 - [ ] T056 [A] Create `docs/RUNBOOK.md` stub: sections for compose-up, restore, on-call troubleshooting; Slice A + Slice D populate
-- [ ] T057 [C] Create `docs/EVALS.md` stub: sections for how each gate is built and how to read results; populated by Slice C
-- [ ] T058 [C] Create `docs/SECURITY.md` stub: threat model, GDPR posture, jurisdictional notes; Slice C populates
+- [X] T057 [C] Create `docs/EVALS.md` stub: sections for how each gate is built and how to read results; populated by Slice C
+- [X] T058 [C] Create `docs/SECURITY.md` stub: threat model, GDPR posture, jurisdictional notes; Slice C populates
 - [ ] T059 [P] [A] Create `src/use_cases/SPEC.md` stub (Slice A)
 - [ ] T060 [P] [B] Create `src/adapters/SPEC.md` stub (Slice B)
-- [ ] T061 [P] [C] Create `services/modelserver/SPEC.md` stub (Slice C)
-- [ ] T062 [P] [C] Create `services/guardrails/SPEC.md` stub (Slice C)
+- [X] T061 [P] [C] Create `services/modelserver/SPEC.md` stub (Slice C)
+- [X] T062 [P] [C] Create `services/guardrails/SPEC.md` stub (Slice C)
 - [ ] T063 [P] [D] Create `admin/SPEC.md` stub (Slice D)
 - [ ] T064 [P] [D] Create `widget/SPEC.md` stub (Slice D)
 
@@ -362,11 +362,11 @@
 
 ### Guardrail Config Entity
 
-- [ ] T122 [US6] [C] Create `src/entities/guardrail_config.py`: GuardrailConfig dataclass with allowed_topics, blocked_topics, refusal_tone, enabled_tools (subset of [rag_search, capture_lead, escalate])
+- [X] T122 [US6] [C] Create `src/entities/guardrail_config.py`: GuardrailConfig dataclass with allowed_topics, blocked_topics, refusal_tone, enabled_tools (subset of [rag_search, capture_lead, escalate])
 
 ### Guardrail Management Use Case
 
-- [ ] T123 [US6] [C] Create `src/use_cases/update_guardrail_config.py`: UpdateGuardrailConfigUseCase; validates tenant cannot weaken platform rails; persists to tenant.guardrail_config JSONB; audit-logs any attempt to weaken (403 + logged).
+- [X] T123 [US6] [C] Create `src/use_cases/update_guardrail_config.py`: UpdateGuardrailConfigUseCase; validates tenant cannot weaken platform rails; persists to tenant.guardrail_config JSONB; audit-logs any attempt to weaken (403 + logged).
 
 ### Admin Routes (Extended)
 
@@ -409,12 +409,12 @@
 
 ### Classifier Training & Eval Gate
 
-- [ ] T130 [C] Create `notebooks/01_label_taxonomy.ipynb`: Defines 5-label taxonomy (spam, faq, lead_intent, escalate, ambiguous) with label definitions, seed examples per label
-- [ ] T131 [C] Create `notebooks/02_tfidf_logreg_baseline.ipynb`: TF-IDF + logistic regression baseline; trains on seed set; evaluates on held-out test set; reports macro-F1, per-class F1, latency, cost
-- [ ] T132 [C] Create `notebooks/03_small_dl_onnx.ipynb`: Small DL model (e.g., CNN + word embeddings) exported to ONNX; evaluates on held-out set
-- [ ] T133 [C] Create `notebooks/04_llm_zero_shot.ipynb`: LLM zero-shot classification (e.g., claude-sonnet-4-6 with prompt); evaluates on held-out set
-- [ ] T134 [C] Create `notebooks/05_compare_and_export.ipynb`: Side-by-side comparison of all three; picks the best by macro-F1 (likely classical baseline or ONNX for speed + size); exports artifact to `services/modelserver/artifacts/model.{onnx|joblib}`; updates `services/modelserver/model_card.yaml` with SHA-256, training data source, comparison results, deployment choice with rationale
-- [ ] T135 [C] Create `tests/evals/classifier/test_classifier_macro_f1.py`: Loads model_card.yaml, computes macro-F1 on held-out test set, asserts ≥ classifier_macro_f1 threshold from eval_thresholds.yaml. Exits non-zero on regression. Committed to CI.
+- [X] T130 [C] Create `notebooks/01_label_taxonomy.ipynb`: Defines 5-label taxonomy (spam, faq, lead_intent, escalate, ambiguous) with label definitions, seed examples per label
+- [X] T131 [C] Create `notebooks/02_tfidf_logreg_baseline.ipynb`: TF-IDF + logistic regression baseline; trains on seed set; evaluates on held-out test set; reports macro-F1, per-class F1, latency, cost
+- [X] T132 [C] Create `notebooks/03_small_dl_onnx.ipynb`: Small DL model (e.g., CNN + word embeddings) exported to ONNX; evaluates on held-out set
+- [X] T133 [C] Create `notebooks/04_llm_zero_shot.ipynb`: LLM zero-shot classification (e.g., claude-sonnet-4-6 with prompt); evaluates on held-out set
+- [X] T134 [C] Create `notebooks/05_compare_and_export.ipynb`: Side-by-side comparison of all three; picks the best by macro-F1 (likely classical baseline or ONNX for speed + size); exports artifact to `services/modelserver/artifacts/model.{onnx|joblib}`; updates `services/modelserver/model_card.yaml` with SHA-256, training data source, comparison results, deployment choice with rationale
+- [X] T135 [C] Create `tests/evals/classifier/test_classifier_macro_f1.py`: Loads model_card.yaml, computes macro-F1 on held-out test set, asserts ≥ classifier_macro_f1 threshold from eval_thresholds.yaml. Exits non-zero on regression. Committed to CI.
 
 ### Agent Tool-Selection Golden Set & Eval Gate
 
@@ -428,8 +428,8 @@
 
 ### Red-Team Set: Injection, Cross-Tenant, PII
 
-- [ ] T140 [P] [C] Create `tests/evals/redteam/injection.jsonl`: 10+ prompt-injection probes; each row: {"message": "...", "expected_action": "refuse|redact"}
-- [ ] T141 [P] [C] Create `tests/evals/redteam/cross_tenant.jsonl`: 5+ cross-tenant probes; visitor on Tenant A asks a question only answered in Tenant B's content; expected: agent refuses or returns "I don't know" (does NOT leak Tenant B content)
+- [X] T140 [P] [C] Create `tests/evals/redteam/injection.jsonl`: 10+ prompt-injection probes; each row: {"message": "...", "expected_action": "refuse|redact"}
+- [X] T141 [P] [C] Create `tests/evals/redteam/cross_tenant.jsonl`: 5+ cross-tenant probes; visitor on Tenant A asks a question only answered in Tenant B's content; expected: agent refuses or returns "I don't know" (does NOT leak Tenant B content)
 - [ ] T142 [P] [C] Create `tests/evals/redteam/test_redteam.py`: Runs each probe; asserts injection probes are refused ≥ 95% (or 100% for critical ones), cross-tenant probes are 100% refused. Exits non-zero on regression.
 
 ### PII Redaction Canary Test
@@ -480,14 +480,14 @@ These tasks operationalise `research.md §1a` (3-way chunker bake-off),
 - [ ] T155 [B] Populate `docs/DECISIONS.md` (entry 1): Agent vs. Workflow vs. Hybrid argument; decision: bounded tool-calling agent (max 5 iterations, max 2048 tokens) with three tools. Rationale: balance flexibility (agent) with cost + latency (bounded + deterministic fallbacks). Alternatives considered, numbers on golden set.
 - [ ] T156 [B] Append `docs/DECISIONS.md` (entry 2): Embedding provider picked by RAG golden set score (threshold ≥ 0.85). Candidate comparison (OpenAI vs. Voyage vs. Cohere) with cost/recall/latency tradeoffs. Winner noted with runner-up scores.
 - [ ] T157 [B] Append `docs/DECISIONS.md` (entry 3): Reranker provider (if enabled) picked by same golden set criterion. Same format.
-- [ ] T158 [C] Append `docs/DECISIONS.md` (entry 4): Classifier algorithm picked from three-way comparison (classical / DL ONNX / LLM zero-shot) on held-out test set. Winner's macro-F1, per-class F1, latency, inference cost. Rationale for deployment choice (likely classical or ONNX for speed / size constraints).
-- [ ] T159 [C] Populate `docs/EVALS.md`: Four evaluation gates (classifier, agent, RAG, redteam); how each is built (source data, held-out split), how to run locally (`make eval-classifier`, etc.), how to read results. Thresholds from eval_thresholds.yaml. Pass/fail interpretation.
-- [ ] T160 [C] Populate `docs/SECURITY.md`: Threat model (token compromise, prompt injection, cross-tenant misconfiguration, PII leakage), mitigations (short-lived JWTs, guardrails rails, RLS + repository + middleware layers, PII redactor). GDPR-aligned design (lawful basis, right of access, right of erasure, data minimization). No certification claimed; design rationale only. Jurisdictional posture.
+- [X] T158 [C] Append `docs/DECISIONS.md` (entry 4): Classifier algorithm picked from three-way comparison (classical / DL ONNX / LLM zero-shot) on held-out test set. Winner's macro-F1, per-class F1, latency, inference cost. Rationale for deployment choice (likely classical or ONNX for speed / size constraints).
+- [X] T159 [C] Populate `docs/EVALS.md`: Four evaluation gates (classifier, agent, RAG, redteam); how each is built (source data, held-out split), how to run locally (`make eval-classifier`, etc.), how to read results. Thresholds from eval_thresholds.yaml. Pass/fail interpretation.
+- [X] T160 [C] Populate `docs/SECURITY.md`: Threat model (token compromise, prompt injection, cross-tenant misconfiguration, PII leakage), mitigations (short-lived JWTs, guardrails rails, RLS + repository + middleware layers, PII redactor). GDPR-aligned design (lawful basis, right of access, right of erasure, data minimization). No certification claimed; design rationale only. Jurisdictional posture.
 - [ ] T161 [A] Populate `docs/RUNBOOK.md` (Slice A + D): Compose-up troubleshooting, restore procedures (backup/restore Postgres + pgvector + Redis + MinIO), on-call playbook (common alerts, remediation). Links to SECURITY.md and EVALS.md for context.
 - [ ] T162 [A] Populate `src/use_cases/SPEC.md` (Slice A): Tenant provisioning / erasure / authentication flows; contract with use-case interfaces.
 - [ ] T163 [B] Populate `src/adapters/SPEC.md` (Slice B): Repository layer contract; protocol implementations (LLM, Embedding, Session); integration points with other adapters.
-- [ ] T164 [C] Populate `services/modelserver/SPEC.md` (Slice C): Model serving architecture; artifact loading + hash verification; inference API; no torch constraint. Model card schema and build process.
-- [ ] T165 [C] Populate `services/guardrails/SPEC.md` (Slice C): Platform rails (injection, jailbreak, cross-tenant, PII) + tenant rails configuration. API contract. Integration with NeMo Guardrails library.
+- [X] T164 [C] Populate `services/modelserver/SPEC.md` (Slice C): Model serving architecture; artifact loading + hash verification; inference API; no torch constraint. Model card schema and build process.
+- [X] T165 [C] Populate `services/guardrails/SPEC.md` (Slice C): Platform rails (injection, jailbreak, cross-tenant, PII) + tenant rails configuration. API contract. Integration with NeMo Guardrails library.
 - [ ] T166 [D] Populate `admin/SPEC.md` (Slice D): Streamlit app structure; pages (dashboard, CMS, leads, settings, embed snippet); auth via fastapi-users session cookie. No custom auth in admin.
 - [ ] T167 [D] Populate `widget/SPEC.md` (Slice D): Widget architecture (React + Vite + TypeScript in iframe). Loader contract (vanilla JS, no dependencies, < 5 KB gzipped). Token exchange, origin validation, refresh logic. Iframe ↔ loader communication (postMessage).
 
