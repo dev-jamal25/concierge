@@ -35,6 +35,8 @@ class Settings(BaseSettings):
 
     # Redis (session memory — Owner B owns the adapter; A only needs the URL for erasure purge)
     redis_url: str = Field(default="redis://localhost:6379/0")
+    session_ttl_seconds: int = Field(default=3600, description="Fixed TTL for session keys (T184).")
+    session_max_messages: int = Field(default=20, description="Max clean turns stored per session (T190).")
 
     # MinIO (object storage — Owner D owns the adapter)
     minio_endpoint: str = Field(default="localhost:9000")
@@ -43,6 +45,20 @@ class Settings(BaseSettings):
     vault_addr: str = Field(default="http://localhost:8200")
     vault_token: str = Field(default="dev-root-token", alias="VAULT_DEV_ROOT_TOKEN_ID")
     vault_kv_mount: str = Field(default="secret")
+
+    # LLM (Owner B)
+    anthropic_api_key: str = Field(default="", alias="ANTHROPIC_API_KEY")
+    llm_model: str = Field(default="claude-sonnet-4-6")
+
+    # Embeddings (Owner B)
+    embedding_provider: str = Field(default="voyage", alias="EMBEDDING_PROVIDER")
+    embedding_api_key: str = Field(default="", alias="EMBEDDING_API_KEY")
+    embedding_model: str | None = Field(default=None)
+
+    # Reranker (Owner B — optional)
+    reranker_url: str | None = Field(default=None, alias="RERANKER_URL")
+    reranker_api_key: str | None = Field(default=None, alias="RERANKER_API_KEY")
+    reranker_model: str | None = Field(default=None, alias="RERANKER_MODEL")
 
     # Internal services (Owner C) — modelserver classifier + NeMo guardrails sidecar.
     # service_token is the shared X-Service-Token issued from Vault in T151;

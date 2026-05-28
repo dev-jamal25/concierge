@@ -41,6 +41,41 @@ whose answer straddles two paragraphs.
 `rag_golden_set_recall_at_5 ≥ 0.85`. To be validated at Phase 2 against
 the 15-triple RAG golden set; result entered in `docs/DECISIONS.md`.
 
+### 1a. Validation: three-way chunker bake-off (Owner B addendum, 2026-05-27)
+
+The "paragraph-aware" decision above is the **starting baseline**, not
+the locked winner. Per the validation requirement, Slice B will benchmark
+three chunker variants against the 15-triple RAG golden set and record
+the winning variant in `docs/DECISIONS.md` (new entry "Decision 1.5 —
+Chunker variant"). The three variants:
+
+1. **Fixed-size baseline**: 500-token windows, no overlap, no heading
+   awareness. The naïve floor that any structured chunker must beat.
+2. **Paragraph-aware recursive**: split on `\n\n`, then merge to a
+   400-token target with 50-token overlap, hard cap 600 tokens
+   (the implementation already shipped in `reindex_tenant_chunks.py`).
+3. **Header-first recursive**: split on Markdown headings (`#`/`##`/`###`),
+   then recursively split each section on `\n\n` to fit the 400/50/600
+   bounds. **Each child chunk is prepended with its full heading path**
+   (e.g. `H1 > H2 > H3\n\n<body>`) so the embedder and downstream
+   retrieval carry structural context.
+
+**Metrics reported per variant** (single table in DECISIONS.md):
+- `hit@5` — the gate metric (must satisfy `rag_golden_set_recall_at_5 ≥ 0.85`)
+- `MRR` (mean reciprocal rank) — catches ranking-quality differences `hit@5` hides
+- mean retrieval latency (ms) — catches a chunker that wins on accuracy but blows
+  the per-turn 5s SLA budget
+
+**Decision rule**: winner = highest `hit@5` that also satisfies the gate
+*and* has retrieval latency ≤ 200ms p95 (the pgvector budget from plan.md).
+Ties on `hit@5` broken by `MRR`; further ties broken by lower latency.
+If the fixed-size baseline wins, that itself is a finding worth
+documenting (and a signal the corpus is simpler than expected).
+
+The chunker code lives in `backend/app/use_cases/_chunkers/`
+(one module per variant) so the bake-off can swap implementations
+without touching `reindex_tenant_chunks.py`.
+
 ---
 
 ## 2. Retrieval improvement
@@ -67,6 +102,39 @@ single extra HTTP call, so cost is bounded and predictable at PoC scale.
 `rag_golden_set_answer_grounded_rate ≥ 0.85`. Comparison baseline
 (no-rerank) MUST be measured and recorded in `docs/DECISIONS.md` so the
 +x improvement is auditable.
+
+### 2a. A/B harness and ship/no-ship rule (Owner B addendum, 2026-05-27)
+
+Tightens the "must be measured" requirement into an automated A/B test
+that runs in CI and a binary ship/no-ship rule:
+
+**Test**: `tests/evals/rag/test_reranker_ab.py` runs the existing 15-triple
+RAG golden set **twice** — once with reranker enabled, once disabled
+(the `rag_search.py` code already supports both modes via graceful
+fallback). Records `hit@5` for both modes plus the delta in
+`docs/DECISIONS.md` (entry 3 — Reranker provider).
+
+**Ship/no-ship rule**: reranker stays in v1 if and only if it lifts
+`hit@5` by **≥ 0.05 (5 percentage points)** over the no-rerank baseline
+on the golden set. Below that, the reranker's cost (~$0.001/call +
+~200ms latency) is not paid back at PoC scale and the v1 deployment
+disables it (`RERANKER_URL` left unset). The graceful-fallback path
+already in place means the change is config-only — no code revert needed.
+
+**Rationale**: 5pp is a meaningful, statistically defensible margin on
+a 15-triple set; smaller deltas risk noise. The rule is auditable and
+the test re-runs on every CI build, so a future re-evaluation (e.g.
+after corpus expansion) is one CI run away.
+
+**FR-019 fallback**: FR-019 requires at least one retrieval improvement
+in production. If the A/B test triggers the no-ship rule and the
+reranker is disabled, **query rewriting** satisfies FR-019 as the
+in-production retrieval improvement. The agent's `rag_search` tool
+already rewrites the visitor's raw question into a focused search query
+before retrieval (implemented in `agent_turn.py` — the `query` arg
+passed to `RAGSearchUseCase` is the agent-composed search string, not
+the visitor's verbatim message). No additional code is needed; the
+fallback is already live.
 
 ---
 
@@ -124,21 +192,81 @@ score, recorded in `docs/DECISIONS.md`. Threshold:
 
 ## 5. Redis session TTL
 
-**Decision**: 30 minutes per conversation key.
+**Decision (revised 2026-05-27, Owner B)**: **60 minutes per conversation
+key, fixed expiry** (TTL set on first write only; subsequent writes
+update the value but do NOT reset the TTL).
 
-**Rationale**: Visitor sessions on a B2B website typically end within
-20–25 minutes (industry-standard analytics data); 30 minutes covers
-the long tail while bounding the blast radius of a leaked session token
-to a single afternoon. Memory cost is negligible at PoC scale.
+**Rationale**: Concierge-style conversations frequently span lunch breaks,
+multi-tab browsing, and short interruptions; the original 30-minute
+window cuts off visitors mid-session and forces context loss. Doubling
+to 60 minutes covers the realistic long tail (per session-length data
+on consumer-facing chat widgets) without meaningfully expanding the
+blast radius of a leaked session token — the token itself is short-lived
+(widget JWT exp ≤ 5 min, per §6) and Redis values are PII-redacted
+before write.
+
+**Fixed (not sliding)** because:
+- A *fixed* expiry gives a **predictable upper bound** on how long
+  any single session's data lives in Redis, which is cleaner to argue
+  in `docs/SECURITY.md` and to GDPR-aligned reviewers (data minimisation
+  principle).
+- A *sliding* expiry can keep an idle-but-touched conversation alive
+  indefinitely under adversarial activity, which expands the blast radius.
+- The trade-off cost (a 65-minute visitor session loses last-5-min
+  context) is small for concierge use and recoverable (visitor can
+  restate; agent re-grounds via `rag_search`).
+
+**Implementation note for adapters/session/redis_session.py**:
+`store()` MUST set the TTL only on key creation and preserve it on update.
+Create with `SET ... NX EX <ttl>`; update with `SET ... KEEPTTL`.
+**Correction (2026-05-28)**: an earlier draft said to use plain `SET`
+(no `EX`) for subsequent updates — that is wrong, because a plain `SET`
+*clears* the existing TTL and makes the key persistent. `KEEPTTL` is the
+correct primitive: it rewrites the value while leaving the original
+expiry counting down. A `touch()` method is explicitly NOT added —
+sliding TTL is rejected here.
 
 **Alternatives considered**:
-- *Hours / days* — increases blast radius of token compromise; not
-  justified by user-visible benefit.
+- *Sliding 60-minute window* — better UX for active conversations but
+  loses the predictable-upper-bound property above.
+- *Hours / days* — increases blast radius without proportional benefit.
 - *Per-turn (no persistence between turns)* — breaks multi-turn
   context; visitor would have to restate prior turns.
+- *Original 30 minutes (fixed)* — too aggressive a cut-off in practice;
+  the original number was a guess, not measurement-backed.
 
-**Number**: Acceptable as a one-sentence justification per Constitution
-Principle VII for memory (`FR-024`). No held-out gate required.
+**Number**: Acceptable as a one-paragraph justification per Constitution
+Principle VII for memory (`FR-024`, which only requires "stated TTL
+with documented rationale"). No held-out gate required. Decision also
+recorded in `docs/DECISIONS.md` (new entry "Decision 5 — Memory TTL").
+
+### 5a. Key schema, stored payload, and erasure seam (Owner B addendum, 2026-05-28)
+
+**Key schema**: `session:{tenant_id}:{conversation_id}`. The earlier
+`session:<key>` scheme carried no tenant_id, so a per-tenant purge would
+have had to scan `session:*` — every tenant's keys at once. Embedding the
+`tenant_id` segment lets a purge target exactly one tenant via
+`SCAN session:{tenant_id}:*`, and keeps the per-conversation grain.
+
+**Stored payload**: the short-term turn list only — clean `{role, content}`
+pairs for visitor and assistant turns. The agent's intermediate tool-call
+and tool-result messages are NOT stored (their provider-assigned call IDs
+do not round-trip into future API calls, and they bloat the window). The
+list is capped at the most recent `session_max_messages` (default 20 ≈ 10
+turns); older entries are dropped on write. Memory is loaded on every turn
+and written back after every turn (any route), so a later agent turn has
+full context.
+
+**Erasure seam (cross-owner)**: the `SessionStore` protocol gains
+`delete_by_tenant(tenant_id)`, implemented in `RedisSession` as a
+`SCAN session:{tenant_id}:*` + pipelined delete. Owner A's erasure use
+case (T129) injects `SessionStore` and calls this, growing the
+`stores_purged` audit list to include `redis`. The key format stays
+encapsulated in the adapter — Owner A does not construct keys.
+
+**PII**: Redis values are expected to be PII-redacted upstream (Owner C's
+egress/redaction middleware, T173); this memory layer stores whatever text
+the route produced and does not itself redact.
 
 ---
 
@@ -340,11 +468,11 @@ record numbers in `docs/DECISIONS.md` as decisions are made:
 
 | # | Decision | Status |
 |---|----------|--------|
-| 1 | Paragraph-aware chunking (400/50/600 tokens) | Threshold committed; number due Phase 2 |
-| 2 | Cross-encoder rerank top-20 → top-5 | Threshold committed; baseline number required |
+| 1 | Paragraph-aware chunking (400/50/600 tokens) — baseline; 3-way bake-off picks winner (§1a) | Threshold committed; bake-off due in Slice B |
+| 2 | Cross-encoder rerank top-20 → top-5; A/B ship-rule ≥0.05 hit@5 lift (§2a) | Threshold committed; A/B test in Slice B |
 | 3 | Anthropic claude-sonnet-4-6 default | Tool-selection gate committed |
 | 4 | Hosted embeddings, provider TBD via bake-off | Threshold committed; pick in Slice B |
-| 5 | Redis session TTL = 30 min | Justified inline (no gate required) |
+| 5 | Redis session TTL = 60 min, fixed expiry | Justified inline (no gate required) |
 | 6 | Ed25519 JWT in Vault, 5-day overlap rotation | Documented decision (no gate) |
 | 7 | `SET LOCAL app.tenant_id` + RLS policies | Cross-tenant red-team gate at 100% |
 | 8 | Egress-side PII redactor via NeMo PII rail | Canary test required at 100% |

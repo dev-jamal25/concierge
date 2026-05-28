@@ -31,13 +31,21 @@ def create_app() -> FastAPI:
     app.add_middleware(TenantContextMiddleware)
 
     # --- Routers (registered as slices land) ---
+    from app.frameworks.api.routes import admin as admin_routes
     from app.frameworks.api.routes import auth as auth_routes
+    from app.frameworks.api.routes import chat as chat_routes
+    from app.frameworks.api.routes import cms as cms_routes
+    from app.frameworks.api.routes import leads as leads_routes
     from app.frameworks.api.routes import manager as manager_routes
     from app.frameworks.api.routes import widget as widget_routes
 
     app.include_router(auth_routes.router)
     app.include_router(manager_routes.router)
     app.include_router(widget_routes.router)
+    app.include_router(chat_routes.router)
+    app.include_router(cms_routes.router)
+    app.include_router(leads_routes.router)
+    app.include_router(admin_routes.router)
 
     return app
 

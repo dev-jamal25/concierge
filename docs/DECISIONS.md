@@ -1,20 +1,66 @@
 # Decisions Log
 
-Each entry is dated, owner-attributed, and backed by numbers per constitution Principle VII. Lowering a threshold or reversing a decision requires a new numbered entry citing the new measurements.
+Each entry is dated, owner-attributed, and backed by numbers per Constitution
+Principle VII. Lowering a threshold or reversing a decision requires a new
+numbered entry citing the new measurements.
 
-| # | Date | Owner | Topic |
-|---|------|-------|-------|
-| 1 | TBD | B | Agent vs workflow vs hybrid |
-| 2 | TBD | B | Embedder choice |
-| 3 | TBD | B | Reranker choice |
-| 4 | 2026-05-27 | C | Classifier algorithm |
+| #   | Date       | Owner | Topic                        |
+|-----|------------|-------|------------------------------|
+| 1   | TBD        | B     | Agent vs workflow vs hybrid  |
+| 1.5 | TBD        | B     | Chunker variant (bake-off)   |
+| 2   | TBD        | B     | Embedder choice              |
+| 3   | TBD        | B     | Reranker A/B result          |
+| 4   | 2026-05-27 | C     | Classifier algorithm         |
+| 5   | 2026-05-28 | B     | Memory TTL                   |
 
 ---
 
-## Entry #4 — Classifier algorithm
+## Entry #1 — Agent vs. Workflow vs. Hybrid
 
-**Date**: 2026-05-27  
-**Owner**: C (Models / Security / Guardrails)  
+*To be populated by Owner B (T155) after agent golden-set evaluation.*
+
+Topics to cover: bounded tool-calling agent (max 5 iterations, max 2048 tokens)
+vs. deterministic workflow vs. hybrid; rationale; alternatives considered;
+golden-set numbers (`agent_tool_selection_macro_f1 ≥ 0.80`).
+
+---
+
+## Entry #1.5 — Chunker variant
+
+*To be populated by Owner B (T182) after three-way bake-off on 15-triple RAG golden set.*
+
+Topics to cover: fixed-size baseline (500-token, no overlap) vs. paragraph-aware
+recursive (400/50/600) vs. header-first recursive (full heading path prepended).
+Metrics: `hit@5`, `MRR`, mean retrieval latency (ms). Winner = highest `hit@5`
+satisfying `rag_golden_set_recall_at_5 ≥ 0.85` AND latency ≤ 200ms p95; ties
+broken by `MRR` then latency.
+
+---
+
+## Entry #2 — Embedding Provider
+
+*To be populated by Owner B (T156) after RAG golden-set evaluation.*
+
+Topics to cover: candidate comparison (Voyage vs. Cohere vs. OpenAI); cost /
+recall@5 / latency tradeoffs; winner noted with runner-up scores.
+
+---
+
+## Entry #3 — Reranker A/B Result
+
+*To be populated by Owner B (T157 / T183) after A/B harness run on 15-triple golden set.*
+
+Topics to cover: `hit@5` with reranker enabled vs. disabled; delta vs. 0.05
+ship-rule threshold; provider candidates if reranker ships; graceful-degradation
+behaviour if disabled. FR-019 fallback note if reranker is disabled (query
+rewriting already live).
+
+---
+
+## Entry #4 — Classifier Algorithm
+
+**Date**: 2026-05-27
+**Owner**: C (Models / Security / Guardrails)
 **Decision**: deploy `cnn_onnx` (1D-CNN + word embeddings, exported to ONNX) as the router-intent classifier.
 
 ### Accuracy comparison
@@ -54,3 +100,35 @@ CNN+ONNX is the only candidate above the 0.80 macro-F1 threshold and delivers ~1
 - Training data: `notebooks/data/clinc150_mapped.csv` — sha256 `b3d6ec9b0ece4493f7d22d7d8f150acb423e2172f4221fb0837ef17e96c95f27`
 
 ---
+
+## Entry #5 — Memory TTL
+
+**Date**: 2026-05-28
+**Owner**: B (Agent / RAG / Session)
+**Decision**: 60-minute **fixed** expiry for Redis session keys.
+
+### Options considered
+
+| Option | Expiry | Reset on write? | Rationale |
+|--------|--------|-----------------|-----------|
+| 30-min fixed | 30 min | No | Too short for a multi-question sales conversation. |
+| 60-min fixed | 60 min | No | **Selected.** Matches observed concierge session lengths; limits PII persistence window. |
+| 60-min sliding | 60 min | Yes | Rejected: a bot hammering one key would keep it alive indefinitely, unbounding PII retention. |
+
+### Implementation
+
+`RedisSession.store()` (T046 / T184) uses two Redis primitives:
+- **First write**: `SET key val NX EX 3600` — creates the key and starts the clock once.
+- **Subsequent writes**: `SET key val KEEPTTL` — overwrites the value without touching the TTL, preserving the fixed expiry.
+
+`KEEPTTL` (Redis ≥ 6.0) is the only correct way to update a value without resetting the TTL. A plain `SET` clears the TTL, making the key permanent — this was a bug in the original research note (§5 correction applied).
+
+### Key schema (T191)
+
+`session:{tenant_id}:{conversation_id}` — tenant-scoped so Owner A's T129 can purge one tenant's sessions via `SCAN session:{tenant_id}:*` through the `delete_by_tenant(tenant_id)` seam on the `SessionStore` protocol.
+
+### Gate check
+
+- Session TTL = 3600 s; cap = 20 messages (`session_max_messages`).
+- Unit test: two consecutive `store()` calls leave TTL < original value (TTL not reset). ✓
+- Integration test: turn 2 reads turn 1; cross-tenant isolation enforced. ✓
