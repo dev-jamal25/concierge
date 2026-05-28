@@ -17,6 +17,8 @@ from collections.abc import Callable
 from datetime import datetime, timezone
 from typing import Any
 
+from uuid import UUID
+
 from app.frameworks.config import Settings, get_settings
 
 Redactor = Callable[[str], str]
@@ -77,6 +79,49 @@ _redaction_filter = RedactionFilter()
 def get_redaction_filter() -> RedactionFilter:
     """Return the singleton filter so T035 can swap in its redactor."""
     return _redaction_filter
+
+
+def log_turn_cost(
+    *,
+    tenant_id: UUID,
+    conversation_id: UUID,
+    route: str,
+    classifier_calls: int = 1,
+    llm_in_tokens: int = 0,
+    llm_out_tokens: int = 0,
+    embedding_calls: int = 0,
+    ms_elapsed: float = 0.0,
+    embedding_provider: str = "voyage",
+) -> None:
+    """Emit a structured cost line per chat turn (T189).
+
+    Fields: tenant_id, conversation_id, route, classifier_calls,
+    llm_in_tokens, llm_out_tokens, embedding_calls, estimated_usd, ms_elapsed.
+    """
+    from app.frameworks.observability.cost_table import estimate_turn_cost
+
+    estimated_usd = estimate_turn_cost(
+        llm_in_tokens=llm_in_tokens,
+        llm_out_tokens=llm_out_tokens,
+        embedding_calls=embedding_calls,
+        embedding_provider=embedding_provider,
+    )
+    logger = logging.getLogger(CONCIERGE_LOGGER)
+    logger.info(
+        "turn_cost",
+        extra={
+            "event": "turn_cost",
+            "tenant_id": str(tenant_id),
+            "conversation_id": str(conversation_id),
+            "route": route,
+            "classifier_calls": classifier_calls,
+            "llm_in_tokens": llm_in_tokens,
+            "llm_out_tokens": llm_out_tokens,
+            "embedding_calls": embedding_calls,
+            "estimated_usd": round(estimated_usd, 6),
+            "ms_elapsed": round(ms_elapsed, 1),
+        },
+    )
 
 
 def configure_logging(settings: Settings | None = None) -> None:

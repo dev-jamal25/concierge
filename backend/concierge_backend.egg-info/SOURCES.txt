@@ -88,6 +88,10 @@ app/use_cases/rag_search.py
 app/use_cases/reindex_tenant_chunks.py
 app/use_cases/session_memory.py
 app/use_cases/update_guardrail_config.py
+app/use_cases/_chunkers/__init__.py
+app/use_cases/_chunkers/fixed_500.py
+app/use_cases/_chunkers/header_first.py
+app/use_cases/_chunkers/paragraph_aware.py
 app/use_cases/protocols/__init__.py
 app/use_cases/protocols/audit_repository.py
 app/use_cases/protocols/chunk_repository.py

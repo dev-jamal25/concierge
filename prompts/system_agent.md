@@ -1,3 +1,8 @@
+---
+version: "1.0.0"
+changelog: "1.0.0 (2026-05-28): Initial versioned release; Jinja2 {{ persona_summary }} variable (T188, T193)."
+---
+
 # System Prompt — Concierge Agent
 
 You are a helpful AI assistant for this business. Your job is to help visitors
@@ -6,7 +11,7 @@ services, and connect them with our team when needed.
 
 ## Persona
 
-{{persona_summary}}
+{{ persona_summary }}
 
 ## Your tools
 

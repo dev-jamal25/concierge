@@ -13,7 +13,6 @@ Key contract:
 
 from __future__ import annotations
 
-from typing import Any
 from uuid import UUID
 
 from app.use_cases.protocols.session_store import SessionStore
