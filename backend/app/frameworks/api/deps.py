@@ -168,7 +168,7 @@ async def get_manager_context(
         accept_url_base=settings.public_base_url,
     )
     provision = ProvisionTenantUseCase(tenants, audit, invite)
-    erase = EraseTenantUseCase(tenants, audit)
+    erase = EraseTenantUseCase(tenants, audit, get_session_store())
     return ManagerContext(
         session=session,
         tenants=tenants,

@@ -11,6 +11,13 @@
 - Composition root remains in `backend/app/frameworks/api/deps.py` and wires
   Owner A adapters. B/C/D provider hooks are explicit `NotImplementedError`
   placeholders.
+- T129 Redis half complete (2026-05-28): `EraseTenantUseCase` now injects and
+  calls `SessionStore.delete_by_tenant(tenant_id)` after the Postgres cascade
+  delete, via Owner B's published `SessionStore` protocol (T029/T191). The
+  `tenant_erase_start` audit entry is written before any destructive work.
+  `stores_purged` in the completion audit entry is now `["pg", "vector", "redis"]`.
+  Three new tests cover: `delete_by_tenant` is called, cross-tenant sessions
+  survive, and `tenant_erase_start` is recorded.
 
 ## Baseline CI Scaffold
 
@@ -43,6 +50,21 @@ sidecar build checks are configured in this baseline.
 | B | tenant/user/audit/vault protocols | T019-T021, T032 | done |
 | D | OriginCheck middleware stub | T034 | done |
 
+## Remaining Blockers (Owner A T129 — MinIO half)
+
+T129 is **partially complete**. The Postgres + pgvector + Redis halves are done.
+MinIO prefix purge remains blocked on Owner D:
+
+| Blocker | Owner | File | Status |
+| --- | --- | --- | --- |
+| `ObjectStorage.delete_prefix` wiring | D | `backend/app/adapters/storage/minio_object_storage.py` | All methods raise `NotImplementedError` |
+
+When Owner D delivers the real MinIO client:
+1. Inject `ObjectStorage` into `EraseTenantUseCase` alongside `SessionStore`.
+2. Call `await self._object_storage.delete_prefix(tenant_id, "")` after the Redis purge.
+3. Append `"minio"` to `stores_purged` in the completion audit entry.
+4. Remove the inline `TODO(owner-d, T031/T050)` comment in `erase_tenant.py`.
+
 ## Still Owned Elsewhere
 
 - Structured logging is T040 and remains pending Owner C/shared work.
@@ -57,13 +79,3 @@ sidecar build checks are configured in this baseline.
 Do not add `backend/app/core/`. Shared settings stay in
 `backend/app/frameworks/config.py`; logging/redaction/security work belongs in
 the framework-layer files named by the Speckit tasks.
-
-## Day-1 Owner Checklist
-
-Owner B publishes its protocol interfaces and fakes for conversation, chunks,
-leads, LLM, embeddings, and sessions before building story logic.
-
-Owner C publishes classifier and guardrails protocols/adapters, plus
-redaction/logging/tracing surfaces.
-
-Owner D publishes token signing, object storage, CI, widget, and admin scaffolds.

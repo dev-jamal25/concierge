@@ -86,17 +86,17 @@
 
 ### Isolation Reference Pattern (Slice A leads; all consume)
 
-- [ ] T014 [A] Create `src/entities/tenant.py`: Tenant dataclass with id, slug, display_name, plan, persona_config, theme_config, guardrail_config, status, created_at, updated_at
-- [ ] T015 [A] Create `src/entities/user.py`: User dataclass with id, email, hashed_password, role (tenant_manager | tenant_admin), is_active, is_verified, created_at
-- [ ] T016 [A] Create `src/frameworks/db/models.py`: SQLAlchemy ORM models mirroring entities (tenants, users, user_tenant_roles, invitations, audit_entries tables with RLS schema placeholders)
-- [ ] T017 [A] Create `src/frameworks/db/session.py`: SessionLocal factory with async scope; TenantContextMiddleware that extracts tenant_id from JWT/credential and executes `SET LOCAL app.tenant_id = '<uuid>'`
-- [ ] T018 [A] Create Alembic migration `001_init_tenants_users_audit.sql`: creates tenants, users, user_tenant_roles, invitations, audit_entries tables with `tenant_id` on all tenant-scoped tables; installs pgcrypto, uuid-ossp, vector extensions; applies ONE RLS policy on tenants table as the reference pattern
+- [X] T014 [A] Create `src/entities/tenant.py`: Tenant dataclass with id, slug, display_name, plan, persona_config, theme_config, guardrail_config, status, created_at, updated_at
+- [X] T015 [A] Create `src/entities/user.py`: User dataclass with id, email, hashed_password, role (tenant_manager | tenant_admin), is_active, is_verified, created_at
+- [X] T016 [A] Create `src/frameworks/db/models.py`: SQLAlchemy ORM models mirroring entities (tenants, users, user_tenant_roles, invitations, audit_entries tables with RLS schema placeholders)
+- [X] T017 [A] Create `src/frameworks/db/session.py`: SessionLocal factory with async scope; TenantContextMiddleware that extracts tenant_id from JWT/credential and executes `SET LOCAL app.tenant_id = '<uuid>'`
+- [X] T018 [A] Create Alembic migration `001_init_tenants_users_audit.sql`: creates tenants, users, user_tenant_roles, invitations, audit_entries tables with `tenant_id` on all tenant-scoped tables; installs pgcrypto, uuid-ossp, vector extensions; applies ONE RLS policy on tenants table as the reference pattern
 
 ### Protocol Interfaces (Slice leaders publish; others code against fakes)
 
-- [ ] T019 [A] Create `src/use_cases/protocols/tenant_repository.py`: Protocol for ProvisionTenant, EraseTenant, GetTenant, ListTenants, UpdateTenant
-- [ ] T020 [A] Create `src/use_cases/protocols/user_repository.py`: Protocol for CreateUser, GetUser, UpdateUser (role binding)
-- [ ] T021 [A] Create `src/use_cases/protocols/audit_repository.py`: Protocol for LogAuditEntry (append-only)
+- [X] T019 [A] Create `src/use_cases/protocols/tenant_repository.py`: Protocol for ProvisionTenant, EraseTenant, GetTenant, ListTenants, UpdateTenant
+- [X] T020 [A] Create `src/use_cases/protocols/user_repository.py`: Protocol for CreateUser, GetUser, UpdateUser (role binding)
+- [X] T021 [A] Create `src/use_cases/protocols/audit_repository.py`: Protocol for LogAuditEntry (append-only)
 - [X] T022 [B] Create `src/use_cases/protocols/conversation_repository.py`: Protocol for CreateConversation, GetConversation, UpdateEscalation
 - [X] T023 [B] Create `src/use_cases/protocols/chunk_repository.py`: Protocol for CreateChunk, QueryChunks (with tenant_id filter at query time)
 - [X] T024 [B] Create `src/use_cases/protocols/lead_repository.py`: Protocol for CaptureLead, ListLeads, RateLimitLeads
@@ -107,12 +107,12 @@
 - [X] T029 [B] Create `src/use_cases/protocols/session_store.py`: Protocol for StoreSession(key, value, ttl), RetrieveSession(key), DeleteSession(key) (Redis backend)
 - [ ] T030 [D] Create `src/use_cases/protocols/token_signer.py`: Protocol for SignToken(claims, ttl) → JWT, VerifyToken(jwt) → claims
 - [ ] T031 [D] Create `src/use_cases/protocols/object_storage.py`: Protocol for StoreObject(tenant_id, path, data), FetchObject(tenant_id, path) → bytes, DeleteObject(tenant_id, path), DeletePrefix(tenant_id, prefix)
-- [ ] T032 [A] Create `src/use_cases/protocols/vault_client.py`: Protocol for GetSecret(path) → value, SetSecret(path, value), RotateKey(key_id)
+- [X] T032 [A] Create `src/use_cases/protocols/vault_client.py`: Protocol for GetSecret(path) → value, SetSecret(path, value), RotateKey(key_id)
 
 ### Middleware & Cross-Slice Seams
 
-- [ ] T033 [A] Create `src/frameworks/api/middleware/tenant_context.py`: TenantContextMiddleware extracts tenant_id from JWT (widget) or session (admin/manager), calls `SET LOCAL app.tenant_id`, resets at response end
-- [ ] T034 [A] Create `src/frameworks/api/middleware/origin_check.py`: OriginCheckMiddleware validates request Origin header against tenant.allowed_origins from DB
+- [X] T033 [A] Create `src/frameworks/api/middleware/tenant_context.py`: TenantContextMiddleware extracts tenant_id from JWT (widget) or session (admin/manager), calls `SET LOCAL app.tenant_id`, resets at response end
+- [X] T034 [A] Create `src/frameworks/api/middleware/origin_check.py`: OriginCheckMiddleware validates request Origin header against tenant.allowed_origins from DB
 - [X] T035 [C] Create `src/frameworks/api/middleware/pii_redaction.py`: PIIRedactionMiddleware wraps logger, tracer, Redis writer to redact outbound data via guardrails_client
 - [X] T036 [ALL] Create `src/frameworks/api/deps.py`: Composition root. Wires concrete adapters (PostgresRepository, RedisSession, AnthropicLLM, HostedEmbeddings, ModelserverClassifier, NeMoGuardrails, PyJWTSigner, MinIOStorage, VaultClient) into use-case protocols. No use case imports a concrete adapter.
 - [X] T037 [ALL] Wire static import-linter rule in CI (or custom ruff rule) to enforce: no file in `src/entities/` or `src/use_cases/` imports from `src/adapters/` or `src/frameworks/`
@@ -156,12 +156,12 @@
 
 ### Documentation Stubs (to be filled by slice owners)
 
-- [ ] T054 [A] Create `docs/DESIGN.md` stub: sections for isolation strategy, scaling story, cost-per-tenant model, role model, erasure path; populated as Slice A completes
+- [X] T054 [A] Create `docs/DESIGN.md` stub: sections for isolation strategy, scaling story, cost-per-tenant model, role model, erasure path; populated as Slice A completes
 - [X] T055 [B] Create `docs/DECISIONS.md` stub with header and structure; to be appended by all slices with numbered decisions. Entries: agent-vs-workflow-vs-hybrid [B], embedder choice [B], reranker choice [B], classifier algorithm [C], others TBD
 - [ ] T056 [A] Create `docs/RUNBOOK.md` stub: sections for compose-up, restore, on-call troubleshooting; Slice A + Slice D populate
 - [X] T057 [C] Create `docs/EVALS.md` stub: sections for how each gate is built and how to read results; populated by Slice C
 - [X] T058 [C] Create `docs/SECURITY.md` stub: threat model, GDPR posture, jurisdictional notes; Slice C populates
-- [ ] T059 [P] [A] Create `src/use_cases/SPEC.md` stub (Slice A)
+- [X] T059 [P] [A] Create `src/use_cases/SPEC.md` stub (Slice A)
 - [X] T060 [P] [B] Create `src/adapters/SPEC.md` stub (Slice B)
 - [X] T061 [P] [C] Create `services/modelserver/SPEC.md` stub (Slice C)
 - [X] T062 [P] [C] Create `services/guardrails/SPEC.md` stub (Slice C)
@@ -296,40 +296,40 @@
 
 ### Tenant & Invitation Entities
 
-- [ ] T106 [US4] [A] Create `src/entities/allowed_origin.py`: AllowedOrigin dataclass with id, tenant_id, origin, created_at
-- [ ] T107 [US4] [A] Create `src/entities/audit_entry.py`: AuditEntry dataclass with id, actor_user_id, target_tenant_id, action, outcome, details, created_at
+- [X] T106 [US4] [A] Create `src/entities/allowed_origin.py`: AllowedOrigin dataclass with id, tenant_id, origin, created_at
+- [X] T107 [US4] [A] Create `src/entities/audit_entry.py`: AuditEntry dataclass with id, actor_user_id, target_tenant_id, action, outcome, details, created_at
 
 ### Tenant Management Use Cases
 
-- [ ] T108 [US4] [A] Create `src/use_cases/provision_tenant.py`: ProvisionTenantUseCase; creates tenant row, widget row, seeds allowed_origins, creates invitation, audit-logs the action. Calls external email service (stub) to dispatch invitation link.
-- [ ] T109 [US4] [A] Create `src/use_cases/invite_admin.py`: InviteAdminUseCase; creates invitations row with token_hash, expires_at, sends email (stub). Called during provisioning and by admins inviting more admins to their tenant.
-- [ ] T110 [US4] [A] Create `src/use_cases/erase_tenant.py`: EraseTenantUseCase; sets tenant.status = 'erasing'; deletes from postgres (cascades to cms_pages, conversations, leads, chunks, widgets, allowed_origins, user_tenant_roles, invitations); purges Redis keys matching `tenant:<tenant_id>:*`; purges MinIO prefix `tenant-<tenant_id>/`; audit-logs completion. Must complete within ≤1 hour SLA (SC-009).
+- [X] T108 [US4] [A] Create `src/use_cases/provision_tenant.py`: ProvisionTenantUseCase; creates tenant row, widget row, seeds allowed_origins, creates invitation, audit-logs the action. Calls external email service (stub) to dispatch invitation link.
+- [X] T109 [US4] [A] Create `src/use_cases/invite_admin.py`: InviteAdminUseCase; creates invitations row with token_hash, expires_at, sends email (stub). Called during provisioning and by admins inviting more admins to their tenant.
+- [X] T110 [US4] [A] Create `src/use_cases/erase_tenant.py`: EraseTenantUseCase; sets tenant.status = 'erasing'; deletes from postgres (cascades to cms_pages, conversations, leads, chunks, widgets, allowed_origins, user_tenant_roles, invitations); purges Redis keys matching `tenant:<tenant_id>:*`; purges MinIO prefix `tenant-<tenant_id>/`; audit-logs completion. Must complete within ≤1 hour SLA (SC-009).
 
 ### Tenant Repository
 
-- [ ] T111 [P] [US4] [A] Create `src/adapters/repositories/tenant_repository.py`: Implements TenantRepository; CRUD for tenants, widget, allowed_origins. RLS: tenant_admin sees only their tenant; tenant_manager bypasses RLS on read.
-- [ ] T112 [P] [US4] [A] Create `src/adapters/repositories/user_repository.py`: Implements UserRepository; wired with fastapi-users for email + password auth. Creates user rows with role column.
+- [X] T111 [P] [US4] [A] Create `src/adapters/repositories/tenant_repository.py`: Implements TenantRepository; CRUD for tenants, widget, allowed_origins. RLS: tenant_admin sees only their tenant; tenant_manager bypasses RLS on read.
+- [X] T112 [P] [US4] [A] Create `src/adapters/repositories/user_repository.py`: Implements UserRepository; wired with fastapi-users for email + password auth. Creates user rows with role column.
 
 ### Auth & fastapi-users Integration
 
-- [ ] T113 [US4] [A] Create `src/frameworks/api/routes/auth.py`: fastapi-users routes (login, logout, register, password-reset, email-verify, invitation acceptance). Adapted: on invitation acceptance, creates user_tenant_roles row mapping the new admin to the tenant.
-- [ ] T114 [US4] [A] Implement invitation acceptance endpoint: POST `/auth/invitations/{token}/accept` with password; hashes token, looks up invitations row, creates user if not exists, sets role=tenant_admin, creates user_tenant_roles row for the target tenant, sets accepted_at, audit-logs.
+- [X] T113 [US4] [A] Create `src/frameworks/api/routes/auth.py`: fastapi-users routes (login, logout, register, password-reset, email-verify, invitation acceptance). Adapted: on invitation acceptance, creates user_tenant_roles row mapping the new admin to the tenant.
+- [X] T114 [US4] [A] Implement invitation acceptance endpoint: POST `/auth/invitations/{token}/accept` with password; hashes token, looks up invitations row, creates user if not exists, sets role=tenant_admin, creates user_tenant_roles row for the target tenant, sets accepted_at, audit-logs.
 
 ### Manager Routes
 
-- [ ] T115 [US4] [A] Create `src/frameworks/api/routes/manager.py`: Manager-only endpoints (/manager/tenants GET/POST, /manager/tenants/{id} DELETE, /manager/audit GET, /manager/usage GET). Requires role=tenant_manager. POST /tenants calls provision_tenant. DELETE calls erase_tenant (async, returns 202). GET /audit returns all audit entries (no tenant scoping). GET /usage returns aggregate (not per-tenant).
+- [X] T115 [US4] [A] Create `src/frameworks/api/routes/manager.py`: Manager-only endpoints (/manager/tenants GET/POST, /manager/tenants/{id} DELETE, /manager/audit GET, /manager/usage GET). Requires role=tenant_manager. POST /tenants calls provision_tenant. DELETE calls erase_tenant (async, returns 202). GET /audit returns all audit entries (no tenant scoping). GET /usage returns aggregate (not per-tenant).
 
 ### Database Migrations (Story-Specific)
 
-- [ ] T116 [US4] [A] Create Alembic migration `003_add_invitations_allowed_origins_widgets.sql`: creates invitations (with unique(tenant_id, email) where accepted_at is null), allowed_origins, widgets (unique(tenant_id)) tables; adds role column to users; RLS policies for all tables.
+- [X] T116 [US4] [A] Create Alembic migration `003_add_invitations_allowed_origins_widgets.sql`: creates invitations (with unique(tenant_id, email) where accepted_at is null), allowed_origins, widgets (unique(tenant_id)) tables; adds role column to users; RLS policies for all tables.
 
 ### Contract Tests
 
-- [ ] T117 [P] [US4] [A] Create `tests/contract/test_manager_schema.py`: Schema conformance for `/manager/tenants` and `/auth/invitations/{token}/accept`
+- [X] T117 [P] [US4] [A] Create `tests/contract/test_manager_schema.py`: Schema conformance for `/manager/tenants` and `/auth/invitations/{token}/accept`
 
 ### Integration Tests
 
-- [ ] T118 [US4] [A] Create `tests/integration/test_tenant_provisioning.py`: Call provision_tenant → assert tenant created, widget created, allowed_origins seeded, invitation created, audit_entry logged. Call invite_admin → assert new user created, user_tenant_roles bound. Cross-tenant access attempt → assert denied.
+- [X] T118 [US4] [A] Create `tests/integration/test_tenant_provisioning.py`: Call provision_tenant → assert tenant created, widget created, allowed_origins seeded, invitation created, audit_entry logged. Call invite_admin → assert new user created, user_tenant_roles bound. Cross-tenant access attempt → assert denied.
 
 **Checkpoint**: Provisioning flow works. Managers can create and erase tenants (within SLA). Audit log records all manager actions. tenant_admin cannot see other tenants' data or audit entries.
 
@@ -462,7 +462,7 @@ These tasks operationalise `research.md §1a` (3-way chunker bake-off),
 
 ### Tenant Isolation Gates
 
-- [ ] T146 [A] Create `tests/integration/test_rls_isolation.py` (detailed): Multiple tables tested; for each, create rows for Tenant A and B; execute queries in Tenant A context; assert zero rows from Tenant B returned. Tests: tenants, users, user_tenant_roles, cms_pages, chunks, conversations, messages, leads, widgets, allowed_origins, invitations. Required: RLS policies on EVERY tenant-scoped table (data-model.md). Gates the cross-tenant red-team eval (SC-003).
+- [X] T146 [A] Create `tests/integration/test_rls_isolation.py` (detailed): Multiple tables tested; for each, create rows for Tenant A and B; execute queries in Tenant A context; assert zero rows from Tenant B returned. Tests: tenants, users, user_tenant_roles, cms_pages, chunks, conversations, messages, leads, widgets, allowed_origins, invitations. Required: RLS policies on EVERY tenant-scoped table (data-model.md). Gates the cross-tenant red-team eval (SC-003).
 - [ ] T147 [A] Create CI assertion: `docker build` modelserver with `no-torch` check in Dockerfile; image size assertion ≤ 500MB (FR-004, Constitution IV).
 - [ ] T148 [A] Create CI assertion: Modelserver boot-time artifact hash verification; model_card.yaml's artifact_sha256 is computed on boot and compared (FR-023); mismatch = process exits 1 (asserted in smoke test).
 - [ ] T149 [A] Implement tenant_id derivation only from JWT/credential; TenantContextMiddleware rejects requests where body claims a different tenant (FR-007/008). Integration test: POST `/chat` with JWT claiming Tenant A but body claiming Tenant B → assert 403 or JWT tenant wins.
