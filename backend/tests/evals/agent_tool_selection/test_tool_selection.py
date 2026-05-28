@@ -26,7 +26,7 @@ import pytest
 import yaml
 
 from app.use_cases.agent_turn import AgentTurnUseCase
-from app.use_cases.protocols.llm_client import LLMClient, LLMResponse, Message, ToolSpec
+from app.use_cases.protocols.llm_client import LLMResponse, Message
 
 GOLDEN = pathlib.Path(__file__).parent / "golden.jsonl"
 THRESHOLDS = pathlib.Path(__file__).parents[4] / "eval_thresholds.yaml"
@@ -111,9 +111,9 @@ def _f1(tp: int, fp: int, fn: int) -> float:
 def _macro_f1(predictions: list[str], labels: list[str], classes: list[str]) -> float:
     scores = []
     for cls in classes:
-        tp = sum(1 for p, l in zip(predictions, labels) if p == cls and l == cls)
-        fp = sum(1 for p, l in zip(predictions, labels) if p == cls and l != cls)
-        fn = sum(1 for p, l in zip(predictions, labels) if p != cls and l == cls)
+        tp = sum(1 for pred, label in zip(predictions, labels) if pred == cls and label == cls)
+        fp = sum(1 for pred, label in zip(predictions, labels) if pred == cls and label != cls)
+        fn = sum(1 for pred, label in zip(predictions, labels) if pred != cls and label == cls)
         scores.append(_f1(tp, fp, fn))
     return sum(scores) / len(scores) if scores else 0.0
 
@@ -125,7 +125,7 @@ def _macro_f1(predictions: list[str], labels: list[str], classes: list[str]) -> 
 
 @pytest.mark.asyncio
 async def test_tool_selection_macro_f1() -> None:
-    rows = [json.loads(l) for l in GOLDEN.read_text().splitlines() if l.strip()]
+    rows = [json.loads(line) for line in GOLDEN.read_text().splitlines() if line.strip()]
     thresholds = yaml.safe_load(THRESHOLDS.read_text())
     threshold = thresholds["agent_tool_selection_macro_f1"]
 
@@ -165,15 +165,15 @@ async def test_tool_selection_macro_f1() -> None:
     classes = ["rag_search", "capture_lead", "escalate"]
     per_class = {
         cls: _f1(
-            sum(1 for p, l in zip(predictions, labels) if p == cls and l == cls),
-            sum(1 for p, l in zip(predictions, labels) if p == cls and l != cls),
-            sum(1 for p, l in zip(predictions, labels) if p != cls and l == cls),
+            sum(1 for pred, label in zip(predictions, labels) if pred == cls and label == cls),
+            sum(1 for pred, label in zip(predictions, labels) if pred == cls and label != cls),
+            sum(1 for pred, label in zip(predictions, labels) if pred != cls and label == cls),
         )
         for cls in classes
     }
     macro = _macro_f1(predictions, labels, classes)
 
-    print(f"\n=== Agent Tool-Selection Eval ===")
+    print("\n=== Agent Tool-Selection Eval ===")
     print(f"n={len(rows)}, threshold={threshold}")
     for cls, score in per_class.items():
         print(f"  f1_{cls}: {score:.4f}")

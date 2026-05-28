@@ -141,10 +141,8 @@ async def test_faq_route_returns_chunks_from_tenant_a(app_engine) -> None:
     """Chat turn for Tenant A returns chunks; response time < 5s; no Tenant B chunks."""
     from app.adapters.repositories.chunk_repository import PostgresChunkRepository
     from app.adapters.repositories.conversation_repository import PostgresConversationRepository
-    from app.adapters.repositories.lead_repository import PostgresLeadRepository
     from app.use_cases.classify_message import ClassifyMessageUseCase
     from app.use_cases.rag_search import RAGSearchUseCase
-    from app.use_cases.session_memory import SessionMemory
 
     async with AsyncSession(app_engine) as session:
         # Set RLS context to Tenant A
@@ -152,15 +150,13 @@ async def test_faq_route_returns_chunks_from_tenant_a(app_engine) -> None:
 
         chunk_repo = PostgresChunkRepository(session)
         conv_repo = PostgresConversationRepository(session)
-        lead_repo = PostgresLeadRepository(session)
         embedder = _ZeroEmbeddings()
 
         classify_uc = ClassifyMessageUseCase(_FaqClassifier())
         rag_uc = RAGSearchUseCase(chunk_repo, embedder)
-        memory = SessionMemory(_NullSessionStore())
 
         conversation_id = uuid.uuid4()
-        conv = await conv_repo.create(
+        await conv_repo.create(
             tenant_id=TENANT_A,
             widget_id=WIDGET_A,
             visitor_session=str(conversation_id),

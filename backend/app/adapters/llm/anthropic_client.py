@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import anthropic
 
-from app.use_cases.protocols.llm_client import LLMResponse, LLMClient, Message, ToolSpec
+from app.use_cases.protocols.llm_client import LLMResponse, Message, ToolSpec
 
 
 class AnthropicLLM:

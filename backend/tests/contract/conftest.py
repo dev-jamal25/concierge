@@ -7,7 +7,6 @@ Also clears the lru_cache on _resolve_service_token so tests start clean.
 
 from __future__ import annotations
 
-import importlib
 import os
 
 import pytest

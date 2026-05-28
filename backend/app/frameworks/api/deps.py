@@ -21,15 +21,15 @@ from uuid import UUID
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.adapters.guardrails.nemo_client import NeMoGuardrails
-from app.adapters.session.redis_session import make_redis_session
-from app.adapters.tokens.pyjwt_signer import PyJWTSigner
 from app.adapters.email.console_email import ConsoleEmailSender
+from app.adapters.guardrails.nemo_client import NeMoGuardrails
 from app.adapters.repositories.audit_repository import PostgresAuditRepository
 from app.adapters.repositories.invitation_repository import PostgresInvitationRepository
 from app.adapters.repositories.tenant_repository import PostgresTenantRepository
 from app.adapters.repositories.user_repository import PostgresUserRepository
+from app.adapters.session.redis_session import make_redis_session
 from app.adapters.storage.minio_object_storage import MinIOObjectStorage
+from app.adapters.tokens.pyjwt_signer import PyJWTSigner
 from app.frameworks.config import Settings, get_settings
 from app.frameworks.db.session import (
     get_manager_session,

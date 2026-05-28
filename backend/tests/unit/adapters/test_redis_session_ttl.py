@@ -5,8 +5,7 @@ Uses fakeredis so no live Redis is needed.
 
 from __future__ import annotations
 
-import asyncio
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import pytest
 import pytest_asyncio

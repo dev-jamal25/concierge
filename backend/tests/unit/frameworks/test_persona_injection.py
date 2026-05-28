@@ -6,7 +6,6 @@ produce different system prompts. Uses the Jinja2 rendering path introduced in T
 
 from __future__ import annotations
 
-import pytest
 
 from app.frameworks.api.routes.chat import _load_system_prompt
 
