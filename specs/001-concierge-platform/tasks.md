@@ -97,14 +97,14 @@
 - [ ] T019 [A] Create `src/use_cases/protocols/tenant_repository.py`: Protocol for ProvisionTenant, EraseTenant, GetTenant, ListTenants, UpdateTenant
 - [ ] T020 [A] Create `src/use_cases/protocols/user_repository.py`: Protocol for CreateUser, GetUser, UpdateUser (role binding)
 - [ ] T021 [A] Create `src/use_cases/protocols/audit_repository.py`: Protocol for LogAuditEntry (append-only)
-- [ ] T022 [B] Create `src/use_cases/protocols/conversation_repository.py`: Protocol for CreateConversation, GetConversation, UpdateEscalation
-- [ ] T023 [B] Create `src/use_cases/protocols/chunk_repository.py`: Protocol for CreateChunk, QueryChunks (with tenant_id filter at query time)
-- [ ] T024 [B] Create `src/use_cases/protocols/lead_repository.py`: Protocol for CaptureLead, ListLeads, RateLimitLeads
-- [ ] T025 [B] Create `src/use_cases/protocols/llm_client.py`: Protocol for CallLLM(system, messages, tools, max_tokens, temp) → ToolChoice result
-- [ ] T026 [B] Create `src/use_cases/protocols/embedding_client.py`: Protocol for EmbedTexts(texts) → List[Vector]
+- [X] T022 [B] Create `src/use_cases/protocols/conversation_repository.py`: Protocol for CreateConversation, GetConversation, UpdateEscalation
+- [X] T023 [B] Create `src/use_cases/protocols/chunk_repository.py`: Protocol for CreateChunk, QueryChunks (with tenant_id filter at query time)
+- [X] T024 [B] Create `src/use_cases/protocols/lead_repository.py`: Protocol for CaptureLead, ListLeads, RateLimitLeads
+- [X] T025 [B] Create `src/use_cases/protocols/llm_client.py`: Protocol for CallLLM(system, messages, tools, max_tokens, temp) → ToolChoice result
+- [X] T026 [B] Create `src/use_cases/protocols/embedding_client.py`: Protocol for EmbedTexts(texts) → List[Vector]
 - [X] T027 [C] Create `src/use_cases/protocols/classifier_client.py`: Protocol for Classify(message, tenant_id) → Label, confidence, per_class scores
 - [X] T028 [C] Create `src/use_cases/protocols/guardrails_client.py`: Protocol for Check(tenant_id, role, content) → action (allow|redact|refuse), redacted_content, triggered_rails
-- [ ] T029 [B] Create `src/use_cases/protocols/session_store.py`: Protocol for StoreSession(key, value, ttl), RetrieveSession(key), DeleteSession(key) (Redis backend)
+- [X] T029 [B] Create `src/use_cases/protocols/session_store.py`: Protocol for StoreSession(key, value, ttl), RetrieveSession(key), DeleteSession(key) (Redis backend)
 - [ ] T030 [D] Create `src/use_cases/protocols/token_signer.py`: Protocol for SignToken(claims, ttl) → JWT, VerifyToken(jwt) → claims
 - [ ] T031 [D] Create `src/use_cases/protocols/object_storage.py`: Protocol for StoreObject(tenant_id, path, data), FetchObject(tenant_id, path) → bytes, DeleteObject(tenant_id, path), DeletePrefix(tenant_id, prefix)
 - [ ] T032 [A] Create `src/use_cases/protocols/vault_client.py`: Protocol for GetSecret(path) → value, SetSecret(path, value), RotateKey(key_id)
@@ -134,9 +134,9 @@
 
 ### Protocol-Driven LLM & Embedding Adapters (Fakes for now; impl in slice work)
 
-- [ ] T044 [B] Create `src/adapters/llm/anthropic_client.py`: Stub implementing LLMClient protocol; calls Anthropic API with tool_choice result handling. Actual implementation in Slice B / US1.
-- [ ] T045 [B] Create `src/adapters/embeddings/hosted_embeddings.py`: Stub implementing EmbeddingClient; calls hosted API (Voyage/Cohere/OpenAI per env). Actual impl in Slice B / US1.
-- [ ] T046 [B] Create `src/adapters/session/redis_session.py`: Stub implementing SessionStore protocol; Redis client wrapper with TTL. Actual impl in Slice B / US1.
+- [X] T044 [B] Create `src/adapters/llm/anthropic_client.py`: Stub implementing LLMClient protocol; calls Anthropic API with tool_choice result handling. Actual implementation in Slice B / US1.
+- [X] T045 [B] Create `src/adapters/embeddings/hosted_embeddings.py`: Stub implementing EmbeddingClient; calls hosted API (Voyage/Cohere/OpenAI per env). Actual impl in Slice B / US1.
+- [X] T046 [B] Create `src/adapters/session/redis_session.py`: Stub implementing SessionStore protocol; Redis client wrapper with TTL. Actual impl in Slice B / US1.
 
 ### Classifier & Guardrails HTTP Clients
 
@@ -157,12 +157,12 @@
 ### Documentation Stubs (to be filled by slice owners)
 
 - [ ] T054 [A] Create `docs/DESIGN.md` stub: sections for isolation strategy, scaling story, cost-per-tenant model, role model, erasure path; populated as Slice A completes
-- [ ] T055 [B] Create `docs/DECISIONS.md` stub with header and structure; to be appended by all slices with numbered decisions. Entries: agent-vs-workflow-vs-hybrid [B], embedder choice [B], reranker choice [B], classifier algorithm [C], others TBD
+- [X] T055 [B] Create `docs/DECISIONS.md` stub with header and structure; to be appended by all slices with numbered decisions. Entries: agent-vs-workflow-vs-hybrid [B], embedder choice [B], reranker choice [B], classifier algorithm [C], others TBD
 - [ ] T056 [A] Create `docs/RUNBOOK.md` stub: sections for compose-up, restore, on-call troubleshooting; Slice A + Slice D populate
 - [X] T057 [C] Create `docs/EVALS.md` stub: sections for how each gate is built and how to read results; populated by Slice C
 - [X] T058 [C] Create `docs/SECURITY.md` stub: threat model, GDPR posture, jurisdictional notes; Slice C populates
 - [ ] T059 [P] [A] Create `src/use_cases/SPEC.md` stub (Slice A)
-- [ ] T060 [P] [B] Create `src/adapters/SPEC.md` stub (Slice B)
+- [X] T060 [P] [B] Create `src/adapters/SPEC.md` stub (Slice B)
 - [X] T061 [P] [C] Create `services/modelserver/SPEC.md` stub (Slice C)
 - [X] T062 [P] [C] Create `services/guardrails/SPEC.md` stub (Slice C)
 - [ ] T063 [P] [D] Create `admin/SPEC.md` stub (Slice D)
@@ -180,48 +180,48 @@
 
 ### Entities (Story-Specific)
 
-- [ ] T065 [B] Create `src/entities/conversation.py`: Conversation dataclass with id, tenant_id, widget_id, visitor_session, escalated_at, escalation_reason, started_at, last_turn_at
-- [ ] T066 [B] Create `src/entities/message.py`: Message dataclass with id, tenant_id, conversation_id, role (visitor|agent|tool|system), router_label, content (PII-redacted), tool_calls, created_at
-- [ ] T067 [B] Create `src/entities/chunk.py`: Chunk dataclass with id, tenant_id, cms_page_id, chunk_index, content, embedding (vector), metadata, embedded_at
-- [ ] T068 [B] Create `src/entities/lead.py`: Lead dataclass with id, tenant_id, conversation_id, name, contact, intent, created_at
-- [ ] T069 [B] Create `src/entities/cms_page.py`: CMSPage dataclass with id, tenant_id, title, body, state (draft|published|unpublished), slug, published_at, created_at, updated_at
+- [X] T065 [B] Create `src/entities/conversation.py`: Conversation dataclass with id, tenant_id, widget_id, visitor_session, escalated_at, escalation_reason, started_at, last_turn_at
+- [X] T066 [B] Create `src/entities/message.py`: Message dataclass with id, tenant_id, conversation_id, role (visitor|agent|tool|system), router_label, content (PII-redacted), tool_calls, created_at
+- [X] T067 [B] Create `src/entities/chunk.py`: Chunk dataclass with id, tenant_id, cms_page_id, chunk_index, content, embedding (vector), metadata, embedded_at
+- [X] T068 [B] Create `src/entities/lead.py`: Lead dataclass with id, tenant_id, conversation_id, name, contact, intent, created_at
+- [X] T069 [B] Create `src/entities/cms_page.py`: CMSPage dataclass with id, tenant_id, title, body, state (draft|published|unpublished), slug, published_at, created_at, updated_at
 
 ### Repository Implementations (Story-Specific)
 
-- [ ] T070 [P] [B] Create `src/adapters/repositories/conversation_repository.py`: Implements ConversationRepository protocol; queries include `WHERE tenant_id = :tenant_id`; RLS enforced at DB layer
-- [ ] T071 [P] [B] Create `src/adapters/repositories/chunk_repository.py`: Implements ChunkRepository protocol; vector query returns top-20 by cosine similarity, filters `WHERE tenant_id = :tenant_id AND cms_page.state = 'published'` at query time (NOT post-filter); indexes: HNSW/ivfflat on embedding, B-tree on tenant_id
-- [ ] T072 [P] [B] Create `src/adapters/repositories/lead_repository.py`: Implements LeadRepository protocol; rate limits per-visitor/session (≤1 per 60s, ≤5 lifetime); appends rate-limit details to conversation for audit
+- [X] T070 [P] [B] Create `src/adapters/repositories/conversation_repository.py`: Implements ConversationRepository protocol; queries include `WHERE tenant_id = :tenant_id`; RLS enforced at DB layer
+- [X] T071 [P] [B] Create `src/adapters/repositories/chunk_repository.py`: Implements ChunkRepository protocol; vector query returns top-20 by cosine similarity, filters `WHERE tenant_id = :tenant_id AND cms_page.state = 'published'` at query time (NOT post-filter); indexes: HNSW/ivfflat on embedding, B-tree on tenant_id
+- [X] T072 [P] [B] Create `src/adapters/repositories/lead_repository.py`: Implements LeadRepository protocol; rate limits per-visitor/session (≤1 per 60s, ≤5 lifetime); appends rate-limit details to conversation for audit
 
 ### Router & Agent Use Cases (Core Logic)
 
-- [ ] T073 [B] Create `src/use_cases/classify_message.py`: ClassifyMessageUseCase; calls classifier_client.Classify(message) → label; routes: spam (drop), faq (rag_search), lead_intent (capture_lead), escalate (flag), ambiguous (agent_turn). Returns route and route-specific result.
-- [ ] T074 [B] Create `src/use_cases/rag_search.py`: RAGSearchUseCase; chunk_repo.QueryChunks(embedding of user message) → top-20; reranker API (if enabled) → top-5; returns top-5 with cms_page_id and snippet
-- [ ] T075 [B] Create `src/use_cases/capture_lead.py`: CaptureLeadUseCase; schema-validates (name, contact, intent); rate-limits per-visitor/session; calls lead_repo.CaptureLead(…) → Lead; returns success or rate_limited status
-- [ ] T076 [B] Create `src/use_cases/escalate.py`: EscalateUseCase; sets conversation.escalated_at = now(), escalation_reason = 'visitor_request' (or 'llm_unavailable', 'tool_loop_cap'); audit-logs
-- [ ] T077 [B] Create `src/use_cases/agent_turn.py`: AgentTurnUseCase; bounded tool-calling loop: calls llm_client.CallLLM(system_prompt + persona + top-5 chunks + conversation history, tools=[rag_search, capture_lead, escalate], max_iterations=5, max_tokens=2048). Each tool call returns a result; loop terminates on max_iterations or stop token. Returns synthesized reply + any tool side effects (lead captured, conversation escalated).
-- [ ] T078 [B] Create `src/use_cases/publish_cms_page.py`: PublishCMSPageUseCase; transitions cms_page.state from draft → published; calls reindex_tenant_chunks (async or sync).
-- [ ] T079 [B] Create `src/use_cases/reindex_tenant_chunks.py`: ReindexTenantChunksUseCase; deletes existing chunks for the page; chunks the page body (paragraph-aware, token-bounded 400/50/600 tokens per research.md#1); embeds each chunk via embedding_client.EmbedTexts; inserts into chunk_repo. Transition published ↔ unpublished triggers deletion of chunks.
+- [X] T073 [B] Create `src/use_cases/classify_message.py`: ClassifyMessageUseCase; calls classifier_client.Classify(message) → label; routes: spam (drop), faq (rag_search), lead_intent (capture_lead), escalate (flag), ambiguous (agent_turn). Returns route and route-specific result.
+- [X] T074 [B] Create `src/use_cases/rag_search.py`: RAGSearchUseCase; chunk_repo.QueryChunks(embedding of user message) → top-20; reranker API (if enabled) → top-5; returns top-5 with cms_page_id and snippet
+- [X] T075 [B] Create `src/use_cases/capture_lead.py`: CaptureLeadUseCase; schema-validates (name, contact, intent); rate-limits per-visitor/session; calls lead_repo.CaptureLead(…) → Lead; returns success or rate_limited status
+- [X] T076 [B] Create `src/use_cases/escalate.py`: EscalateUseCase; sets conversation.escalated_at = now(), escalation_reason = 'visitor_request' (or 'llm_unavailable', 'tool_loop_cap'); audit-logs
+- [X] T077 [B] Create `src/use_cases/agent_turn.py`: AgentTurnUseCase; bounded tool-calling loop: calls llm_client.CallLLM(system_prompt + persona + top-5 chunks + conversation history, tools=[rag_search, capture_lead, escalate], max_iterations=5, max_tokens=2048). Each tool call returns a result; loop terminates on max_iterations or stop token. Returns synthesized reply + any tool side effects (lead captured, conversation escalated).
+- [X] T078 [B] Create `src/use_cases/publish_cms_page.py`: PublishCMSPageUseCase; transitions cms_page.state from draft → published; calls reindex_tenant_chunks (async or sync).
+- [X] T079 [B] Create `src/use_cases/reindex_tenant_chunks.py`: ReindexTenantChunksUseCase; deletes existing chunks for the page; chunks the page body (paragraph-aware, token-bounded 400/50/600 tokens per research.md#1); embeds each chunk via embedding_client.EmbedTexts; inserts into chunk_repo. Transition published ↔ unpublished triggers deletion of chunks.
 
 ### Chat Route (Endpoint)
 
-- [ ] T080 [B] Create `src/frameworks/api/routes/chat.py`: POST `/chat` endpoint; extracts conversation_id, message from body; gets tenant_id from TenantContext; calls classify_message → routes to rag_search | capture_lead | escalate | agent_turn | (spam → silent drop); returns ChatTurnResponse with route, reply, escalated, retrieved_chunks, capture_lead_status. On LLM/embedding timeout, returns 503 with "service temporarily unavailable", auto-flags conversation as escalated (FR-014a).
+- [X] T080 [B] Create `src/frameworks/api/routes/chat.py`: POST `/chat` endpoint; extracts conversation_id, message from body; gets tenant_id from TenantContext; calls classify_message → routes to rag_search | capture_lead | escalate | agent_turn | (spam → silent drop); returns ChatTurnResponse with route, reply, escalated, retrieved_chunks, capture_lead_status. On LLM/embedding timeout, returns 503 with "service temporarily unavailable", auto-flags conversation as escalated (FR-014a).
 
 ### Contract Tests (Before Implementation)
 
-- [ ] T081 [P] [B] Create `tests/contract/test_chat_schema.py`: OpenAPI schema conformance tests for POST `/chat` request/response shapes, status codes
-- [ ] T082 [P] [B] Create `tests/integration/test_rls_isolation.py`: RLS enforcement test; create two tenants with chunks; query chunk_repo.QueryChunks from tenant A context; assert zero results from tenant B's chunks. REQUIRED: cross-tenant red-team gate.
+- [X] T081 [P] [B] Create `tests/contract/test_chat_schema.py`: OpenAPI schema conformance tests for POST `/chat` request/response shapes, status codes
+- [X] T082 [P] [B] Create `tests/integration/test_rls_isolation.py`: RLS enforcement test; create two tenants with chunks; query chunk_repo.QueryChunks from tenant A context; assert zero results from tenant B's chunks. REQUIRED: cross-tenant red-team gate.
 
 ### Prompts & Memory
 
-- [ ] T083 [B] Create `prompts/system_agent.md`: System prompt for the agent; includes placeholder for {{persona_summary}} (injected at runtime from tenant_config); mentions the three tools and their purpose
-- [ ] T084 [B] Create `prompts/system_router.md`: System prompt for the router classifier (fallback if classifier unavailable); instructs the LLM to classify into the 5 labels
-- [ ] T085 [B] Create `prompts/tool_specs/rag_search.md`: Tool spec for rag_search; includes description, parameters, response format
-- [ ] T086 [B] Create `prompts/tool_specs/capture_lead.md`: Tool spec for capture_lead
-- [ ] T087 [B] Create `prompts/tool_specs/escalate.md`: Tool spec for escalate
+- [X] T083 [B] Create `prompts/system_agent.md`: System prompt for the agent; includes placeholder for {{persona_summary}} (injected at runtime from tenant_config); mentions the three tools and their purpose
+- [X] T084 [B] Create `prompts/system_router.md`: System prompt for the router classifier (fallback if classifier unavailable); instructs the LLM to classify into the 5 labels
+- [X] T085 [B] Create `prompts/tool_specs/rag_search.md`: Tool spec for rag_search; includes description, parameters, response format
+- [X] T086 [B] Create `prompts/tool_specs/capture_lead.md`: Tool spec for capture_lead
+- [X] T087 [B] Create `prompts/tool_specs/escalate.md`: Tool spec for escalate
 
 ### Database Migrations (Story-Specific)
 
-- [ ] T088 [B] Create Alembic migration `002_add_cms_conversations_chunks.sql`: creates cms_pages, conversations, messages, chunks tables with tenant_id, RLS policies, indexes (pgvector HNSW/ivfflat on chunks.embedding, B-tree on tenant_id for query-time filtering)
+- [X] T088 [B] Create Alembic migration `002_add_cms_conversations_chunks.sql`: creates cms_pages, conversations, messages, chunks tables with tenant_id, RLS policies, indexes (pgvector HNSW/ivfflat on chunks.embedding, B-tree on tenant_id for query-time filtering)
 
 **Checkpoint**: US1 functional and independently testable. Widget not yet embedded; routes tested via `/chat` endpoint directly.
 
@@ -424,7 +424,7 @@
 ### RAG Golden Set & Eval Gate
 
 - [ ] T138 [B] Create `tests/evals/rag/golden.jsonl`: 15 curated examples; each row: {"query": "...", "expected_cms_page_id": "...", "expected_answer_snippet": "..."}
-- [ ] T139 [B] Create `tests/evals/rag/test_rag_quality.py`: Seeds tenant with the 15 questions' source pages; retrieves chunks for each query; reranks; computes recall@5 (chunk from expected page in top-5), answer grounding (expected_answer_snippet present in top-5), etc. Asserts ≥ thresholds for rag_golden_set_recall_at_5 and rag_golden_set_answer_grounded_rate. Exits non-zero on regression.
+- [ ] T139 [B] Create `tests/evals/rag/test_rag_quality.py`: Seeds tenant with the 15 questions' source pages; retrieves chunks for each query; reranks; computes recall@5 (chunk from expected page in top-5), MRR, and answer grounding (expected_answer_snippet present in top-5). Asserts ≥ thresholds for rag_golden_set_recall_at_5 and rag_golden_set_answer_grounded_rate. Exits non-zero on regression. **Faithfulness method (per Design D brief)**: choose and justify the evaluation framework — RAGAS or a frozen judge model (record the choice + why in `docs/DECISIONS.md`); hand-label at least 5 of the 15 triples for faithfulness and report inter-rater agreement between the hand labels and the judge/RAGAS score (e.g. Cohen's κ or simple % agreement) so the automated grounding metric is itself validated, not trusted blind.
 
 ### Red-Team Set: Injection, Cross-Tenant, PII
 
@@ -504,6 +504,7 @@ These tasks operationalise `research.md §1a` (3-way chunker bake-off),
 - [ ] T170 [D] Build Streamlit admin UI pages (1_dashboard, 2_cms, 3_leads, 4_settings, 5_embed_snippet); wire to FastAPI backend. Dashboard: aggregate stats (conversation count, lead count, avg response time). CMS: CRUD table view. Leads: sortable table + export button. Settings: persona / theme / origins / guardrails. Embed snippet: copy-to-clipboard.
 - [ ] T171 [D] Build React widget pages (App, Chat, Consent notice, Reconnect spinner). Socket/polling for token refresh. Inline iframe communication. Dark mode toggle (optional).
 - [ ] T172 [C] Wire NeMo Guardrails sidecar: platform rails locked (YAML config, no code mutation). Tenant rails templated from DB at boot. Both layers applied on ingress (visitor input, tool input) and egress (agent output, tool output).
+  - **Cross-owner coordination note (B↔C, 2026-05-28)**: the sidecar is Owner C's, but the *call-site* that routes the agent's ingress/egress through it lives in Owner B's `backend/app/use_cases/agent_turn.py` (currently `self._llm.call(...)` is a direct Anthropic call with no guardrails wrapping). When T172 lands, B and C pair to inject the `GuardrailsClient` protocol into the agent loop and call `/check` on visitor input + tool input (ingress) and agent output + tool output (egress) around the LLM call. Tracked here under T172, not as a separate B task, per owner decision.
 - [ ] T173 [C] Implement PII redaction middleware: calls guardrails sidecar `/check` with role='visitor_input' / 'agent_output' before logging, caching, or outbound API calls. Redacts in-place in logs (structured field redaction), traces, Redis values, LLM input.
 
 ### Slice B refinements (Owner B addendum, 2026-05-27)
@@ -516,6 +517,18 @@ research conflict. They sharpen the already-shipped chat path.
 - [ ] T187 [B] Demo tenant seed in `db/init/seed_demo_tenants.sql`: two fictional tenants for the Friday isolation demo — **Lumière Coffee** (warm/casual persona, menu + hours + booking content, heavy `capture_lead` use) and **Helix Analytics** (professional/technical persona, integrations + pricing + API docs, heavy `rag_search` use). Each tenant: tenant row, widget row, ≥4 published CMS pages, `allowed_origins` entry for its dev host. Plus an "attacker" stub site (not in any tenant's `allowed_origins`) for the blocked-origin demo. Idempotent (safe to re-run).
 - [ ] T188 [B] Replace `str.replace("{{persona_summary}}", ...)` in `backend/app/frameworks/api/routes/chat.py::_load_system_prompt` with `jinja2.Template(...).render(persona_summary=..., guardrail_config=..., tenant=...)`. Enables future template blocks like `{% if guardrail_config.refusal_tone %}` without code changes. Add `jinja2` to `backend/pyproject.toml`. Update `prompts/system_agent.md` placeholder syntax accordingly (Jinja2 already accepts `{{ var }}` so existing prompt may be a no-op change).
 - [ ] T189 [B] Per-turn cost telemetry: in `backend/app/frameworks/observability/logging.py`, add a `log_turn_cost(...)` helper that emits a structured JSON line per chat turn: `{tenant_id, conversation_id, route, classifier_calls, llm_in_tokens, llm_out_tokens, embedding_calls, estimated_usd, ms_elapsed}`. Instrument `chat.py` and `agent_turn.py` to call it once per turn. Pricing constants live in a small `cost_table.py` (claude-sonnet-4-6 input/output rates, embedding rate per provider). Feeds the DECISIONS.md cost-story sentence: *"router handled X% of turns at $Y avg; agent handled Z% at $W avg; pure-agent baseline would have cost ~Nx as much."*
+
+### Slice B gap-closure (Owner B addendum, 2026-05-28)
+
+These close gaps found in the 2026-05-28 scope audit: the session-memory
+seam was never wired into the chat loop, the Redis key schema carried no
+`tenant_id` (so per-tenant erasure could not target it), and the routing
+cost number that DECISIONS #1 promises had no task to produce it. They
+operationalise `research.md §5/§5a`.
+
+- [ ] T190 [B] Wire short-term session memory into the chat loop. Create `backend/app/use_cases/session_memory.py` (`SessionMemory`, depending only on the `SessionStore` protocol): `load(tenant_id, conversation_id) -> list[Message]` and `append_turn(tenant_id, conversation_id, *, visitor, assistant)`; stores clean `{role, content}` turns only (NOT the agent's intermediate tool-call/tool-result messages), caps to `session_max_messages` (default 20). Wire into `backend/app/frameworks/api/routes/chat.py`: load prior history before classify, build agent history as `prior + current turn`, and `append_turn` after every route. Implement `get_session_store()` in `backend/app/frameworks/api/deps.py` (currently raises `NotImplementedError`) to return `make_redis_session(settings.redis_url)`. Add `session_ttl_seconds=3600` and `session_max_messages=20` to `backend/app/frameworks/config.py`. Integration test: two turns on one `conversation_id` → turn 2's agent history contains turn 1.
+- [ ] T191 [B] Tenant-scoped Redis key schema + erasure seam (per `research.md §5a`). Change `backend/app/adapters/session/redis_session.py` key format to `session:{tenant_id}:{conversation_id}` and update the docstring (supersedes the old `session:<key>` / `session:*` scheme). Add `delete_by_tenant(tenant_id)` to the `SessionStore` protocol (`backend/app/use_cases/protocols/session_store.py`) and implement it in `RedisSession` via `scan_iter("session:{tenant_id}:*")` + pipelined delete. This is the seam Owner A's erasure use case (T129) injects and calls. **Do NOT edit `erase_tenant.py`** — publish the protocol method and notify Owner A. Unit test: `delete_by_tenant` removes only the target tenant's keys.
+- [ ] T192 [B] Routing cost measurement + DECISIONS cost-story (depends on T189 telemetry). Create `backend/tests/evals/cost/test_routing_cost.py` (or a small script/notebook) that replays a representative turn mix through the router, reads the `log_turn_cost` output, and computes the headline numbers: % of turns handled off the agent (workflow paths) vs. on the agent, average $/turn per path, and the pure-agent counterfactual. Write the resulting sentence into `docs/DECISIONS.md` entry 1 (Agent vs. Workflow vs. Hybrid) and feed the figure to Owner A for `docs/DESIGN.md` (scaling story). This is the number FR/Principle VII expects behind the hybrid-routing decision.
 
 ### Testing & Coverage
 
@@ -639,7 +652,7 @@ After MVP:
 
 ## Task Counts & Summary
 
-### Total Tasks: **189 tasks** (180 original + 9 Owner B addendum 2026-05-27)
+### Total Tasks: **192 tasks** (180 original + 9 Owner B addendum 2026-05-27 + 3 Owner B gap-closure 2026-05-28)
 
 ### By Phase:
 
@@ -657,14 +670,14 @@ After MVP:
 | 10. Evals | T130–T152, T181–T184 | 27 |
 | 11. Constraints | T146–T153 | 8 |
 | 12. Docs | T154–T167 | 14 |
-| 13. Polish | T168–T180, T185–T189 | 18 |
+| 13. Polish | T168–T180, T185–T192 | 21 |
 
 **Task Count by Owner:**
 
 | Owner | Count | Notes |
 |-------|-------|-------|
 | [A] Platform / Tenancy | 32 | Tenant model, RLS, provisioning, erasure, audit, manager routes |
-| [B] Agent / RAG / Memory | 70 | Router, agent, RAG, CMS, chat, leads, memory, prompts, notebooks, golden sets, +9 addendum tasks (chunker bake-off, reranker A/B, TTL, confidence routing, oscillation detector, demo seed, Jinja2, cost telemetry) |
+| [B] Agent / RAG / Memory | 73 | Router, agent, RAG, CMS, chat, leads, memory, prompts, notebooks, golden sets, +9 addendum (chunker bake-off, reranker A/B, TTL, confidence routing, oscillation detector, demo seed, Jinja2, cost telemetry), +3 gap-closure (session-memory wiring, tenant-scoped key + erasure seam, routing-cost measurement) |
 | [C] Models / Security / Guardrails | 34 | Classifier training, guardrails sidecar, PII redaction, evals, model card, service auth |
 | [D] Widget / Admin / CI | 38 | Widget bundle + loader, admin UI (Streamlit), origins, CI pipeline, smoke test, contract tests |
 | [ALL] Shared | 15 | Setup, Phase 2 skeleton, docs, polish |
