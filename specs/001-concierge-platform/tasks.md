@@ -531,6 +531,7 @@ operationalise `research.md §5/§5a`.
 - [ ] T192 [B] Routing cost measurement + DECISIONS cost-story (depends on T189 telemetry). Create `backend/tests/evals/cost/test_routing_cost.py` (or a small script/notebook) that replays a representative turn mix through the router, reads the `log_turn_cost` output, and computes the headline numbers: % of turns handled off the agent (workflow paths) vs. on the agent, average $/turn per path, and the pure-agent counterfactual. Write the resulting sentence into `docs/DECISIONS.md` entry 1 (Agent vs. Workflow vs. Hybrid) and feed the figure to Owner A for `docs/DESIGN.md` (scaling story). This is the number FR/Principle VII expects behind the hybrid-routing decision.
 - [ ] T193 [B] Prompt versioning discipline (per Design B brief: "prompts are code — a prompt change with no diff history is an outage you can't bisect"). Add a versioning convention to `prompts/`: a header block at the top of each prompt file (`system_agent.md`, `system_router.md`, `tool_specs/*.md`) carrying `version:` (semver or date) and a one-line `changelog:` entry per change, plus a `prompts/CHANGELOG.md` rolling up notable prompt edits with the commit SHA. Goal: any agent-behaviour regression can be bisected to a specific prompt revision, not just inferred from git blame. Ties into T188 (Jinja2) — the version header is a comment/front-matter block the loader ignores at render time.
 
+
 ### Testing & Coverage
 
 - [ ] T174 [ALL] Run `pytest --cov` on all unit tests; aim for ≥ 80% coverage on src/ (exclude __init__, stubs). Report in CI.
