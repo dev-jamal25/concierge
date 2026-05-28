@@ -424,7 +424,7 @@
 ### RAG Golden Set & Eval Gate
 
 - [ ] T138 [B] Create `tests/evals/rag/golden.jsonl`: 15 curated examples; each row: {"query": "...", "expected_cms_page_id": "...", "expected_answer_snippet": "..."}
-- [ ] T139 [B] Create `tests/evals/rag/test_rag_quality.py`: Seeds tenant with the 15 questions' source pages; retrieves chunks for each query; reranks; computes recall@5 (chunk from expected page in top-5), MRR, and answer grounding (expected_answer_snippet present in top-5). Asserts ≥ thresholds for rag_golden_set_recall_at_5 and rag_golden_set_answer_grounded_rate. Exits non-zero on regression. **Faithfulness method (per Design D brief)**: choose and justify the evaluation framework — RAGAS or a frozen judge model (record the choice + why in `docs/DECISIONS.md`); hand-label at least 5 of the 15 triples for faithfulness and report inter-rater agreement between the hand labels and the judge/RAGAS score (e.g. Cohen's κ or simple % agreement) so the automated grounding metric is itself validated, not trusted blind.
+- [ ] T139 [B] Create `tests/evals/rag/test_rag_quality.py`: Seeds tenant with the 15 questions' source pages; retrieves chunks for each query; reranks; computes the four Design-D metrics — recall@5/hit@5 (chunk from expected page in top-5), MRR, faithfulness/answer-grounding (expected_answer_snippet present in / entailed by top-5), and answer relevancy (does the generated answer actually address the query, scored by the chosen RAGAS/judge framework). Asserts ≥ thresholds for rag_golden_set_recall_at_5 and rag_golden_set_answer_grounded_rate. Exits non-zero on regression. **Faithfulness method (per Design D brief)**: choose and justify the evaluation framework — RAGAS or a frozen judge model (record the choice + why in `docs/DECISIONS.md`); hand-label at least 5 of the 15 triples for faithfulness and report inter-rater agreement between the hand labels and the judge/RAGAS score (e.g. Cohen's κ or simple % agreement) so the automated grounding metric is itself validated, not trusted blind.
 
 ### Red-Team Set: Injection, Cross-Tenant, PII
 
@@ -529,6 +529,7 @@ operationalise `research.md §5/§5a`.
 - [ ] T190 [B] Wire short-term session memory into the chat loop. Create `backend/app/use_cases/session_memory.py` (`SessionMemory`, depending only on the `SessionStore` protocol): `load(tenant_id, conversation_id) -> list[Message]` and `append_turn(tenant_id, conversation_id, *, visitor, assistant)`; stores clean `{role, content}` turns only (NOT the agent's intermediate tool-call/tool-result messages), caps to `session_max_messages` (default 20). Wire into `backend/app/frameworks/api/routes/chat.py`: load prior history before classify, build agent history as `prior + current turn`, and `append_turn` after every route. Implement `get_session_store()` in `backend/app/frameworks/api/deps.py` (currently raises `NotImplementedError`) to return `make_redis_session(settings.redis_url)`. Add `session_ttl_seconds=3600` and `session_max_messages=20` to `backend/app/frameworks/config.py`. Integration test: two turns on one `conversation_id` → turn 2's agent history contains turn 1.
 - [ ] T191 [B] Tenant-scoped Redis key schema + erasure seam (per `research.md §5a`). Change `backend/app/adapters/session/redis_session.py` key format to `session:{tenant_id}:{conversation_id}` and update the docstring (supersedes the old `session:<key>` / `session:*` scheme). Add `delete_by_tenant(tenant_id)` to the `SessionStore` protocol (`backend/app/use_cases/protocols/session_store.py`) and implement it in `RedisSession` via `scan_iter("session:{tenant_id}:*")` + pipelined delete. This is the seam Owner A's erasure use case (T129) injects and calls. **Do NOT edit `erase_tenant.py`** — publish the protocol method and notify Owner A. Unit test: `delete_by_tenant` removes only the target tenant's keys.
 - [ ] T192 [B] Routing cost measurement + DECISIONS cost-story (depends on T189 telemetry). Create `backend/tests/evals/cost/test_routing_cost.py` (or a small script/notebook) that replays a representative turn mix through the router, reads the `log_turn_cost` output, and computes the headline numbers: % of turns handled off the agent (workflow paths) vs. on the agent, average $/turn per path, and the pure-agent counterfactual. Write the resulting sentence into `docs/DECISIONS.md` entry 1 (Agent vs. Workflow vs. Hybrid) and feed the figure to Owner A for `docs/DESIGN.md` (scaling story). This is the number FR/Principle VII expects behind the hybrid-routing decision.
+- [ ] T193 [B] Prompt versioning discipline (per Design B brief: "prompts are code — a prompt change with no diff history is an outage you can't bisect"). Add a versioning convention to `prompts/`: a header block at the top of each prompt file (`system_agent.md`, `system_router.md`, `tool_specs/*.md`) carrying `version:` (semver or date) and a one-line `changelog:` entry per change, plus a `prompts/CHANGELOG.md` rolling up notable prompt edits with the commit SHA. Goal: any agent-behaviour regression can be bisected to a specific prompt revision, not just inferred from git blame. Ties into T188 (Jinja2) — the version header is a comment/front-matter block the loader ignores at render time.
 
 ### Testing & Coverage
 
@@ -652,7 +653,7 @@ After MVP:
 
 ## Task Counts & Summary
 
-### Total Tasks: **192 tasks** (180 original + 9 Owner B addendum 2026-05-27 + 3 Owner B gap-closure 2026-05-28)
+### Total Tasks: **193 tasks** (180 original + 9 Owner B addendum 2026-05-27 + 4 Owner B gap-closure 2026-05-28)
 
 ### By Phase:
 
@@ -670,14 +671,14 @@ After MVP:
 | 10. Evals | T130–T152, T181–T184 | 27 |
 | 11. Constraints | T146–T153 | 8 |
 | 12. Docs | T154–T167 | 14 |
-| 13. Polish | T168–T180, T185–T192 | 21 |
+| 13. Polish | T168–T180, T185–T193 | 22 |
 
 **Task Count by Owner:**
 
 | Owner | Count | Notes |
 |-------|-------|-------|
 | [A] Platform / Tenancy | 32 | Tenant model, RLS, provisioning, erasure, audit, manager routes |
-| [B] Agent / RAG / Memory | 73 | Router, agent, RAG, CMS, chat, leads, memory, prompts, notebooks, golden sets, +9 addendum (chunker bake-off, reranker A/B, TTL, confidence routing, oscillation detector, demo seed, Jinja2, cost telemetry), +3 gap-closure (session-memory wiring, tenant-scoped key + erasure seam, routing-cost measurement) |
+| [B] Agent / RAG / Memory | 73 | Router, agent, RAG, CMS, chat, leads, memory, prompts, notebooks, golden sets, +9 addendum (chunker bake-off, reranker A/B, TTL, confidence routing, oscillation detector, demo seed, Jinja2, cost telemetry), +4 gap-closure (session-memory wiring, tenant-scoped key + erasure seam, routing-cost measurement, prompt versioning) |
 | [C] Models / Security / Guardrails | 34 | Classifier training, guardrails sidecar, PII redaction, evals, model card, service auth |
 | [D] Widget / Admin / CI | 38 | Widget bundle + loader, admin UI (Streamlit), origins, CI pipeline, smoke test, contract tests |
 | [ALL] Shared | 15 | Setup, Phase 2 skeleton, docs, polish |
