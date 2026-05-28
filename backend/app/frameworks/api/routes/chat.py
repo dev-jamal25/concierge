@@ -13,7 +13,11 @@ import uuid
 from pathlib import Path
 from uuid import UUID
 
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import JSONResponse
+from jinja2 import Template
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -44,8 +48,8 @@ _SYSTEM_PROMPT_PATH = Path(__file__).parents[5] / "prompts" / "system_agent.md"
 
 def _load_system_prompt(persona_summary: str = "") -> str:
     try:
-        template = _SYSTEM_PROMPT_PATH.read_text(encoding="utf-8")
-        return template.replace("{{persona_summary}}", persona_summary)
+        source = _SYSTEM_PROMPT_PATH.read_text(encoding="utf-8")
+        return Template(source).render(persona_summary=persona_summary)
     except FileNotFoundError:
         return f"You are a helpful AI assistant. {persona_summary}"
 
@@ -75,7 +79,7 @@ class RetrievedChunk(BaseModel):
 
 
 class ChatTurnResponse(BaseModel):
-    route: str  # spam | faq | lead_intent | escalate | agent | unavailable
+    route: Literal["spam", "faq", "lead_intent", "escalate", "agent", "unavailable"]
     reply: str | None = None
     escalated: bool = False
     retrieved_chunks: list[RetrievedChunk] = []
@@ -118,7 +122,7 @@ def _build_context(session: AsyncSession, settings: Settings, session_store: Ses
     )
     escalate = EscalateUseCase(conv_repo)
     capture_lead = CaptureLeadUseCase(lead_repo)
-    agent_turn = AgentTurnUseCase(llm_client, rag, capture_lead, escalate)
+    agent_turn = AgentTurnUseCase(llm_client, rag, capture_lead, escalate, embedding_client)
     classify = ClassifyMessageUseCase(classifier)
     memory = SessionMemory(
         session_store,
@@ -137,7 +141,11 @@ def _build_context(session: AsyncSession, settings: Settings, session_store: Ses
     )
 
 
-@router.post("/chat", response_model=ChatTurnResponse)
+@router.post(
+    "/chat",
+    response_model=ChatTurnResponse,
+    responses={503: {"model": UpstreamUnavailableResponse, "description": "LLM unavailable; conversation escalated"}},
+)
 async def chat(
     body: ChatRequest,
     tenant_id_str: str = Depends(get_current_tenant_id),
@@ -180,6 +188,9 @@ async def chat(
         message=body.message, tenant_id=tenant_id
     )
     label = classify_result.label
+    # Low-confidence override: fall through to full agent rather than a wrong fast path (T185)
+    if classify_result.confidence < settings.router_confidence_threshold and label != "spam":
+        label = "ambiguous"
 
     # --- Route ---
 

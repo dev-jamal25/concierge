@@ -21,6 +21,14 @@ def _props(openapi: dict, name: str) -> set[str]:
     return set(openapi["components"]["schemas"][name]["properties"].keys())
 
 
+def _resolve_ref(openapi: dict, schema: dict) -> dict:
+    """Follow a single $ref into components/schemas."""
+    if "$ref" in schema:
+        ref_name = schema["$ref"].split("/")[-1]
+        return openapi["components"]["schemas"][ref_name]
+    return schema
+
+
 # --- /chat ---
 
 
@@ -30,7 +38,8 @@ def test_chat_path_present(openapi: dict) -> None:
 
 def test_chat_request_body(openapi: dict) -> None:
     post = openapi["paths"]["/chat"]["post"]
-    schema = post["requestBody"]["content"]["application/json"]["schema"]
+    raw = post["requestBody"]["content"]["application/json"]["schema"]
+    schema = _resolve_ref(openapi, raw)
     assert "conversation_id" in schema["properties"]
     assert "message" in schema["properties"]
     assert set(schema.get("required", [])) >= {"conversation_id", "message"}

@@ -1,3 +1,8 @@
+---
+version: "1.0.0"
+changelog: "1.0.0 (2026-05-28): Initial versioned release (T193)."
+---
+
 # Tool Spec — escalate
 
 **Name**: `escalate`

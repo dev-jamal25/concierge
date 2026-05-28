@@ -12,6 +12,7 @@ On LLM timeout, auto-escalates with reason="llm_unavailable" and returns 503.
 from __future__ import annotations
 
 import json
+import math
 from dataclasses import dataclass, field
 from uuid import UUID
 
@@ -19,11 +20,22 @@ from app.entities.chunk import Chunk
 from app.entities.lead import Lead
 from app.use_cases.capture_lead import CaptureLeadUseCase
 from app.use_cases.escalate import EscalateUseCase
+from app.use_cases.protocols.embedding_client import EmbeddingClient
 from app.use_cases.protocols.llm_client import LLMClient, Message, ToolSpec
 from app.use_cases.rag_search import RAGSearchUseCase
 
 _MAX_ITERATIONS = 5
 _MAX_TOKENS = 2048
+_OSCILLATION_THRESHOLD = 0.95
+
+
+def _cosine(a: list[float], b: list[float]) -> float:
+    dot = sum(x * y for x, y in zip(a, b))
+    mag_a = math.sqrt(sum(x * x for x in a))
+    mag_b = math.sqrt(sum(x * x for x in b))
+    if mag_a == 0 or mag_b == 0:
+        return 0.0
+    return dot / (mag_a * mag_b)
 
 _TOOL_SPECS = [
     ToolSpec(
@@ -77,11 +89,13 @@ class AgentTurnUseCase:
         rag_search: RAGSearchUseCase,
         capture_lead: CaptureLeadUseCase,
         escalate: EscalateUseCase,
+        embedding_client: EmbeddingClient | None = None,
     ) -> None:
         self._llm = llm_client
         self._rag = rag_search
         self._capture_lead = capture_lead
         self._escalate = escalate
+        self._embedder = embedding_client
 
     async def execute(
         self,
@@ -95,6 +109,7 @@ class AgentTurnUseCase:
         messages = list(conversation_history)
         result = AgentTurnResult(reply="")
         all_chunks: list[Chunk] = []
+        last_rag_embedding: list[float] | None = None
 
         for iteration in range(_MAX_ITERATIONS):
             result.iterations = iteration + 1
@@ -128,6 +143,23 @@ class AgentTurnUseCase:
                 call_id = call["id"]
 
                 if tool_name == "rag_search":
+                    # Oscillation detection (T186): consecutive near-identical queries → force-escalate
+                    if self._embedder is not None and last_rag_embedding is not None:
+                        current_emb = (await self._embedder.embed([tool_input["query"]]))[0]
+                        if _cosine(last_rag_embedding, current_emb) >= _OSCILLATION_THRESHOLD:
+                            await self._escalate.execute(
+                                conversation_id=conversation_id,
+                                tenant_id=tenant_id,
+                                reason="tool_loop_cap",
+                            )
+                            result.escalated = True
+                            result.escalation_reason = "tool_loop_cap"
+                            result.retrieved_chunks = all_chunks
+                            return result
+                        last_rag_embedding = current_emb
+                    elif self._embedder is not None:
+                        last_rag_embedding = (await self._embedder.embed([tool_input["query"]]))[0]
+
                     rag_result = await self._rag.execute(
                         query=tool_input["query"], tenant_id=tenant_id
                     )
