@@ -1,3 +1,8 @@
+---
+version: "1.0.0"
+changelog: "1.0.0 (2026-05-28): Initial versioned release (T193)."
+---
+
 # System Prompt — Router (LLM fallback classifier)
 
 You are a message classifier for a customer-facing AI chat system. Classify

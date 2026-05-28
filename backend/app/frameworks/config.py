@@ -37,6 +37,11 @@ class Settings(BaseSettings):
     redis_url: str = Field(default="redis://localhost:6379/0")
     session_ttl_seconds: int = Field(default=3600, description="Fixed TTL for session keys (T184).")
     session_max_messages: int = Field(default=20, description="Max clean turns stored per session (T190).")
+    router_confidence_threshold: float = Field(
+        default=0.75,
+        alias="ROUTER_CONFIDENCE_THRESHOLD",
+        description="Classify confidence below this value falls back to ambiguous → agent (T185).",
+    )
 
     # MinIO (object storage — Owner D owns the adapter)
     minio_endpoint: str = Field(default="localhost:9000")

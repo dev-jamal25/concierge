@@ -9,11 +9,15 @@ On LLM/embedding timeout: returns 503, auto-flags conversation as escalated.
 
 from __future__ import annotations
 
+import time
 import uuid
 from pathlib import Path
+from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import JSONResponse
+from jinja2 import Template
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -36,6 +40,7 @@ from app.use_cases.protocols.session_store import SessionStore
 from app.use_cases.rag_search import RAGSearchUseCase
 from app.use_cases.reindex_tenant_chunks import ReindexTenantChunksUseCase
 from app.use_cases.session_memory import SessionMemory
+from app.frameworks.observability.logging import log_turn_cost
 
 router = APIRouter(tags=["chat"])
 
@@ -44,8 +49,8 @@ _SYSTEM_PROMPT_PATH = Path(__file__).parents[5] / "prompts" / "system_agent.md"
 
 def _load_system_prompt(persona_summary: str = "") -> str:
     try:
-        template = _SYSTEM_PROMPT_PATH.read_text(encoding="utf-8")
-        return template.replace("{{persona_summary}}", persona_summary)
+        source = _SYSTEM_PROMPT_PATH.read_text(encoding="utf-8")
+        return Template(source).render(persona_summary=persona_summary)
     except FileNotFoundError:
         return f"You are a helpful AI assistant. {persona_summary}"
 
@@ -75,7 +80,7 @@ class RetrievedChunk(BaseModel):
 
 
 class ChatTurnResponse(BaseModel):
-    route: str  # spam | faq | lead_intent | escalate | agent | unavailable
+    route: Literal["spam", "faq", "lead_intent", "escalate", "agent", "unavailable"]
     reply: str | None = None
     escalated: bool = False
     retrieved_chunks: list[RetrievedChunk] = []
@@ -118,7 +123,7 @@ def _build_context(session: AsyncSession, settings: Settings, session_store: Ses
     )
     escalate = EscalateUseCase(conv_repo)
     capture_lead = CaptureLeadUseCase(lead_repo)
-    agent_turn = AgentTurnUseCase(llm_client, rag, capture_lead, escalate)
+    agent_turn = AgentTurnUseCase(llm_client, rag, capture_lead, escalate, embedding_client)
     classify = ClassifyMessageUseCase(classifier)
     memory = SessionMemory(
         session_store,
@@ -137,7 +142,11 @@ def _build_context(session: AsyncSession, settings: Settings, session_store: Ses
     )
 
 
-@router.post("/chat", response_model=ChatTurnResponse)
+@router.post(
+    "/chat",
+    response_model=ChatTurnResponse,
+    responses={503: {"model": UpstreamUnavailableResponse, "description": "LLM unavailable; conversation escalated"}},
+)
 async def chat(
     body: ChatRequest,
     tenant_id_str: str = Depends(get_current_tenant_id),
@@ -174,16 +183,22 @@ async def chat(
 
     # Load prior session history before classify so it's available for all routes
     prior_turns = await memory.load(tenant_id, body.conversation_id)
+    _t0 = time.perf_counter()
 
     # Classify
     classify_result = await classify.execute(
         message=body.message, tenant_id=tenant_id
     )
     label = classify_result.label
+    # Low-confidence override: fall through to full agent rather than a wrong fast path (T185)
+    if classify_result.confidence < settings.router_confidence_threshold and label != "spam":
+        label = "ambiguous"
 
     # --- Route ---
 
     if label == "spam":
+        log_turn_cost(tenant_id=tenant_id, conversation_id=body.conversation_id,
+                      route="spam", ms_elapsed=(time.perf_counter() - _t0) * 1000)
         return ChatTurnResponse(route="spam", reply=None)
 
     if label == "faq":
@@ -192,6 +207,10 @@ async def chat(
         await memory.append_turn(
             tenant_id, body.conversation_id, body.message, reply or ""
         )
+        log_turn_cost(tenant_id=tenant_id, conversation_id=body.conversation_id,
+                      route="faq", embedding_calls=1,
+                      ms_elapsed=(time.perf_counter() - _t0) * 1000,
+                      embedding_provider=getattr(settings, "embedding_provider", "voyage"))
         return ChatTurnResponse(
             route="faq",
             reply=reply,
@@ -207,6 +226,8 @@ async def chat(
         await memory.append_turn(
             tenant_id, body.conversation_id, body.message, reply
         )
+        log_turn_cost(tenant_id=tenant_id, conversation_id=body.conversation_id,
+                      route="lead_intent", ms_elapsed=(time.perf_counter() - _t0) * 1000)
         return ChatTurnResponse(
             route="lead_intent",
             reply=reply,
@@ -223,6 +244,8 @@ async def chat(
         await memory.append_turn(
             tenant_id, body.conversation_id, body.message, reply
         )
+        log_turn_cost(tenant_id=tenant_id, conversation_id=body.conversation_id,
+                      route="escalate", ms_elapsed=(time.perf_counter() - _t0) * 1000)
         return ChatTurnResponse(
             route="escalate",
             reply=reply,
@@ -271,6 +294,14 @@ async def chat(
         body.conversation_id,
         body.message,
         turn_result.reply or "",
+    )
+    log_turn_cost(
+        tenant_id=tenant_id,
+        conversation_id=body.conversation_id,
+        route="agent",
+        embedding_calls=turn_result.iterations,  # one rag_search embed per iteration (approx)
+        ms_elapsed=(time.perf_counter() - _t0) * 1000,
+        embedding_provider=getattr(settings, "embedding_provider", "voyage"),
     )
 
     return ChatTurnResponse(
