@@ -27,7 +27,7 @@ def _to_entity(row: ChunkModel) -> Chunk:
         chunk_index=row.chunk_index,
         content=row.content,
         embedding=list(row.embedding),
-        metadata=row.metadata_,
+        metadata=row.chunk_metadata,
         embedded_at=row.embedded_at,
     )
 
@@ -45,7 +45,7 @@ class PostgresChunkRepository:
                 chunk_index=c.chunk_index,
                 content=c.content,
                 embedding=c.embedding,
-                metadata_=c.metadata,
+                chunk_metadata=c.metadata,
             )
             for c in chunks
         ]
