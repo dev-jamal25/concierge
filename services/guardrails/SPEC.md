@@ -1,7 +1,7 @@
 # Guardrails Sidecar — Specification
 
 **Owner**: C (Models / Security / Guardrails)
-**Status**: protocol + adapter stub merged (T028/T048); regex-redaction middleware seam merged (T035); sidecar container + NeMo wiring pending (T172/T173)
+**Status**: live. Protocol + adapter (T028/T048), redaction middleware (T035/T173), sidecar with checksummed locked platform rails + DB-loaded tenant rails (T172), service-token auth (T151, sidecar side), and redteam/PII-canary eval gates (T142/T143) all merged. Pending: modelserver service `app.py` (T151 modelserver side).
 
 The guardrails sidecar is a small HTTP service that applies **platform rails** and **tenant rails** to every piece of text moving in or out of the agent. It is the place where prompt-injection defenses, jailbreak defenses, cross-tenant refusal, and PII redaction live as code, not as polite prompt suggestions.
 
@@ -90,7 +90,7 @@ Every request carries the shared `X-Service-Token` issued from Vault (T151). The
 
 ## Platform rails (locked)
 
-Implemented as NeMo Guardrails YAML config baked into the image. The rail definitions live in `services/guardrails/rails/platform/` and are checksummed at boot — runtime mutation is impossible without a new container.
+The active rail set is declared in `services/guardrails/config/platform_rails.yml` (baked into the image) and its sha256 is computed at boot and exposed on `/healthz` — a runtime edit is detectable and the container cannot mutate the locked set. The YAML names which rails are active; the regex implementations live in the catalog in `app.py`. A manifest naming a rail absent from the catalog fails fast at boot.
 
 | Rail | Trigger | Action |
 |---|---|---|
@@ -142,10 +142,10 @@ All three are committed thresholds in `eval_thresholds.yaml`. They block merges 
 | T028 | done | GuardrailsClient protocol |
 | T035 | done | PIIRedactionMiddleware (sync regex redactor + async RedactionService seam) |
 | T048 | done | NeMoGuardrails HTTP adapter stub |
-| T123 | pending [C] | UpdateGuardrailConfigUseCase (rejects rail weakening) |
-| T140, T141 | pending [C] | redteam JSONL probe sets (injection, cross-tenant) |
-| T142, T143 | pending [C] | redteam + PII canary tests (Docker-gated) |
-| T151 | pending [C] | Vault service credential |
+| T122, T123 | done | GuardrailConfig entity + UpdateGuardrailConfigUseCase (rejects rail weakening) |
+| T140, T141 | done | redteam JSONL probe sets (injection, cross-tenant) |
+| T142, T143 | done | redteam + PII canary eval gates (`tests/evals/redteam/`, in-process) |
+| T151 | partial | Vault service credential — sidecar 401 enforcement + integration test done; modelserver side pending its `app.py` |
 | T165 | done | this document |
-| T172 | pending [C] | wire NeMo Guardrails sidecar |
-| T173 | pending [C] | PII redaction middleware integration on the request path |
+| T172 | done | platform rails locked from checksummed YAML; tenant rails loaded from DB at boot + `/reload` |
+| T173 | done | PII redaction middleware: message + structured-field log redaction, trace + Redis/LLM seam |

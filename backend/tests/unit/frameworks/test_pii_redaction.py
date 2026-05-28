@@ -79,6 +79,27 @@ def test_middleware_installs_redactor_on_logging_filter() -> None:
     assert payload["message"] == "user paid with [REDACTED]"
 
 
+def test_middleware_redacts_structured_log_fields() -> None:
+    """PII in an `extra={...}` structured field must be redacted, not just the
+    rendered message (T173 structured-field redaction)."""
+    PIIRedactionMiddleware(_noop_app)
+
+    logger = logging.getLogger(f"{CONCIERGE_LOGGER}.pii_struct_test")
+    logger.handlers.clear()
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+    stream = io.StringIO()
+    handler = logging.StreamHandler(stream)
+    handler.setFormatter(JsonFormatter())
+    handler.addFilter(get_redaction_filter())
+    logger.addHandler(handler)
+
+    logger.info("lead captured", extra={"contact_email": "carla@example.com"})
+
+    payload = json.loads(stream.getvalue())
+    assert payload["contact_email"] == "[REDACTED]"
+
+
 def test_middleware_installs_redactor_on_span_processor() -> None:
     PIIRedactionMiddleware(_noop_app)
 

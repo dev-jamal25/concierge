@@ -23,5 +23,8 @@ test:
 eval-classifier:
 	cd $(BACKEND_DIR) && $(UV) run --extra dev --extra notebooks pytest ../tests/evals/classifier/ -v -s
 
-seed-demo-tenant serve-test-host smoke eval eval-agent eval-rag eval-redteam:
+eval-redteam:
+	cd $(BACKEND_DIR) && $(UV) run --extra dev pytest ../tests/evals/redteam/ -v -s
+
+seed-demo-tenant serve-test-host smoke eval eval-agent eval-rag:
 	@echo "$@ pending Owner C/D"

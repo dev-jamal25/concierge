@@ -3,6 +3,10 @@ platform_rails:
   refusal:
     - prompt_injection
     - jailbreak
+    - system_prompt_extraction
+    - content_policy_bypass
+    - syntax_injection
+    - tool_use_abuse
     - cross_tenant
   redaction:
     - pii_credit_card
