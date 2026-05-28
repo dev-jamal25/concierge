@@ -50,8 +50,11 @@ app/frameworks/api/middleware/origin_check.py
 app/frameworks/api/middleware/pii_redaction.py
 app/frameworks/api/middleware/tenant_context.py
 app/frameworks/api/routes/__init__.py
+app/frameworks/api/routes/admin.py
 app/frameworks/api/routes/auth.py
 app/frameworks/api/routes/chat.py
+app/frameworks/api/routes/cms.py
+app/frameworks/api/routes/leads.py
 app/frameworks/api/routes/manager.py
 app/frameworks/api/routes/widget.py
 app/frameworks/cli/__init__.py
