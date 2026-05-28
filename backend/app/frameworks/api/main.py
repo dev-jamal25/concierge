@@ -23,16 +23,21 @@ def create_app() -> FastAPI:
         return {"status": "ready"}
 
     # --- Middleware (registered in Phase 2; outermost first) ---
+    from app.frameworks.api.deps import get_guardrails_client
+    from app.frameworks.api.middleware.pii_redaction import PIIRedactionMiddleware
     from app.frameworks.api.middleware.tenant_context import TenantContextMiddleware
 
+    app.add_middleware(PIIRedactionMiddleware, guardrails=get_guardrails_client())
     app.add_middleware(TenantContextMiddleware)
 
     # --- Routers (registered as slices land) ---
     from app.frameworks.api.routes import auth as auth_routes
+    from app.frameworks.api.routes import chat as chat_routes
     from app.frameworks.api.routes import manager as manager_routes
     from app.frameworks.api.routes import widget as widget_routes
 
     app.include_router(auth_routes.router)
+    app.include_router(chat_routes.router)
     app.include_router(manager_routes.router)
     app.include_router(widget_routes.router)
 

@@ -15,6 +15,8 @@ Requires-Dist: hvac>=2.1
 Requires-Dist: pyjwt[crypto]>=2.8
 Requires-Dist: pgvector>=0.3
 Requires-Dist: httpx>=0.27
+Requires-Dist: opentelemetry-api>=1.25
+Requires-Dist: opentelemetry-sdk>=1.25
 Provides-Extra: dev
 Requires-Dist: import-linter>=2.0; extra == "dev"
 Requires-Dist: pytest>=8.2; extra == "dev"
@@ -22,3 +24,15 @@ Requires-Dist: pytest-asyncio>=0.23; extra == "dev"
 Requires-Dist: pytest-cov>=5.0; extra == "dev"
 Requires-Dist: ruff>=0.5; extra == "dev"
 Requires-Dist: mypy>=1.10; extra == "dev"
+Provides-Extra: notebooks
+Requires-Dist: jupyter>=1.0; extra == "notebooks"
+Requires-Dist: ipykernel>=6.29; extra == "notebooks"
+Requires-Dist: pandas>=2.2; extra == "notebooks"
+Requires-Dist: scikit-learn>=1.5; extra == "notebooks"
+Requires-Dist: nbconvert>=7.16; extra == "notebooks"
+Requires-Dist: datasets>=2.20; extra == "notebooks"
+Requires-Dist: torch<3.0,>=2.0; extra == "notebooks"
+Requires-Dist: onnx>=1.15; extra == "notebooks"
+Requires-Dist: onnxruntime>=1.18; extra == "notebooks"
+Requires-Dist: openai>=1.30; extra == "notebooks"
+Requires-Dist: tabulate>=0.9; extra == "notebooks"

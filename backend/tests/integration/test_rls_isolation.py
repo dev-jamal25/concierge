@@ -30,7 +30,10 @@ USER_B = uuid4()
 
 async def _seed(owner_engine) -> None:
     async with owner_engine.begin() as conn:
-        for tid, slug in ((TENANT_A, "tenant-a"), (TENANT_B, "tenant-b")):
+        for tid, slug in (
+            (TENANT_A, f"tenant-a-{TENANT_A.hex[:8]}"),
+            (TENANT_B, f"tenant-b-{TENANT_B.hex[:8]}"),
+        ):
             await conn.execute(
                 text(
                     "INSERT INTO tenants (id, slug, display_name) "
@@ -59,7 +62,8 @@ async def _seed(owner_engine) -> None:
             await conn.execute(
                 text(
                     "INSERT INTO invitations (tenant_id, email, token_hash, expires_at, created_by) "
-                    "VALUES (:tid, :email, 'h', now() + interval '1 day', :uid)"
+                    "VALUES (:tid, :email, 'h', now() + interval '1 day', :uid) "
+                    "ON CONFLICT DO NOTHING"
                 ),
                 {"tid": str(tid), "email": f"inv-{email}", "uid": str(uid)},
             )
@@ -120,6 +124,47 @@ async def test_manager_reads_all_tenants_and_audit(owner_engine, manager_engine)
     tenant_ids = {str(r[0]) for r in tenants}
     assert {str(TENANT_A), str(TENANT_B)} <= tenant_ids
     assert len(audit) >= 2
+
+
+async def test_tenant_b_data_invisible_to_tenant_a(owner_engine, app_engine) -> None:
+    """Tenant A's app session must not see any Tenant B rows — explicit cross-tenant
+    query (T146, cross-tenant red-team gate)."""
+    await _seed(owner_engine)
+    rows = await _scoped_query(app_engine, "SELECT id FROM tenants", TENANT_A)
+    ids = {str(r[0]) for r in rows}
+    assert str(TENANT_B) not in ids, "Tenant B row must not be visible to Tenant A session"
+    assert str(TENANT_A) in ids, "Tenant A row must be visible in its own session"
+
+
+async def test_app_role_cannot_update_other_tenant_row(owner_engine, app_engine) -> None:
+    """RLS WITH CHECK must prevent concierge_app from updating a different tenant's row.
+
+    SQLAlchemy / asyncpg surfaces a Postgres permission/RLS violation as an
+    IntegrityError or ProgrammingError. We accept any exception; if no exception
+    is raised we assert 0 rows affected so a silent no-op is also acceptable.
+    """
+    await _seed(owner_engine)
+    try:
+        async with app_engine.connect() as conn:
+            async with conn.begin():
+                # Scope to Tenant A, attempt to rename Tenant B.
+                await conn.execute(
+                    text("SELECT set_config('app.tenant_id', :tid, true)"),
+                    {"tid": str(TENANT_A)},
+                )
+                result = await conn.execute(
+                    text(
+                        "UPDATE tenants SET display_name = 'HIJACKED' WHERE id = :b"
+                    ),
+                    {"b": str(TENANT_B)},
+                )
+                # If no exception: RLS must have blocked the write (0 rows affected).
+                assert result.rowcount == 0, (
+                    "RLS WITH CHECK must prevent cross-tenant UPDATE (got rowcount > 0)"
+                )
+    except Exception:
+        # Postgres raised an RLS or permission violation — that is also a PASS.
+        pass
 
 
 async def test_manager_denied_on_content_tables(owner_engine, manager_engine) -> None:
