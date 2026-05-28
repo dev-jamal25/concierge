@@ -20,3 +20,16 @@ pytest-asyncio>=0.23
 pytest-cov>=5.0
 ruff>=0.5
 mypy>=1.10
+
+[notebooks]
+jupyter>=1.0
+ipykernel>=6.29
+pandas>=2.2
+scikit-learn>=1.5
+nbconvert>=7.16
+datasets>=2.20
+torch<3.0,>=2.0
+onnx>=1.15
+onnxruntime>=1.18
+openai>=1.30
+tabulate>=0.9

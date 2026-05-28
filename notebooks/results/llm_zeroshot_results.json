@@ -1,0 +1,22 @@
+{
+  "model": "llm_zeroshot:llama-3.1-8b-instant",
+  "macro_f1": 0.4686290216222952,
+  "per_class_f1": {
+    "spam": 0.057692307692307696,
+    "faq": 0.46439628482972134,
+    "lead_intent": 0.5093167701863354,
+    "escalate": 0.6831683168316832,
+    "ambiguous": 0.6285714285714286
+  },
+  "latency_ms_per_prediction": 205.6264122009161,
+  "cost_per_1k_predictions": 0.010366060000000002,
+  "total_cost_usd": 0.005183030000000001,
+  "tokens_used": {
+    "input": 101739,
+    "output": 1201,
+    "total": 102940
+  },
+  "fallback_parses": 5,
+  "n_samples": 500,
+  "sampling_note": "stratified 100/label from test split (random_state=42); spec asks for full 2290 but Groq free-tier 30 RPM made that impractical"
+}
