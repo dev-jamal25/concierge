@@ -23,15 +23,17 @@ from app.adapters.llm.anthropic_client import AnthropicLLM
 from app.adapters.repositories.chunk_repository import PostgresChunkRepository
 from app.adapters.repositories.conversation_repository import PostgresConversationRepository
 from app.adapters.repositories.lead_repository import PostgresLeadRepository
-from app.frameworks.api.deps import db_session, get_current_tenant_id, get_app_settings
+from app.frameworks.api.deps import db_session, get_current_tenant_id, get_app_settings, get_session_store
 from app.frameworks.config import Settings
 from app.use_cases.agent_turn import AgentTurnUseCase
 from app.use_cases.capture_lead import CaptureLeadUseCase
 from app.use_cases.classify_message import ClassifyMessageUseCase
 from app.use_cases.escalate import EscalateUseCase
 from app.use_cases.protocols.llm_client import Message
+from app.use_cases.protocols.session_store import SessionStore
 from app.use_cases.rag_search import RAGSearchUseCase
 from app.use_cases.reindex_tenant_chunks import ReindexTenantChunksUseCase
+from app.use_cases.session_memory import SessionMemory
 
 router = APIRouter(tags=["chat"])
 
@@ -75,7 +77,7 @@ class UpstreamUnavailableResponse(BaseModel):
 # --- Dependency: build all B use cases per request ---
 
 
-def _build_context(session: AsyncSession, settings: Settings) -> dict:
+def _build_context(session: AsyncSession, settings: Settings, session_store: SessionStore) -> dict:
     chunk_repo = PostgresChunkRepository(session)
     conv_repo = PostgresConversationRepository(session)
     lead_repo = PostgresLeadRepository(session)
@@ -105,6 +107,11 @@ def _build_context(session: AsyncSession, settings: Settings) -> dict:
     capture_lead = CaptureLeadUseCase(lead_repo)
     agent_turn = AgentTurnUseCase(llm_client, rag, capture_lead, escalate)
     classify = ClassifyMessageUseCase(classifier)
+    memory = SessionMemory(
+        session_store,
+        ttl=settings.session_ttl_seconds,
+        max_messages=settings.session_max_messages,
+    )
 
     return dict(
         conv_repo=conv_repo,
@@ -113,6 +120,7 @@ def _build_context(session: AsyncSession, settings: Settings) -> dict:
         capture_lead=capture_lead,
         escalate=escalate,
         agent_turn=agent_turn,
+        memory=memory,
     )
 
 
@@ -122,15 +130,17 @@ async def chat(
     tenant_id_str: str = Depends(get_current_tenant_id),
     session: AsyncSession = Depends(db_session),
     settings: Settings = Depends(get_app_settings),
+    session_store: SessionStore = Depends(get_session_store),
 ) -> ChatTurnResponse:
     tenant_id = UUID(tenant_id_str)
-    ctx = _build_context(session, settings)
+    ctx = _build_context(session, settings, session_store)
     conv_repo: PostgresConversationRepository = ctx["conv_repo"]
     classify: ClassifyMessageUseCase = ctx["classify"]
     rag: RAGSearchUseCase = ctx["rag"]
     capture_lead_uc: CaptureLeadUseCase = ctx["capture_lead"]
     escalate_uc: EscalateUseCase = ctx["escalate"]
     agent_turn_uc: AgentTurnUseCase = ctx["agent_turn"]
+    memory: SessionMemory = ctx["memory"]
 
     # Ensure conversation exists (create on first turn)
     conversation = await conv_repo.get(body.conversation_id, tenant_id)
@@ -149,6 +159,9 @@ async def chat(
             detail="conversation is escalated; no further turns accepted",
         )
 
+    # Load prior session history before classify so it's available for all routes
+    prior_turns = await memory.load(tenant_id, body.conversation_id)
+
     # Classify
     classify_result = await classify.execute(
         message=body.message, tenant_id=tenant_id
@@ -162,9 +175,13 @@ async def chat(
 
     if label == "faq":
         rag_result = await rag.execute(query=body.message, tenant_id=tenant_id)
+        reply = None  # agent_turn synthesises the reply; direct FAQ uses top chunk
+        await memory.append_turn(
+            tenant_id, body.conversation_id, body.message, reply or ""
+        )
         return ChatTurnResponse(
             route="faq",
-            reply=None,  # agent_turn synthesises the reply; direct FAQ uses top chunk
+            reply=reply,
             escalated=False,
             retrieved_chunks=[
                 RetrievedChunk(cms_page_id=c.cms_page_id, snippet=c.content[:300])
@@ -173,10 +190,13 @@ async def chat(
         )
 
     if label == "lead_intent":
-        # Minimal lead capture without full agent loop (fast path)
+        reply = "Thanks! We've noted your interest and will be in touch."
+        await memory.append_turn(
+            tenant_id, body.conversation_id, body.message, reply
+        )
         return ChatTurnResponse(
             route="lead_intent",
-            reply="Thanks! We've noted your interest and will be in touch.",
+            reply=reply,
             capture_lead_status="not_captured",  # tool call via agent_turn captures
         )
 
@@ -186,15 +206,22 @@ async def chat(
             tenant_id=tenant_id,
             reason="visitor_request",
         )
+        reply = "You've been connected with our team. Someone will follow up shortly."
+        await memory.append_turn(
+            tenant_id, body.conversation_id, body.message, reply
+        )
         return ChatTurnResponse(
             route="escalate",
-            reply="You've been connected with our team. Someone will follow up shortly.",
+            reply=reply,
             escalated=True,
         )
 
     # label == "ambiguous" → full agent turn
     system_prompt = _load_system_prompt()
-    history = [Message(role="user", content=body.message)]
+    # Build history: prior clean turns + current user message
+    history = [
+        Message(role=t["role"], content=t["content"]) for t in prior_turns
+    ] + [Message(role="user", content=body.message)]
 
     try:
         turn_result = await agent_turn_uc.execute(
@@ -223,6 +250,14 @@ async def chat(
         lead_status = "captured"
     elif turn_result.escalated and turn_result.escalation_reason == "tool_loop_cap":
         lead_status = "not_captured"
+
+    # Persist the turn to session memory
+    await memory.append_turn(
+        tenant_id,
+        body.conversation_id,
+        body.message,
+        turn_result.reply or "",
+    )
 
     return ChatTurnResponse(
         route="agent",
