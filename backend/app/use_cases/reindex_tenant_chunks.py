@@ -1,8 +1,7 @@
 """ReindexTenantChunksUseCase (T079) — Layer 2.
 
-Paragraph-aware chunking per research.md #1:
-  target 400 tokens, overlap 50 tokens, hard cap 600 tokens.
-  Respects heading boundaries (lines starting with #).
+Active chunker is selected via the CHUNKER env var (default: paragraph_aware).
+Variants live in app/use_cases/_chunkers/ (T181 bake-off).
 
 Called on publish and re-publish. On unpublish, caller deletes chunks via
 chunk_repo.delete_by_page without re-embedding.
@@ -10,6 +9,8 @@ chunk_repo.delete_by_page without re-embedding.
 
 from __future__ import annotations
 
+import importlib
+import os
 import uuid
 from dataclasses import dataclass
 from uuid import UUID
@@ -18,79 +19,20 @@ from app.entities.chunk import Chunk
 from app.use_cases.protocols.chunk_repository import ChunkRepository
 from app.use_cases.protocols.embedding_client import EmbeddingClient
 
-_TARGET_TOKENS = 400
-_OVERLAP_TOKENS = 50
-_HARD_CAP_TOKENS = 600
-_CHARS_PER_TOKEN = 4  # rough approximation for plain text
+_CHUNKER_VARIANTS = {"fixed_500", "paragraph_aware", "header_first"}
+_DEFAULT_CHUNKER = "paragraph_aware"
 
 
-def _token_estimate(text: str) -> int:
-    return len(text) // _CHARS_PER_TOKEN
+def _load_chunker(name: str | None = None):
+    variant = (name or os.environ.get("CHUNKER", _DEFAULT_CHUNKER)).strip()
+    if variant not in _CHUNKER_VARIANTS:
+        raise ValueError(f"Unknown CHUNKER variant '{variant}'; choose from {_CHUNKER_VARIANTS}")
+    module = importlib.import_module(f"app.use_cases._chunkers.{variant}")
+    return module.chunk
 
 
 def _chunk_text(body: str) -> list[str]:
-    """Split body into paragraph-aware, token-bounded chunks with overlap."""
-    paragraphs: list[str] = []
-    current: list[str] = []
-
-    for line in body.splitlines(keepends=True):
-        if line.startswith("#") and current:
-            paragraphs.append("".join(current).strip())
-            current = [line]
-        elif line.strip() == "" and current:
-            paragraphs.append("".join(current).strip())
-            current = []
-        else:
-            current.append(line)
-    if current:
-        paragraphs.append("".join(current).strip())
-
-    paragraphs = [p for p in paragraphs if p]
-
-    chunks: list[str] = []
-    window: list[str] = []
-    window_tokens = 0
-    overlap_buf: list[str] = []
-
-    for para in paragraphs:
-        para_tokens = _token_estimate(para)
-
-        if window_tokens + para_tokens > _HARD_CAP_TOKENS and window:
-            chunks.append("\n\n".join(window))
-            # keep overlap tail
-            overlap_buf = []
-            overlap_tokens = 0
-            for p in reversed(window):
-                t = _token_estimate(p)
-                if overlap_tokens + t <= _OVERLAP_TOKENS:
-                    overlap_buf.insert(0, p)
-                    overlap_tokens += t
-                else:
-                    break
-            window = overlap_buf[:]
-            window_tokens = sum(_token_estimate(p) for p in window)
-
-        window.append(para)
-        window_tokens += para_tokens
-
-        if window_tokens >= _TARGET_TOKENS:
-            chunks.append("\n\n".join(window))
-            overlap_buf = []
-            overlap_tokens = 0
-            for p in reversed(window):
-                t = _token_estimate(p)
-                if overlap_tokens + t <= _OVERLAP_TOKENS:
-                    overlap_buf.insert(0, p)
-                    overlap_tokens += t
-                else:
-                    break
-            window = overlap_buf[:]
-            window_tokens = sum(_token_estimate(p) for p in window)
-
-    if window:
-        chunks.append("\n\n".join(window))
-
-    return [c for c in chunks if c.strip()]
+    return _load_chunker()(body)
 
 
 @dataclass

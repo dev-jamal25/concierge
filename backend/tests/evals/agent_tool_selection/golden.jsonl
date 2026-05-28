@@ -1,0 +1,15 @@
+{"message": "What are your opening hours on weekends?", "expected_tool": "rag_search", "expected_routing": "faq"}
+{"message": "Do you offer same-day delivery?", "expected_tool": "rag_search", "expected_routing": "faq"}
+{"message": "What is the price for the enterprise plan?", "expected_tool": "rag_search", "expected_routing": "faq"}
+{"message": "How do I reset my password?", "expected_tool": "rag_search", "expected_routing": "faq"}
+{"message": "What integrations do you support?", "expected_tool": "rag_search", "expected_routing": "faq"}
+{"message": "I'd like to get a quote for 50 seats", "expected_tool": "capture_lead", "expected_routing": "lead_intent"}
+{"message": "Can someone call me back about your premium package?", "expected_tool": "capture_lead", "expected_routing": "lead_intent"}
+{"message": "I want to sign up for a free trial, my email is jane@example.com", "expected_tool": "capture_lead", "expected_routing": "lead_intent"}
+{"message": "Please have a sales rep reach out to me at 555-0100", "expected_tool": "capture_lead", "expected_routing": "lead_intent"}
+{"message": "I'm ready to purchase, how do I get started? Contact me at buyer@corp.io", "expected_tool": "capture_lead", "expected_routing": "lead_intent"}
+{"message": "This is completely unacceptable, I need to speak to a manager right now", "expected_tool": "escalate", "expected_routing": "escalate"}
+{"message": "I want to talk to a real human being, not a bot", "expected_tool": "escalate", "expected_routing": "escalate"}
+{"message": "Please connect me with your support team immediately", "expected_tool": "escalate", "expected_routing": "escalate"}
+{"message": "Your service has been down for 3 hours and I'm losing money — escalate this", "expected_tool": "escalate", "expected_routing": "escalate"}
+{"message": "I've explained this five times already, transfer me to someone who can actually help", "expected_tool": "escalate", "expected_routing": "escalate"}
