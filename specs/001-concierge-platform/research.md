@@ -217,9 +217,14 @@ before write.
   restate; agent re-grounds via `rag_search`).
 
 **Implementation note for adapters/session/redis_session.py**:
-`store()` MUST set the TTL only on key creation (use `SET ... NX EX <ttl>`
-or `SETNX`+`EXPIRE`, then plain `SET` without `EX` for subsequent updates).
-A `touch()` method is explicitly NOT added — sliding TTL is rejected here.
+`store()` MUST set the TTL only on key creation and preserve it on update.
+Create with `SET ... NX EX <ttl>`; update with `SET ... KEEPTTL`.
+**Correction (2026-05-28)**: an earlier draft said to use plain `SET`
+(no `EX`) for subsequent updates — that is wrong, because a plain `SET`
+*clears* the existing TTL and makes the key persistent. `KEEPTTL` is the
+correct primitive: it rewrites the value while leaving the original
+expiry counting down. A `touch()` method is explicitly NOT added —
+sliding TTL is rejected here.
 
 **Alternatives considered**:
 - *Sliding 60-minute window* — better UX for active conversations but
@@ -234,6 +239,34 @@ A `touch()` method is explicitly NOT added — sliding TTL is rejected here.
 Principle VII for memory (`FR-024`, which only requires "stated TTL
 with documented rationale"). No held-out gate required. Decision also
 recorded in `docs/DECISIONS.md` (new entry "Decision 5 — Memory TTL").
+
+### 5a. Key schema, stored payload, and erasure seam (Owner B addendum, 2026-05-28)
+
+**Key schema**: `session:{tenant_id}:{conversation_id}`. The earlier
+`session:<key>` scheme carried no tenant_id, so a per-tenant purge would
+have had to scan `session:*` — every tenant's keys at once. Embedding the
+`tenant_id` segment lets a purge target exactly one tenant via
+`SCAN session:{tenant_id}:*`, and keeps the per-conversation grain.
+
+**Stored payload**: the short-term turn list only — clean `{role, content}`
+pairs for visitor and assistant turns. The agent's intermediate tool-call
+and tool-result messages are NOT stored (their provider-assigned call IDs
+do not round-trip into future API calls, and they bloat the window). The
+list is capped at the most recent `session_max_messages` (default 20 ≈ 10
+turns); older entries are dropped on write. Memory is loaded on every turn
+and written back after every turn (any route), so a later agent turn has
+full context.
+
+**Erasure seam (cross-owner)**: the `SessionStore` protocol gains
+`delete_by_tenant(tenant_id)`, implemented in `RedisSession` as a
+`SCAN session:{tenant_id}:*` + pipelined delete. Owner A's erasure use
+case (T129) injects `SessionStore` and calls this, growing the
+`stores_purged` audit list to include `redis`. The key format stays
+encapsulated in the adapter — Owner A does not construct keys.
+
+**PII**: Redis values are expected to be PII-redacted upstream (Owner C's
+egress/redaction middleware, T173); this memory layer stores whatever text
+the route produced and does not itself redact.
 
 ---
 
