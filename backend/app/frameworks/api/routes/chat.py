@@ -15,6 +15,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.adapters.classifier.modelserver_client import ModelserverClassifier
@@ -23,6 +24,7 @@ from app.adapters.llm.anthropic_client import AnthropicLLM
 from app.adapters.repositories.chunk_repository import PostgresChunkRepository
 from app.adapters.repositories.conversation_repository import PostgresConversationRepository
 from app.adapters.repositories.lead_repository import PostgresLeadRepository
+from app.frameworks.db.models import TenantModel
 from app.frameworks.api.deps import db_session, get_current_tenant_id, get_app_settings, get_session_store
 from app.frameworks.config import Settings
 from app.use_cases.agent_turn import AgentTurnUseCase
@@ -46,6 +48,17 @@ def _load_system_prompt(persona_summary: str = "") -> str:
         return template.replace("{{persona_summary}}", persona_summary)
     except FileNotFoundError:
         return f"You are a helpful AI assistant. {persona_summary}"
+
+
+async def _get_persona_summary(tenant_id: UUID, session: AsyncSession) -> str:
+    """Fetch persona_summary from tenant.persona_config at runtime (T126 / FR-025)."""
+    result = await session.execute(
+        select(TenantModel).where(TenantModel.id == tenant_id)
+    )
+    row = result.scalar_one_or_none()
+    if row is None:
+        return ""
+    return (row.persona_config or {}).get("persona_summary", "")
 
 
 # --- Request / Response schemas (per api.openapi.yaml) ---
@@ -217,7 +230,8 @@ async def chat(
         )
 
     # label == "ambiguous" → full agent turn
-    system_prompt = _load_system_prompt()
+    persona_summary = await _get_persona_summary(tenant_id, session)
+    system_prompt = _load_system_prompt(persona_summary)
     # Build history: prior clean turns + current user message
     history = [
         Message(role=t["role"], content=t["content"]) for t in prior_turns
