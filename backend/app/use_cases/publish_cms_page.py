@@ -9,106 +9,73 @@ Manages the CMS page state machine and triggers chunk reindexing:
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from uuid import UUID
 
-from sqlalchemy import select, update
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.entities.cms_page import CMSPage, CMSPageState
-from app.frameworks.db.models import CMSPageModel
+from app.use_cases.protocols.chunk_repository import ChunkRepository
+from app.use_cases.protocols.cms_page_repository import CMSPageRepository
 from app.use_cases.reindex_tenant_chunks import ReindexTenantChunksUseCase
-
-
-def _to_entity(row: CMSPageModel) -> CMSPage:
-    return CMSPage(
-        id=row.id,
-        tenant_id=row.tenant_id,
-        title=row.title,
-        body=row.body,
-        state=CMSPageState(row.state),
-        slug=row.slug,
-        published_at=row.published_at,
-        created_at=row.created_at,
-        updated_at=row.updated_at,
-    )
 
 
 class PublishCMSPageUseCase:
     def __init__(
         self,
-        session: AsyncSession,
+        cms_pages: CMSPageRepository,
+        chunks: ChunkRepository,
         reindex: ReindexTenantChunksUseCase,
     ) -> None:
-        self._session = session
+        self._cms_pages = cms_pages
+        self._chunks = chunks
         self._reindex = reindex
 
     async def publish(self, *, cms_page_id: UUID, tenant_id: UUID) -> CMSPage:
-        row = await self._get(cms_page_id, tenant_id)
-        current = CMSPageState(row.state)
+        page = await self._get(cms_page_id, tenant_id)
 
-        if current == CMSPageState.PUBLISHED:
-            return _to_entity(row)
+        if page.state == CMSPageState.PUBLISHED:
+            return page
 
-        if current == CMSPageState.DRAFT:
-            pass  # draft → published is allowed
-        elif current == CMSPageState.UNPUBLISHED:
-            pass  # unpublished → published is allowed
-
-        from datetime import datetime, timezone
         now = datetime.now(timezone.utc)
-        await self._session.execute(
-            update(CMSPageModel)
-            .where(CMSPageModel.id == cms_page_id, CMSPageModel.tenant_id == tenant_id)
-            .values(state="published", published_at=now, updated_at=now)
+        updated = await self._cms_pages.update_state(
+            cms_page_id,
+            tenant_id,
+            state=CMSPageState.PUBLISHED,
+            published_at=now,
         )
-        await self._session.flush()
 
         await self._reindex.execute(
             cms_page_id=cms_page_id,
             tenant_id=tenant_id,
-            body=row.body,
+            body=page.body,
         )
 
-        updated = await self._get(cms_page_id, tenant_id)
-        return _to_entity(updated)
+        return updated
 
     async def unpublish(self, *, cms_page_id: UUID, tenant_id: UUID) -> CMSPage:
-        row = await self._get(cms_page_id, tenant_id)
-        current = CMSPageState(row.state)
+        page = await self._get(cms_page_id, tenant_id)
 
-        if current == CMSPageState.DRAFT:
+        if page.state == CMSPageState.DRAFT:
             raise ValueError("Cannot unpublish a draft page. Publish it first.")
 
-        if current == CMSPageState.UNPUBLISHED:
-            return _to_entity(row)
+        if page.state == CMSPageState.UNPUBLISHED:
+            return page
 
-        from datetime import datetime, timezone
-        now = datetime.now(timezone.utc)
-        await self._session.execute(
-            update(CMSPageModel)
-            .where(CMSPageModel.id == cms_page_id, CMSPageModel.tenant_id == tenant_id)
-            .values(state="unpublished", updated_at=now)
+        updated = await self._cms_pages.update_state(
+            cms_page_id,
+            tenant_id,
+            state=CMSPageState.UNPUBLISHED,
         )
-        await self._session.flush()
 
-        # Delete chunks; they'll be re-created on re-publish
-        from app.use_cases.protocols.chunk_repository import ChunkRepository
-        # chunk deletion done via the reindex use case's delete_by_page
-        await self._reindex._chunks.delete_by_page(
+        await self._chunks.delete_by_page(
             cms_page_id=cms_page_id, tenant_id=tenant_id
         )
 
-        updated = await self._get(cms_page_id, tenant_id)
-        return _to_entity(updated)
+        return updated
 
-    async def _get(self, cms_page_id: UUID, tenant_id: UUID) -> CMSPageModel:
-        result = await self._session.execute(
-            select(CMSPageModel).where(
-                CMSPageModel.id == cms_page_id,
-                CMSPageModel.tenant_id == tenant_id,
+    async def _get(self, cms_page_id: UUID, tenant_id: UUID) -> CMSPage:
+        page = await self._cms_pages.get(cms_page_id, tenant_id)
+        if page is None:
+            raise ValueError(
+                f"CMS page {cms_page_id} not found for tenant {tenant_id}"
             )
-        )
-        row = result.scalar_one_or_none()
-        if row is None:
-            raise ValueError(f"CMS page {cms_page_id} not found for tenant {tenant_id}")
-        return row
+        return page
