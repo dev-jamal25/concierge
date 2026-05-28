@@ -3,18 +3,20 @@ in data-model.md. NEVER imported from entities/ or use_cases/.
 
 Owner A owns: tenants, users, user_tenant_roles, invitations, allowed_origins,
 audit_entries. (allowed_origins is created in migration 003 but modelled here.)
-Other tenant-scoped tables (cms_pages, chunks, conversations, messages, leads,
-widgets) are owned by other slices and defined in their migrations/models.
+Owner B owns: cms_pages, conversations, messages, chunks, leads.
+(widgets is owned by D, defined in migration 003 by A as part of provisioning.)
 """
 
 from __future__ import annotations
 
 from datetime import datetime
 
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     Boolean,
     ForeignKey,
     Index,
+    Integer,
     String,
     Text,
     UniqueConstraint,
@@ -126,3 +128,107 @@ class AuditEntryModel(Base):
         Index("ix_audit_target_tenant", "target_tenant_id", "created_at"),
         Index("ix_audit_actor", "actor_user_id", "created_at"),
     )
+
+
+# ---------------------------------------------------------------------------
+# Owner B — Agent / RAG / Memory tables (migration 002)
+# ---------------------------------------------------------------------------
+
+
+class CMSPageModel(Base):
+    __tablename__ = "cms_pages"
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=_UUID_PK)
+    tenant_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    title: Mapped[str] = mapped_column(Text, nullable=False)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    state: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("'draft'"))
+    slug: Mapped[str] = mapped_column(Text, nullable=False)
+    published_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, server_default=_NOW)
+    updated_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, server_default=_NOW)
+
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "slug", name="uq_cms_page_slug"),
+        Index("ix_cms_pages_tenant_state", "tenant_id", "state"),
+    )
+
+
+class ConversationModel(Base):
+    __tablename__ = "conversations"
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=_UUID_PK)
+    tenant_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    widget_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("widgets.id"), nullable=False
+    )
+    visitor_session: Mapped[str] = mapped_column(Text, nullable=False)
+    escalated_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
+    escalation_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    started_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, server_default=_NOW)
+    last_turn_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, server_default=_NOW)
+
+    __table_args__ = (Index("ix_conversations_tenant", "tenant_id", "started_at"),)
+
+
+class MessageModel(Base):
+    __tablename__ = "messages"
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=_UUID_PK)
+    tenant_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    conversation_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False
+    )
+    role: Mapped[str] = mapped_column(Text, nullable=False)
+    router_label: Mapped[str | None] = mapped_column(Text, nullable=True)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    tool_calls: Mapped[dict] = mapped_column(JSONB, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, server_default=_NOW)
+
+    __table_args__ = (Index("ix_messages_conversation", "conversation_id", "created_at"),)
+
+
+class ChunkModel(Base):
+    __tablename__ = "chunks"
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=_UUID_PK)
+    tenant_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    cms_page_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("cms_pages.id", ondelete="CASCADE"), nullable=False
+    )
+    chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    embedding: Mapped[list[float]] = mapped_column(Vector(1024), nullable=False)
+    metadata: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
+    embedded_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, server_default=_NOW)
+
+    __table_args__ = (
+        UniqueConstraint("cms_page_id", "chunk_index", name="uq_chunk_page_index"),
+        Index("ix_chunks_tenant", "tenant_id"),
+    )
+
+
+class LeadModel(Base):
+    __tablename__ = "leads"
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=_UUID_PK)
+    tenant_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    conversation_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("conversations.id"), nullable=False
+    )
+    name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    contact: Mapped[str] = mapped_column(Text, nullable=False)
+    intent: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, server_default=_NOW)
+
+    __table_args__ = (Index("ix_leads_tenant_created", "tenant_id", "created_at"),)

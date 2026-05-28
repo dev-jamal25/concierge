@@ -159,12 +159,12 @@
 - [ ] T054 [A] Create `docs/DESIGN.md` stub: sections for isolation strategy, scaling story, cost-per-tenant model, role model, erasure path; populated as Slice A completes
 - [ ] T055 [B] Create `docs/DECISIONS.md` stub with header and structure; to be appended by all slices with numbered decisions. Entries: agent-vs-workflow-vs-hybrid [B], embedder choice [B], reranker choice [B], classifier algorithm [C], others TBD
 - [ ] T056 [A] Create `docs/RUNBOOK.md` stub: sections for compose-up, restore, on-call troubleshooting; Slice A + Slice D populate
-- [ ] T057 [C] Create `docs/EVALS.md` stub: sections for how each gate is built and how to read results; populated by Slice C
-- [ ] T058 [C] Create `docs/SECURITY.md` stub: threat model, GDPR posture, jurisdictional notes; Slice C populates
+- [X] T057 [C] Create `docs/EVALS.md` stub: sections for how each gate is built and how to read results; populated by Slice C
+- [X] T058 [C] Create `docs/SECURITY.md` stub: threat model, GDPR posture, jurisdictional notes; Slice C populates
 - [ ] T059 [P] [A] Create `src/use_cases/SPEC.md` stub (Slice A)
 - [ ] T060 [P] [B] Create `src/adapters/SPEC.md` stub (Slice B)
-- [ ] T061 [P] [C] Create `services/modelserver/SPEC.md` stub (Slice C)
-- [ ] T062 [P] [C] Create `services/guardrails/SPEC.md` stub (Slice C)
+- [X] T061 [P] [C] Create `services/modelserver/SPEC.md` stub (Slice C)
+- [X] T062 [P] [C] Create `services/guardrails/SPEC.md` stub (Slice C)
 - [ ] T063 [P] [D] Create `admin/SPEC.md` stub (Slice D)
 - [ ] T064 [P] [D] Create `widget/SPEC.md` stub (Slice D)
 
@@ -362,11 +362,11 @@
 
 ### Guardrail Config Entity
 
-- [ ] T122 [US6] [C] Create `src/entities/guardrail_config.py`: GuardrailConfig dataclass with allowed_topics, blocked_topics, refusal_tone, enabled_tools (subset of [rag_search, capture_lead, escalate])
+- [X] T122 [US6] [C] Create `src/entities/guardrail_config.py`: GuardrailConfig dataclass with allowed_topics, blocked_topics, refusal_tone, enabled_tools (subset of [rag_search, capture_lead, escalate])
 
 ### Guardrail Management Use Case
 
-- [ ] T123 [US6] [C] Create `src/use_cases/update_guardrail_config.py`: UpdateGuardrailConfigUseCase; validates tenant cannot weaken platform rails; persists to tenant.guardrail_config JSONB; audit-logs any attempt to weaken (403 + logged).
+- [X] T123 [US6] [C] Create `src/use_cases/update_guardrail_config.py`: UpdateGuardrailConfigUseCase; validates tenant cannot weaken platform rails; persists to tenant.guardrail_config JSONB; audit-logs any attempt to weaken (403 + logged).
 
 ### Admin Routes (Extended)
 
@@ -409,12 +409,12 @@
 
 ### Classifier Training & Eval Gate
 
-- [ ] T130 [C] Create `notebooks/01_label_taxonomy.ipynb`: Defines 5-label taxonomy (spam, faq, lead_intent, escalate, ambiguous) with label definitions, seed examples per label
-- [ ] T131 [C] Create `notebooks/02_tfidf_logreg_baseline.ipynb`: TF-IDF + logistic regression baseline; trains on seed set; evaluates on held-out test set; reports macro-F1, per-class F1, latency, cost
-- [ ] T132 [C] Create `notebooks/03_small_dl_onnx.ipynb`: Small DL model (e.g., CNN + word embeddings) exported to ONNX; evaluates on held-out set
-- [ ] T133 [C] Create `notebooks/04_llm_zero_shot.ipynb`: LLM zero-shot classification (e.g., claude-sonnet-4-6 with prompt); evaluates on held-out set
-- [ ] T134 [C] Create `notebooks/05_compare_and_export.ipynb`: Side-by-side comparison of all three; picks the best by macro-F1 (likely classical baseline or ONNX for speed + size); exports artifact to `services/modelserver/artifacts/model.{onnx|joblib}`; updates `services/modelserver/model_card.yaml` with SHA-256, training data source, comparison results, deployment choice with rationale
-- [ ] T135 [C] Create `tests/evals/classifier/test_classifier_macro_f1.py`: Loads model_card.yaml, computes macro-F1 on held-out test set, asserts ≥ classifier_macro_f1 threshold from eval_thresholds.yaml. Exits non-zero on regression. Committed to CI.
+- [X] T130 [C] Create `notebooks/01_label_taxonomy.ipynb`: Defines 5-label taxonomy (spam, faq, lead_intent, escalate, ambiguous) with label definitions, seed examples per label
+- [X] T131 [C] Create `notebooks/02_tfidf_logreg_baseline.ipynb`: TF-IDF + logistic regression baseline; trains on seed set; evaluates on held-out test set; reports macro-F1, per-class F1, latency, cost
+- [X] T132 [C] Create `notebooks/03_small_dl_onnx.ipynb`: Small DL model (e.g., CNN + word embeddings) exported to ONNX; evaluates on held-out set
+- [X] T133 [C] Create `notebooks/04_llm_zero_shot.ipynb`: LLM zero-shot classification (e.g., claude-sonnet-4-6 with prompt); evaluates on held-out set
+- [X] T134 [C] Create `notebooks/05_compare_and_export.ipynb`: Side-by-side comparison of all three; picks the best by macro-F1 (likely classical baseline or ONNX for speed + size); exports artifact to `services/modelserver/artifacts/model.{onnx|joblib}`; updates `services/modelserver/model_card.yaml` with SHA-256, training data source, comparison results, deployment choice with rationale
+- [X] T135 [C] Create `tests/evals/classifier/test_classifier_macro_f1.py`: Loads model_card.yaml, computes macro-F1 on held-out test set, asserts ≥ classifier_macro_f1 threshold from eval_thresholds.yaml. Exits non-zero on regression. Committed to CI.
 
 ### Agent Tool-Selection Golden Set & Eval Gate
 
@@ -428,13 +428,23 @@
 
 ### Red-Team Set: Injection, Cross-Tenant, PII
 
-- [ ] T140 [P] [C] Create `tests/evals/redteam/injection.jsonl`: 10+ prompt-injection probes; each row: {"message": "...", "expected_action": "refuse|redact"}
-- [ ] T141 [P] [C] Create `tests/evals/redteam/cross_tenant.jsonl`: 5+ cross-tenant probes; visitor on Tenant A asks a question only answered in Tenant B's content; expected: agent refuses or returns "I don't know" (does NOT leak Tenant B content)
+- [X] T140 [P] [C] Create `tests/evals/redteam/injection.jsonl`: 10+ prompt-injection probes; each row: {"message": "...", "expected_action": "refuse|redact"}
+- [X] T141 [P] [C] Create `tests/evals/redteam/cross_tenant.jsonl`: 5+ cross-tenant probes; visitor on Tenant A asks a question only answered in Tenant B's content; expected: agent refuses or returns "I don't know" (does NOT leak Tenant B content)
 - [ ] T142 [P] [C] Create `tests/evals/redteam/test_redteam.py`: Runs each probe; asserts injection probes are refused ≥ 95% (or 100% for critical ones), cross-tenant probes are 100% refused. Exits non-zero on regression.
 
 ### PII Redaction Canary Test
 
 - [ ] T143 [C] Create `tests/evals/redteam/test_pii_canary.py`: Pastes a synthetic fake API key + credit card into a chat turn. Asserts the fake credential NEVER appears unredacted in: logs, traces, Redis session memory, LLM input payload, guardrails sidecar input. Runs on every CI run. 100% pass rate required (SC-008).
+
+### Chunker Bake-Off, Reranker A/B, Memory TTL (Owner B addendum, 2026-05-27)
+
+These tasks operationalise `research.md §1a` (3-way chunker bake-off),
+`§2a` (reranker A/B with ≥0.05 ship-rule), and `§5` (60-min fixed TTL).
+
+- [ ] T181 [B] Create `backend/app/use_cases/_chunkers/` with three modules implementing the bake-off variants per research.md §1a: `fixed_500.py` (500-token windows, no overlap, no heading awareness), `paragraph_aware.py` (the 400/50/600 implementation already in `reindex_tenant_chunks.py`, refactored out so it's swappable), and `header_first.py` (Markdown heading split → recursive `\n\n` split to 400/50/600 bounds, **prepend full heading path `H1 > H2 > H3\n\n` to every child chunk**). Each module exports `chunk(body: str) -> list[str]`. Refactor `reindex_tenant_chunks.py` to import the active chunker from this package via a `CHUNKER` env var (default `paragraph_aware`).
+- [ ] T182 [B] Create `backend/tests/evals/rag/test_chunker_comparison.py` and `notebooks/06_chunking_bake_off.ipynb`: for each chunker in [fixed_500, paragraph_aware, header_first], re-embed the seed corpus, run the 15-triple RAG golden set, report `hit@5`, `MRR`, and mean retrieval latency (ms). Emit a Markdown comparison table to stdout and append it to `docs/DECISIONS.md` as "Decision 1.5 — Chunker variant" with the winner row highlighted. Winner = highest `hit@5` that satisfies `rag_golden_set_recall_at_5 ≥ 0.85` AND retrieval latency ≤ 200ms p95; ties broken by `MRR`, then latency.
+- [ ] T183 [B] Create `backend/tests/evals/rag/test_reranker_ab.py`: runs the existing 15-triple RAG golden set TWICE — once with `RERANKER_URL` set, once with it unset (the no-rerank path is already supported by `rag_search.py`'s graceful fallback). Reports `hit@5` for both modes and the delta. Records the result in `docs/DECISIONS.md` entry 3 (Reranker provider). **Ship-rule**: if reranker lifts `hit@5` by < 0.05 over no-rerank, the test prints a recommendation to disable the reranker (`RERANKER_URL` unset in v1). Does NOT fail CI; it's a decision aid.
+- [ ] T184 [B] Update `backend/app/adapters/session/redis_session.py` per `research.md §5` revision: default TTL changes from 30 min → **60 min, fixed expiry** (TTL set on first write only, NOT refreshed on subsequent writes). Implementation: `store()` uses `SET ... NX EX <ttl>` on first write, plain `SET` (no `EX`) thereafter (or `SETNX`+`EXPIRE` for the same effect). Explicitly do NOT add a `touch()` method — sliding TTL was considered and rejected. Add unit test asserting that two consecutive `store()` calls 1s apart, with TTL=60, leave the actual Redis TTL at <60 (not 60). Append "Decision 5 — Memory TTL" entry to `docs/DECISIONS.md`. **Migration note**: existing in-flight session keys at the time of deployment inherit new semantics on their next write; no backfill is needed at PoC scale (≤10 tenants, short session count).
 
 ### Stack Smoke Test
 
@@ -470,14 +480,14 @@
 - [ ] T155 [B] Populate `docs/DECISIONS.md` (entry 1): Agent vs. Workflow vs. Hybrid argument; decision: bounded tool-calling agent (max 5 iterations, max 2048 tokens) with three tools. Rationale: balance flexibility (agent) with cost + latency (bounded + deterministic fallbacks). Alternatives considered, numbers on golden set.
 - [ ] T156 [B] Append `docs/DECISIONS.md` (entry 2): Embedding provider picked by RAG golden set score (threshold ≥ 0.85). Candidate comparison (OpenAI vs. Voyage vs. Cohere) with cost/recall/latency tradeoffs. Winner noted with runner-up scores.
 - [ ] T157 [B] Append `docs/DECISIONS.md` (entry 3): Reranker provider (if enabled) picked by same golden set criterion. Same format.
-- [ ] T158 [C] Append `docs/DECISIONS.md` (entry 4): Classifier algorithm picked from three-way comparison (classical / DL ONNX / LLM zero-shot) on held-out test set. Winner's macro-F1, per-class F1, latency, inference cost. Rationale for deployment choice (likely classical or ONNX for speed / size constraints).
-- [ ] T159 [C] Populate `docs/EVALS.md`: Four evaluation gates (classifier, agent, RAG, redteam); how each is built (source data, held-out split), how to run locally (`make eval-classifier`, etc.), how to read results. Thresholds from eval_thresholds.yaml. Pass/fail interpretation.
-- [ ] T160 [C] Populate `docs/SECURITY.md`: Threat model (token compromise, prompt injection, cross-tenant misconfiguration, PII leakage), mitigations (short-lived JWTs, guardrails rails, RLS + repository + middleware layers, PII redactor). GDPR-aligned design (lawful basis, right of access, right of erasure, data minimization). No certification claimed; design rationale only. Jurisdictional posture.
+- [X] T158 [C] Append `docs/DECISIONS.md` (entry 4): Classifier algorithm picked from three-way comparison (classical / DL ONNX / LLM zero-shot) on held-out test set. Winner's macro-F1, per-class F1, latency, inference cost. Rationale for deployment choice (likely classical or ONNX for speed / size constraints).
+- [X] T159 [C] Populate `docs/EVALS.md`: Four evaluation gates (classifier, agent, RAG, redteam); how each is built (source data, held-out split), how to run locally (`make eval-classifier`, etc.), how to read results. Thresholds from eval_thresholds.yaml. Pass/fail interpretation.
+- [X] T160 [C] Populate `docs/SECURITY.md`: Threat model (token compromise, prompt injection, cross-tenant misconfiguration, PII leakage), mitigations (short-lived JWTs, guardrails rails, RLS + repository + middleware layers, PII redactor). GDPR-aligned design (lawful basis, right of access, right of erasure, data minimization). No certification claimed; design rationale only. Jurisdictional posture.
 - [ ] T161 [A] Populate `docs/RUNBOOK.md` (Slice A + D): Compose-up troubleshooting, restore procedures (backup/restore Postgres + pgvector + Redis + MinIO), on-call playbook (common alerts, remediation). Links to SECURITY.md and EVALS.md for context.
 - [ ] T162 [A] Populate `src/use_cases/SPEC.md` (Slice A): Tenant provisioning / erasure / authentication flows; contract with use-case interfaces.
 - [ ] T163 [B] Populate `src/adapters/SPEC.md` (Slice B): Repository layer contract; protocol implementations (LLM, Embedding, Session); integration points with other adapters.
-- [ ] T164 [C] Populate `services/modelserver/SPEC.md` (Slice C): Model serving architecture; artifact loading + hash verification; inference API; no torch constraint. Model card schema and build process.
-- [ ] T165 [C] Populate `services/guardrails/SPEC.md` (Slice C): Platform rails (injection, jailbreak, cross-tenant, PII) + tenant rails configuration. API contract. Integration with NeMo Guardrails library.
+- [X] T164 [C] Populate `services/modelserver/SPEC.md` (Slice C): Model serving architecture; artifact loading + hash verification; inference API; no torch constraint. Model card schema and build process.
+- [X] T165 [C] Populate `services/guardrails/SPEC.md` (Slice C): Platform rails (injection, jailbreak, cross-tenant, PII) + tenant rails configuration. API contract. Integration with NeMo Guardrails library.
 - [ ] T166 [D] Populate `admin/SPEC.md` (Slice D): Streamlit app structure; pages (dashboard, CMS, leads, settings, embed snippet); auth via fastapi-users session cookie. No custom auth in admin.
 - [ ] T167 [D] Populate `widget/SPEC.md` (Slice D): Widget architecture (React + Vite + TypeScript in iframe). Loader contract (vanilla JS, no dependencies, < 5 KB gzipped). Token exchange, origin validation, refresh logic. Iframe ↔ loader communication (postMessage).
 
@@ -490,11 +500,22 @@
 ### Remaining Stubs & Integration
 
 - [ ] T168 [ALL] Wire tracing/logging from Phase 2 stubs; ensure all routes log tenant_id, request_id, operation; structured JSON format; no PII in logs (redaction middleware in place).
-- [ ] T169 [B] Implement reranker call in rag_search (if enabled): top-20 vector results → reranker API (Voyage / Cohere) → top-5. Graceful fallback to top-5 by vector score if reranker unavailable.
+- [ ] T169 [B] ~~Implement reranker call in rag_search (if enabled): top-20 vector results → reranker API (Voyage / Cohere) → top-5. Graceful fallback to top-5 by vector score if reranker unavailable.~~ **(superseded: shipped in `backend/app/use_cases/rag_search.py`; A/B ship-rule harness in T183)**
 - [ ] T170 [D] Build Streamlit admin UI pages (1_dashboard, 2_cms, 3_leads, 4_settings, 5_embed_snippet); wire to FastAPI backend. Dashboard: aggregate stats (conversation count, lead count, avg response time). CMS: CRUD table view. Leads: sortable table + export button. Settings: persona / theme / origins / guardrails. Embed snippet: copy-to-clipboard.
 - [ ] T171 [D] Build React widget pages (App, Chat, Consent notice, Reconnect spinner). Socket/polling for token refresh. Inline iframe communication. Dark mode toggle (optional).
 - [ ] T172 [C] Wire NeMo Guardrails sidecar: platform rails locked (YAML config, no code mutation). Tenant rails templated from DB at boot. Both layers applied on ingress (visitor input, tool input) and egress (agent output, tool output).
 - [ ] T173 [C] Implement PII redaction middleware: calls guardrails sidecar `/check` with role='visitor_input' / 'agent_output' before logging, caching, or outbound API calls. Redacts in-place in logs (structured field redaction), traces, Redis values, LLM input.
+
+### Slice B refinements (Owner B addendum, 2026-05-27)
+
+These are open-space additions from Owner B's design notes — no spec or
+research conflict. They sharpen the already-shipped chat path.
+
+- [ ] T185 [B] Confidence-threshold routing in `backend/app/frameworks/api/routes/chat.py`: pass `confidence` from `ClassifyMessageUseCase` through to the routing switch. If `confidence < 0.75`, override the label to `ambiguous` and hand to `AgentTurnUseCase` instead of the workflow path. Rationale: "fail toward the agent" — over-escalation costs money, confident-cheap-miss costs trust. The 0.75 default is configurable via `ROUTER_CONFIDENCE_THRESHOLD` env var.
+- [ ] T186 [B] Oscillation detector in `backend/app/use_cases/agent_turn.py`: maintain the last `rag_search` query embedding across iterations within a single agent turn. If two consecutive `rag_search` calls have query-embedding cosine similarity > 0.95, force-terminate the loop with `escalation_reason="tool_loop_cap"` (already an established reason in `EscalateUseCase`). Prevents the agent from spinning on the same useless query.
+- [ ] T187 [B] Demo tenant seed in `db/init/seed_demo_tenants.sql`: two fictional tenants for the Friday isolation demo — **Lumière Coffee** (warm/casual persona, menu + hours + booking content, heavy `capture_lead` use) and **Helix Analytics** (professional/technical persona, integrations + pricing + API docs, heavy `rag_search` use). Each tenant: tenant row, widget row, ≥4 published CMS pages, `allowed_origins` entry for its dev host. Plus an "attacker" stub site (not in any tenant's `allowed_origins`) for the blocked-origin demo. Idempotent (safe to re-run).
+- [ ] T188 [B] Replace `str.replace("{{persona_summary}}", ...)` in `backend/app/frameworks/api/routes/chat.py::_load_system_prompt` with `jinja2.Template(...).render(persona_summary=..., guardrail_config=..., tenant=...)`. Enables future template blocks like `{% if guardrail_config.refusal_tone %}` without code changes. Add `jinja2` to `backend/pyproject.toml`. Update `prompts/system_agent.md` placeholder syntax accordingly (Jinja2 already accepts `{{ var }}` so existing prompt may be a no-op change).
+- [ ] T189 [B] Per-turn cost telemetry: in `backend/app/frameworks/observability/logging.py`, add a `log_turn_cost(...)` helper that emits a structured JSON line per chat turn: `{tenant_id, conversation_id, route, classifier_calls, llm_in_tokens, llm_out_tokens, embedding_calls, estimated_usd, ms_elapsed}`. Instrument `chat.py` and `agent_turn.py` to call it once per turn. Pricing constants live in a small `cost_table.py` (claude-sonnet-4-6 input/output rates, embedding rate per provider). Feeds the DECISIONS.md cost-story sentence: *"router handled X% of turns at $Y avg; agent handled Z% at $W avg; pure-agent baseline would have cost ~Nx as much."*
 
 ### Testing & Coverage
 
@@ -618,7 +639,7 @@ After MVP:
 
 ## Task Counts & Summary
 
-### Total Tasks: **180 tasks**
+### Total Tasks: **189 tasks** (180 original + 9 Owner B addendum 2026-05-27)
 
 ### By Phase:
 
@@ -633,17 +654,17 @@ After MVP:
 | 7. US5 (P2) | T119–T121 | 3 |
 | 8. US6 (P3) | T122–T127 | 6 |
 | 9. US7 (P3) | T128–T129 | 2 |
-| 10. Evals | T130–T152 | 23 |
+| 10. Evals | T130–T152, T181–T184 | 27 |
 | 11. Constraints | T146–T153 | 8 |
 | 12. Docs | T154–T167 | 14 |
-| 13. Polish | T168–T180 | 13 |
+| 13. Polish | T168–T180, T185–T189 | 18 |
 
 **Task Count by Owner:**
 
 | Owner | Count | Notes |
 |-------|-------|-------|
 | [A] Platform / Tenancy | 32 | Tenant model, RLS, provisioning, erasure, audit, manager routes |
-| [B] Agent / RAG / Memory | 61 | Router, agent, RAG, CMS, chat, leads, memory, prompts, notebooks, golden sets |
+| [B] Agent / RAG / Memory | 70 | Router, agent, RAG, CMS, chat, leads, memory, prompts, notebooks, golden sets, +9 addendum tasks (chunker bake-off, reranker A/B, TTL, confidence routing, oscillation detector, demo seed, Jinja2, cost telemetry) |
 | [C] Models / Security / Guardrails | 34 | Classifier training, guardrails sidecar, PII redaction, evals, model card, service auth |
 | [D] Widget / Admin / CI | 38 | Widget bundle + loader, admin UI (Streamlit), origins, CI pipeline, smoke test, contract tests |
 | [ALL] Shared | 15 | Setup, Phase 2 skeleton, docs, polish |

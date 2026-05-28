@@ -386,9 +386,10 @@ See [`research.md`](./research.md) for the full set of decisions. The
 research phase resolves these open questions (each with a number from a
 held-out or golden set per Principle VII):
 
-1. **Chunking strategy** — paragraph-aware with token-bounded windows
-   and overlap; justified vs. fixed-window baseline on the RAG golden
-   set.
+1. **Chunking strategy** — three-way bake-off (fixed-size baseline,
+   paragraph-aware recursive, header-first recursive) benchmarked on
+   the 15-triple RAG golden set; winner recorded in DECISIONS.md
+   (see `research.md §1a`).
 2. **Retrieval improvement** — cross-encoder rerank over top-k; justified
    vs. raw vector-only retrieval on the RAG golden set.
 3. **LLM provider choice** — Anthropic `claude-sonnet-4-6` default;
@@ -398,9 +399,10 @@ held-out or golden set per Principle VII):
    (e.g. Voyage / Cohere / OpenAI); abstracted behind
    `EmbeddingClient`. Provider chosen by cost-per-1M tokens + retrieval
    golden-set score.
-5. **Redis session TTL** — 30 minutes per conversation, justified by
-   typical visitor session abandonment data and to bound the blast
-   radius of a token compromise.
+5. **Redis session TTL** — 60 minutes per conversation, fixed expiry
+   (TTL set on first write only, not refreshed); justified by concierge
+   session length expectations and to bound the blast radius of a token
+   compromise (see `research.md §5`).
 6. **JWT algorithm and key rotation** — EdDSA (Ed25519) signing keys
    stored in Vault; key rotation by JWKS-style key ID indexed by Vault
    path.

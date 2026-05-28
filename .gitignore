@@ -27,3 +27,8 @@ logs/
 *.parquet
 *.sqlite
 *.db
+
+# Allow tracked model artifacts under services/modelserver/artifacts/
+# (T148 boot-time SHA-256 check requires the artifact to ship with the image)
+!services/modelserver/artifacts/*.joblib
+!services/modelserver/artifacts/*.onnx
