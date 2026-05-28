@@ -9,9 +9,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from uuid import UUID
 
-from app.adapters.repositories.lead_repository import RateLimitExceeded
 from app.entities.lead import Lead
-from app.use_cases.protocols.lead_repository import LeadRepository
+from app.use_cases.protocols.lead_repository import LeadRepository, RateLimitExceeded
 
 
 @dataclass

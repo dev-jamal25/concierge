@@ -14,10 +14,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.entities.lead import Lead
 from app.frameworks.db.models import LeadModel
+from app.use_cases.protocols.lead_repository import RateLimitExceeded
 
-
-class RateLimitExceeded(Exception):
-    """Raised when a visitor session breaches lead capture rate limits."""
+__all__ = ["PostgresLeadRepository", "RateLimitExceeded"]
 
 
 def _to_entity(row: LeadModel) -> Lead:

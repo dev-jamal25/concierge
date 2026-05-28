@@ -12,6 +12,10 @@ from uuid import UUID
 from app.entities.lead import Lead
 
 
+class RateLimitExceeded(Exception):
+    """Raised by LeadRepository.capture when a session breaches rate limits."""
+
+
 class LeadRepository(Protocol):
     async def capture(
         self,
