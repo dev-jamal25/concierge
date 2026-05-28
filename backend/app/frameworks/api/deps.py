@@ -22,6 +22,7 @@ from fastapi import Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.adapters.guardrails.nemo_client import NeMoGuardrails
+from app.adapters.session.redis_session import make_redis_session
 from app.adapters.tokens.pyjwt_signer import PyJWTSigner
 from app.adapters.email.console_email import ConsoleEmailSender
 from app.adapters.repositories.audit_repository import PostgresAuditRepository
@@ -60,7 +61,7 @@ def get_embedding_client() -> object:
 
 
 def get_session_store() -> object:
-    raise NotImplementedError("session store provider is owned by Owner B tasks T029/T046")
+    return make_redis_session(get_settings().redis_url)
 
 
 def get_classifier_client() -> object:

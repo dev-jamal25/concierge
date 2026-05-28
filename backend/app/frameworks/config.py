@@ -35,6 +35,8 @@ class Settings(BaseSettings):
 
     # Redis (session memory — Owner B owns the adapter; A only needs the URL for erasure purge)
     redis_url: str = Field(default="redis://localhost:6379/0")
+    session_ttl_seconds: int = Field(default=3600, description="Fixed TTL for session keys (T184).")
+    session_max_messages: int = Field(default=20, description="Max clean turns stored per session (T190).")
 
     # MinIO (object storage — Owner D owns the adapter)
     minio_endpoint: str = Field(default="localhost:9000")
