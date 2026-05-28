@@ -244,7 +244,7 @@
 
 ### Integration Tests (US1 + US2 Together)
 
-- [ ] T092 [US2] [B] Create `tests/integration/test_chat_flow.py`: Seeded tenant with 2 published pages. Chat turn asks a question. Asserts route=faq, retrieved_chunks not empty, reply contains text from a chunk, within 5s (SC-006). Asserts chunks from other tenants are NOT retrieved (RLS gate).
+- [X] T092 [US2] [B] Create `tests/integration/test_chat_flow.py`: Seeded tenant with 2 published pages. Chat turn asks a question. Asserts route=faq, retrieved_chunks not empty, reply contains text from a chunk, within 5s (SC-006). Asserts chunks from other tenants are NOT retrieved (RLS gate).
 
 **Checkpoint**: US1 + US2 complete and independently testable. Admin can manage content; agent retrieves from published pages only. Unpublished/draft pages do NOT leak to agent. Chunks deleted when page unpublished.
 
@@ -348,7 +348,7 @@
 
 ### Integration Tests
 
-- [ ] T121 [US5] [B] Create `tests/integration/test_leads_flow.py`: Seed tenant A + B; capture leads on A; list leads from A context → assert only A's leads returned. List leads from B context → assert 0 leads. Export → CSV format correct.
+- [X] T121 [US5] [B] Create `tests/integration/test_leads_flow.py`: Seed tenant A + B; capture leads on A; list leads from A context → assert only A's leads returned. List leads from B context → assert 0 leads. Export → CSV format correct.
 
 **Checkpoint**: Leads view functional. Tenant isolation verified. Leads exported for CRM integration.
 
