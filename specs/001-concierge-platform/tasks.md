@@ -430,11 +430,11 @@
 
 - [X] T140 [P] [C] Create `tests/evals/redteam/injection.jsonl`: 10+ prompt-injection probes; each row: {"message": "...", "expected_action": "refuse|redact"}
 - [X] T141 [P] [C] Create `tests/evals/redteam/cross_tenant.jsonl`: 5+ cross-tenant probes; visitor on Tenant A asks a question only answered in Tenant B's content; expected: agent refuses or returns "I don't know" (does NOT leak Tenant B content)
-- [ ] T142 [P] [C] Create `tests/evals/redteam/test_redteam.py`: Runs each probe; asserts injection probes are refused ≥ 95% (or 100% for critical ones), cross-tenant probes are 100% refused. Exits non-zero on regression.
+- [X] T142 [P] [C] Create `tests/evals/redteam/test_redteam.py`: Runs each probe; asserts injection probes are refused ≥ 95% (or 100% for critical ones), cross-tenant probes are 100% refused. Exits non-zero on regression.
 
 ### PII Redaction Canary Test
 
-- [ ] T143 [C] Create `tests/evals/redteam/test_pii_canary.py`: Pastes a synthetic fake API key + credit card into a chat turn. Asserts the fake credential NEVER appears unredacted in: logs, traces, Redis session memory, LLM input payload, guardrails sidecar input. Runs on every CI run. 100% pass rate required (SC-008).
+- [X] T143 [C] Create `tests/evals/redteam/test_pii_canary.py`: Pastes a synthetic fake API key + credit card into a chat turn. Asserts the fake credential NEVER appears unredacted in: logs, traces, Redis session memory, LLM input payload, guardrails sidecar input. Runs on every CI run. 100% pass rate required (SC-008).
 
 ### Chunker Bake-Off, Reranker A/B, Memory TTL (Owner B addendum, 2026-05-27)
 
@@ -467,7 +467,7 @@ These tasks operationalise `research.md §1a` (3-way chunker bake-off),
 - [ ] T148 [A] Create CI assertion: Modelserver boot-time artifact hash verification; model_card.yaml's artifact_sha256 is computed on boot and compared (FR-023); mismatch = process exits 1 (asserted in smoke test).
 - [ ] T149 [A] Implement tenant_id derivation only from JWT/credential; TenantContextMiddleware rejects requests where body claims a different tenant (FR-007/008). Integration test: POST `/chat` with JWT claiming Tenant A but body claiming Tenant B → assert 403 or JWT tenant wins.
 - [X] T150 [B] Implement pgvector query-time filtering (NOT post-filter): ChunkRepository.QueryChunks includes `WHERE tenant_id = :tenant_id AND cms_page.state = 'published'` in the SQL query sent to Postgres; planner applies tenant_id filter before vector ANN. Integration test verifies via EXPLAIN ANALYZE (FR-017).
-- [ ] T151 [C] Implement service-to-service Vault credential: modelserver and guardrails sidecar receive X-Service-Token header on every request from API; token issued from Vault and rotated per Vault policy. Integration test: unauthorized calls return 401 (FR-036).
+- [X] T151 [C] Implement service-to-service Vault credential: modelserver and guardrails sidecar receive X-Service-Token header on every request from API; token issued from Vault and rotated per Vault policy. Integration test: unauthorized calls return 401 (FR-036). _(guardrails sidecar: `tests/integration/test_guardrails_service_token.py`; modelserver: `services/modelserver/app.py` + `tests/integration/test_modelserver_service_token.py`.)_
 - [X] T152 [B] Implement tenant persona injection at runtime: prompts/system_agent.md uses {{persona_summary}} placeholder; at agent invocation, extract tenant.persona_config and render the prompt. Test: two tenants with different personas → agent replies reflect the respective personas (FR-025, Constitution VII).
 
 ### Import Linter Rule (Clean Architecture Gate)
@@ -503,9 +503,9 @@ These tasks operationalise `research.md §1a` (3-way chunker bake-off),
 - [X] T169 [B] ~~Implement reranker call in rag_search (if enabled): top-20 vector results → reranker API (Voyage / Cohere) → top-5. Graceful fallback to top-5 by vector score if reranker unavailable.~~ **(superseded: shipped in `backend/app/use_cases/rag_search.py`; A/B ship-rule harness in T183)**
 - [ ] T170 [D] Build Streamlit admin UI pages (1_dashboard, 2_cms, 3_leads, 4_settings, 5_embed_snippet); wire to FastAPI backend. Dashboard: aggregate stats (conversation count, lead count, avg response time). CMS: CRUD table view. Leads: sortable table + export button. Settings: persona / theme / origins / guardrails. Embed snippet: copy-to-clipboard.
 - [ ] T171 [D] Build React widget pages (App, Chat, Consent notice, Reconnect spinner). Socket/polling for token refresh. Inline iframe communication. Dark mode toggle (optional).
-- [ ] T172 [C] Wire NeMo Guardrails sidecar: platform rails locked (YAML config, no code mutation). Tenant rails templated from DB at boot. Both layers applied on ingress (visitor input, tool input) and egress (agent output, tool output).
+- [X] T172 [C] Wire NeMo Guardrails sidecar: platform rails locked (YAML config, no code mutation). Tenant rails templated from DB at boot. Both layers applied on ingress (visitor input, tool input) and egress (agent output, tool output).
   - **Cross-owner coordination note (B↔C, 2026-05-28)**: the sidecar is Owner C's, but the *call-site* that routes the agent's ingress/egress through it lives in Owner B's `backend/app/use_cases/agent_turn.py` (currently `self._llm.call(...)` is a direct Anthropic call with no guardrails wrapping). When T172 lands, B and C pair to inject the `GuardrailsClient` protocol into the agent loop and call `/check` on visitor input + tool input (ingress) and agent output + tool output (egress) around the LLM call. Tracked here under T172, not as a separate B task, per owner decision.
-- [ ] T173 [C] Implement PII redaction middleware: calls guardrails sidecar `/check` with role='visitor_input' / 'agent_output' before logging, caching, or outbound API calls. Redacts in-place in logs (structured field redaction), traces, Redis values, LLM input.
+- [X] T173 [C] Implement PII redaction middleware: calls guardrails sidecar `/check` with role='visitor_input' / 'agent_output' before logging, caching, or outbound API calls. Redacts in-place in logs (structured field redaction), traces, Redis values, LLM input.
 
 ### Slice B refinements (Owner B addendum, 2026-05-27)
 

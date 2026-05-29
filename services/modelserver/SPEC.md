@@ -1,7 +1,7 @@
 # Modelserver — Specification
 
 **Owner**: C (Models / Security / Guardrails)
-**Status**: deployment artifact + model card present (T130–T135 complete); container Dockerfile pending (T146/T147)
+**Status**: live. `app.py` serving with boot-time artifact hash verification (T148), X-Service-Token Vault auth (T151), and integration test (`tests/integration/test_modelserver_service_token.py`). Dockerfile + CI image-size assertion (T146/T147) pending Owner A.
 
 The modelserver is a small HTTP service that hosts the router intent classifier. It is the only place the trained model artifact runs at request time. Keeping it lean is a constitution-level constraint (Principle IV).
 
@@ -145,8 +145,8 @@ If a future comparison flips the winner (e.g. TF-IDF beats CNN on real productio
 |---|---|---|
 | T130–T134 | done | label taxonomy → classical baseline → CNN+ONNX → comparison → export |
 | T135 | done | `make eval-classifier` gate; uses the same boot-time hash checks |
-| T146 | pending [A] | Modelserver Dockerfile + base image |
+| T146 | pending [A] | CI image-size assertion (Dockerfile exists; CI assertion pending) |
 | T147 | pending [A] | CI image-size assertion ≤ 500 MB |
-| T148 | pending [A] | boot-time artifact hash verification (this SPEC's section above) |
-| T151 | pending [C] | Vault-issued service credential |
+| T148 | done | boot-time artifact hash verification (app.py _boot()) |
+| T151 | done | Vault-issued service credential + 401 enforcement + integration test |
 | T164 | done | this document |

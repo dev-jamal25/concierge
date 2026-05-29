@@ -51,6 +51,15 @@ class RedactionFilter(logging.Filter):
         if redacted != rendered:
             record.msg = redacted
             record.args = None
+        # Structured-field redaction: `extra={...}` values land as record
+        # attributes that JsonFormatter emits verbatim, so PII in a structured
+        # field would bypass the message redaction above. Redact str values of
+        # the non-standard fields in place (T173).
+        for key, value in record.__dict__.items():
+            if key in _STANDARD_RECORD_FIELDS or key.startswith("_"):
+                continue
+            if isinstance(value, str):
+                setattr(record, key, self._redactor(value))
         return True
 
 

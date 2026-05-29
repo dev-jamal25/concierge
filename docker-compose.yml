@@ -74,6 +74,7 @@ services:
       SESSION_SECRET: ${SESSION_SECRET:-change-me-in-prod}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
       GUARDRAILS_URL: http://guardrails:8002
+      MODELSERVER_URL: http://modelserver:8001
       # SERVICE_TOKEN is a dev-only fallback; api fetches it from Vault at
       # startup (T151). Leave unset in prod so Vault is the only source.
       SERVICE_TOKEN: ${SERVICE_TOKEN:-}
@@ -89,13 +90,31 @@ services:
     ports:
       - "8000:8000"
 
-  # Owner C placeholder:
-  # modelserver:
-  #   profiles: ["owner-c"]
-  #   image: busybox
-  #   command: ["sh", "-c", "echo pending Owner C modelserver && sleep infinity"]
-  #   ports:
-  #     - "8001:8001"
+  modelserver:
+    build:
+      context: ./services/modelserver
+    environment:
+      VAULT_ADDR: http://vault:8200
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_DEV_ROOT_TOKEN_ID:-dev-root-token}
+      # SERVICE_TOKEN is a dev-only fallback; real token is fetched from Vault at
+      # startup (T151). Leave unset in prod so Vault is the only source.
+      SERVICE_TOKEN: ${SERVICE_TOKEN:-}
+    depends_on:
+      vault:
+        condition: service_started
+    ports:
+      - "8001:8001"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/healthz', timeout=2)",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   guardrails:
     build:
@@ -106,9 +125,18 @@ services:
       # SERVICE_TOKEN env is a dev-only fallback; the real token is fetched
       # from Vault at startup (T151).
       SERVICE_TOKEN: ${SERVICE_TOKEN:-}
+      # Read-only cross-tenant DSN for loading tenants.guardrail_config at boot
+      # (T172). asyncpg needs a native postgresql:// URL (no +asyncpg). Dev uses
+      # concierge_manager (the only existing role with cross-tenant SELECT).
+      # PROD HARDENING (Owner A coordination): provision a dedicated SELECT-only
+      # `concierge_guardrails` role + SELECT-all RLS policy on tenants, and point
+      # this URL at it so the security sidecar cannot write tenant rows.
+      GUARDRAILS_DATABASE_URL: postgresql://concierge_manager:${CONCIERGE_MANAGER_PASSWORD:-concierge_manager}@postgres:5432/${POSTGRES_DB:-concierge}
     depends_on:
       vault:
         condition: service_started
+      postgres:
+        condition: service_healthy
     ports:
       - "8002:8002"
     healthcheck:
