@@ -74,7 +74,7 @@ services:
       SESSION_SECRET: ${SESSION_SECRET:-change-me-in-prod}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
       GUARDRAILS_URL: http://guardrails:8002
-      MODELSERVER_URL: http://modelserver:8001
+      CLASSIFIER_URL: http://modelserver:8001
       # SERVICE_TOKEN is a dev-only fallback; api fetches it from Vault at
       # startup (T151). Leave unset in prod so Vault is the only source.
       SERVICE_TOKEN: ${SERVICE_TOKEN:-}
@@ -89,6 +89,17 @@ services:
         condition: service_started
     ports:
       - "8000:8000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2)",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   modelserver:
     build:

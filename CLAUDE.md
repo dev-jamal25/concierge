@@ -26,3 +26,7 @@ Rules:
 
 # Owner A skills
 Use `.claude/skills/tenant-isolation-auditor/SKILL.md` before and after Owner A tenancy/RLS/provisioning changes.
+
+# Project skills
+## 🛡️ Quality Assurance & Auditing (Phase Transition)
+When asked to "run QA", "audit the project", or begin the quality assurance phase, you must **NOT** attempt to manually review or modify the codebase yourself. Instead, you must strictly delegate the entire process by invoking the custom skill located at `.claude/skills/full-project-qa-auditor/SKILL.md`. This will correctly initialize the read-only Orchestrator and the multi-agent testing pipeline.
