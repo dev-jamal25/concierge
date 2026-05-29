@@ -30,6 +30,7 @@ from app.frameworks.api.deps import (
     db_session,
     get_app_settings,
     get_current_widget_tenant_id,
+    get_guardrails_client,
     get_session_store,
 )
 from app.frameworks.config import Settings
@@ -126,7 +127,10 @@ def _build_context(session: AsyncSession, settings: Settings, session_store: Ses
     )
     escalate = EscalateUseCase(conv_repo)
     capture_lead = CaptureLeadUseCase(lead_repo)
-    agent_turn = AgentTurnUseCase(llm_client, rag, capture_lead, escalate, embedding_client)
+    agent_turn = AgentTurnUseCase(
+        llm_client, rag, capture_lead, escalate, embedding_client,
+        guardrails=get_guardrails_client(),
+    )
     classify = ClassifyMessageUseCase(classifier)
     memory = SessionMemory(
         session_store,
