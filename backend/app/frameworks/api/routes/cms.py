@@ -13,14 +13,12 @@ State machine:
 
 from __future__ import annotations
 
-import csv
-import io
 from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from sqlalchemy import delete, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.adapters.embeddings.hosted_embeddings import HostedEmbeddings

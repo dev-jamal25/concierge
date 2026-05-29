@@ -21,13 +21,11 @@ Run:
 from __future__ import annotations
 
 import json
-import os
 import pathlib
 import uuid
 from uuid import UUID
 
 import pytest
-import yaml
 
 from tests.evals.rag.test_rag_quality import _PAGE_BODIES
 
@@ -145,7 +143,7 @@ async def test_reranker_ab(reranker_tenant) -> None:
     engine = reranker_tenant["engine"]
     settings = reranker_tenant["settings"]
 
-    rows = [json.loads(l) for l in GOLDEN.read_text().splitlines() if l.strip()]
+    rows = [json.loads(line) for line in GOLDEN.read_text().splitlines() if line.strip()]
 
     # Pass B — no reranker (always runs)
     hit_no_rerank = await _hit_at_5(rows, page_ids, tenant_id, engine, settings,
@@ -165,16 +163,16 @@ async def test_reranker_ab(reranker_tenant) -> None:
         delta = None
         print("\n  RERANKER_URL not set — running no-reranker pass only")
 
-    print(f"\n=== Reranker A/B Results ===")
+    print("\n=== Reranker A/B Results ===")
     print(f"  hit@5 (no reranker):  {hit_no_rerank:.3f}")
     if hit_rerank is not None:
         print(f"  hit@5 (with reranker):{hit_rerank:.3f}")
         print(f"  delta:                {delta:+.3f}  (ship-rule threshold: +{_SHIP_RULE_DELTA})")
         if delta < _SHIP_RULE_DELTA:
             print(f"\n  ⚠ RECOMMENDATION: reranker lifts hit@5 by only {delta:.3f} < {_SHIP_RULE_DELTA}.")
-            print(f"  Consider setting RERANKER_URL unset in v1 (disable reranker to save cost/latency).")
+            print("  Consider setting RERANKER_URL unset in v1 (disable reranker to save cost/latency).")
         else:
-            print(f"\n  ✓ Reranker passes ship-rule — recommend enabling in production.")
+            print("\n  ✓ Reranker passes ship-rule — recommend enabling in production.")
 
     # Update DECISIONS.md entry #3 if still unpopulated
     decisions_text = DECISIONS_MD.read_text(encoding="utf-8")

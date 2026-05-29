@@ -43,7 +43,6 @@ _CHUNKERS = ["fixed_500", "paragraph_aware", "header_first"]
 
 @pytest.fixture(scope="module")
 async def eval_engine():
-    import os
 
     from sqlalchemy import text
     from sqlalchemy.ext.asyncio import create_async_engine
@@ -172,7 +171,7 @@ def _pick_winner(results: list[dict], recall_threshold: float, latency_cap_ms: f
 @pytest.mark.asyncio
 async def test_chunker_bakeoff(eval_engine) -> None:
     engine, settings = eval_engine
-    rows = [json.loads(l) for l in GOLDEN.read_text().splitlines() if l.strip()]
+    rows = [json.loads(line) for line in GOLDEN.read_text().splitlines() if line.strip()]
     thresholds = yaml.safe_load(THRESHOLDS.read_text())
     recall_threshold = thresholds["rag_golden_set_recall_at_5"]
 
@@ -204,7 +203,6 @@ async def test_chunker_bakeoff(eval_engine) -> None:
 
     # Append to DECISIONS.md if Entry #1.5 not already populated
     decisions_text = DECISIONS_MD.read_text(encoding="utf-8")
-    entry_marker = "## Entry #1.5 — Chunker variant"
     if "To be populated" in decisions_text:
         entry_content = (
             f"\n**Date**: 2026-05-28\n"

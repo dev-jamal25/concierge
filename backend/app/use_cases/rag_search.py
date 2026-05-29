@@ -69,7 +69,6 @@ class RAGSearchUseCase:
                 )
                 resp.raise_for_status()
                 results = resp.json()["results"]
-                ordered = sorted(results, key=lambda r: r["index"])
                 top_indices = [r["index"] for r in sorted(results, key=lambda r: r["relevance_score"], reverse=True)[:5]]
                 return [candidates[i] for i in top_indices]
         except Exception:

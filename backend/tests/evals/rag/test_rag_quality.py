@@ -143,7 +143,6 @@ Scheduled email delivery supports daily, weekly, or monthly cadences.
 @pytest.fixture(scope="module")
 async def seeded_tenant(request):
     """Create a tenant, seed 8 CMS pages, embed+index them. Skip if unavailable."""
-    import os
 
     from sqlalchemy import text
     from sqlalchemy.ext.asyncio import create_async_engine
@@ -198,9 +197,6 @@ async def seeded_tenant(request):
     # Embed and index chunks
     from app.use_cases.reindex_tenant_chunks import ReindexTenantChunksUseCase
 
-    async with engine.begin() as conn:
-        session_factory = engine
-
     from sqlalchemy.ext.asyncio import AsyncSession
 
     async with AsyncSession(engine) as db_session:
@@ -240,7 +236,7 @@ async def test_rag_recall_mrr_grounding(seeded_tenant) -> None:
     from app.adapters.repositories.chunk_repository import PostgresChunkRepository
     from app.use_cases.rag_search import RAGSearchUseCase
 
-    rows = [json.loads(l) for l in GOLDEN.read_text().splitlines() if l.strip()]
+    rows = [json.loads(line) for line in GOLDEN.read_text().splitlines() if line.strip()]
     thresholds = yaml.safe_load(THRESHOLDS.read_text())
     recall_threshold = thresholds["rag_golden_set_recall_at_5"]
     grounded_threshold = thresholds["rag_golden_set_answer_grounded_rate"]
@@ -296,7 +292,7 @@ async def test_rag_recall_mrr_grounding(seeded_tenant) -> None:
     mrr = sum(reciprocal_ranks) / n
     answer_grounded_rate = grounded / n
 
-    print(f"\n=== RAG Quality Eval ===")
+    print("\n=== RAG Quality Eval ===")
     print(f"n={n}")
     print(f"  recall@5:            {recall_at_5:.4f}  (threshold={recall_threshold})")
     print(f"  MRR:                 {mrr:.4f}")
