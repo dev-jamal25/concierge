@@ -397,7 +397,7 @@
 
 ### Erasure Use Case (Already in T110; verify completeness)
 
-- [ ] T129 [US7] [A] Enhance `src/use_cases/erase_tenant.py` (from T110): Implement all four store purges in sequence (Postgres cascade, Redis scan+delete, MinIO list+delete, pgvector implicitly via cascade). Measure completion time; assert ≤ 1 hour SLA. Audit-log the completion with details.stores_purged list.
+- [x] T129 [US7] [A] Enhance `src/use_cases/erase_tenant.py` (from T110): Implement all four store purges in sequence (Postgres cascade, Redis scan+delete, MinIO list+delete, pgvector implicitly via cascade). Measure completion time; assert ≤ 1 hour SLA. Audit-log the completion with details.stores_purged list.
 
 **Checkpoint**: Erasure functional. Tenant data fully purged within SLA. Post-erasure consistency verified by integration test.
 

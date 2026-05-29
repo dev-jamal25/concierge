@@ -21,6 +21,7 @@ Requires-Dist: redis[hiredis]>=5.0
 Requires-Dist: anthropic>=0.28
 Requires-Dist: voyageai>=0.2
 Requires-Dist: jinja2>=3.1
+Requires-Dist: minio>=7.2
 Provides-Extra: dev
 Requires-Dist: import-linter>=2.0; extra == "dev"
 Requires-Dist: pytest>=8.2; extra == "dev"

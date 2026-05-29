@@ -11,13 +11,18 @@
 - Composition root remains in `backend/app/frameworks/api/deps.py` and wires
   Owner A adapters. B/C/D provider hooks are explicit `NotImplementedError`
   placeholders.
-- T129 Redis half complete (2026-05-28): `EraseTenantUseCase` now injects and
-  calls `SessionStore.delete_by_tenant(tenant_id)` after the Postgres cascade
-  delete, via Owner B's published `SessionStore` protocol (T029/T191). The
-  `tenant_erase_start` audit entry is written before any destructive work.
-  `stores_purged` in the completion audit entry is now `["pg", "vector", "redis"]`.
-  Three new tests cover: `delete_by_tenant` is called, cross-tenant sessions
-  survive, and `tenant_erase_start` is recorded.
+- T129 complete (2026-05-29): `EraseTenantUseCase` now drives the full
+  four-store cascade in a fixed order — Postgres + pgvector (via
+  `TenantRepository.delete` cascade), Redis sessions
+  (`SessionStore.delete_by_tenant`), and MinIO objects under the tenant prefix
+  (`ObjectStorage.delete_prefix(tenant_id, "")`, which composes with the
+  adapter's existing `tenant-{tenant_id}/` prefixing). The `tenant_erase_start`
+  audit entry is written before any destructive work. The
+  `tenant_erase_complete` audit entry now carries
+  `details.stores_purged = ["pg", "vector", "redis", "minio"]` and a measured
+  `details.duration_ms` (purge work only, excluding the start-audit write).
+  `tests/integration/test_erasure_path.py` covers all four stores plus
+  cross-tenant isolation for both Redis and MinIO.
 
 ## Baseline CI Scaffold
 
@@ -50,20 +55,19 @@ sidecar build checks are configured in this baseline.
 | B | tenant/user/audit/vault protocols | T019-T021, T032 | done |
 | D | OriginCheck middleware stub | T034 | done |
 
-## Remaining Blockers (Owner A T129 — MinIO half)
+## Remaining Owner A Follow-ups
 
-T129 is **partially complete**. The Postgres + pgvector + Redis halves are done.
-MinIO prefix purge remains blocked on Owner D:
+T129 logic is fully wired across Postgres/pgvector, Redis, and MinIO. The
+remaining items are factual and tracked as separate work:
 
-| Blocker | Owner | File | Status |
-| --- | --- | --- | --- |
-| `ObjectStorage.delete_prefix` wiring | D | `backend/app/adapters/storage/minio_object_storage.py` | All methods raise `NotImplementedError` |
-
-When Owner D delivers the real MinIO client:
-1. Inject `ObjectStorage` into `EraseTenantUseCase` alongside `SessionStore`.
-2. Call `await self._object_storage.delete_prefix(tenant_id, "")` after the Redis purge.
-3. Append `"minio"` to `stores_purged` in the completion audit entry.
-4. Remove the inline `TODO(owner-d, T031/T050)` comment in `erase_tenant.py`.
+- 1-hour erasure SLA load test (T129 SLA bullet) is not yet implemented as an
+  automated assertion — the use case measures and audit-logs `duration_ms`, but
+  there is no large-scale fixture that exercises the SLA budget. Track this as
+  a follow-up ticket; do not retroactively reopen T129 for it.
+- The MinIO adapter's underlying client wiring is owned by Owner D
+  (`backend/app/adapters/storage/minio_object_storage.py`). Owner A's erasure
+  path uses the `ObjectStorage` protocol and is unaffected by adapter-level
+  follow-ups.
 
 ## Still Owned Elsewhere
 

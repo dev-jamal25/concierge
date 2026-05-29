@@ -193,6 +193,7 @@ class ManagerContext:
 async def get_manager_context(
     session: AsyncSession = Depends(manager_db_session),
     session_store: SessionStore = Depends(get_session_store),
+    object_storage: MinIOObjectStorage = Depends(get_object_storage),
 ) -> ManagerContext:
     """Builds all Owner-A repos + use cases on ONE concierge_manager session so a
     provisioning request (tenant + widget + origins + invitation + audit) commits
@@ -211,7 +212,7 @@ async def get_manager_context(
         accept_url_base=settings.public_base_url,
     )
     provision = ProvisionTenantUseCase(tenants, audit, invite)
-    erase = EraseTenantUseCase(tenants, audit, session_store)
+    erase = EraseTenantUseCase(tenants, audit, session_store, object_storage)
     return ManagerContext(
         session=session,
         tenants=tenants,
