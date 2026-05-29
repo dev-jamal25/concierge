@@ -6,7 +6,7 @@ dataset:
   source: clinc/clinc_oos
   config: plus
   csv_path: notebooks/data/clinc150_mapped.csv
-  sha256: b3d6ec9b0ece4493f7d22d7d8f150acb423e2172f4221fb0837ef17e96c95f27
+  sha256: b30d1f4eeb021b74acfd305ae810bf6962a7fbbd44c3283a4028f48f6eb1e7a1
 candidates:
 - name: tfidf_logreg
   macro_f1: 0.8328625293192131

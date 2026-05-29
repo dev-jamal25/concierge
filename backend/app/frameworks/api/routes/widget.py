@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 from uuid import UUID
 
 import jwt
 from fastapi import APIRouter, Depends, Header, HTTPException, Response, status
-from fastapi.responses import HTMLResponse, PlainTextResponse
+from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,6 +27,66 @@ from app.use_cases.issue_widget_token import (
 
 router = APIRouter(tags=["widget"])
 bearer = HTTPBearer(auto_error=False)
+_ROUTE_FILE = Path(__file__).resolve()
+_WIDGET_DIST_CANDIDATES = (
+    _ROUTE_FILE.parents[5] / "widget" / "dist",
+    _ROUTE_FILE.parents[4] / "widget" / "dist",
+    Path.cwd() / "widget" / "dist",
+    Path.cwd().parent / "widget" / "dist",
+)
+_FALLBACK_WIDGET_JS = """
+(function () {
+  var script = document.currentScript;
+  if (!script) return;
+  var widgetId = script.dataset.widgetId;
+  if (!widgetId) return;
+  var apiBase = script.dataset.apiBase || new URL(script.src).origin;
+  var origin = window.location.origin;
+  fetch(apiBase + "/widget/token", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ widget_id: widgetId, origin: origin })
+  })
+    .then(function (response) {
+      if (!response.ok) throw new Error("token");
+      return response.json();
+    })
+    .then(function (issued) {
+      return fetch(apiBase + "/widget/config", {
+        headers: { authorization: "Bearer " + issued.token }
+      }).then(function (response) {
+        if (!response.ok) throw new Error("config");
+        return response.json().then(function (config) {
+          return { token: issued.token, config: config };
+        });
+      });
+    })
+    .then(function (bootstrap) {
+      var iframe = document.createElement("iframe");
+      iframe.src = apiBase + "/widget/?widget_id=" + encodeURIComponent(widgetId);
+      iframe.title = "Concierge chat";
+      iframe.sandbox.add("allow-scripts", "allow-forms", "allow-same-origin");
+      iframe.referrerPolicy = "strict-origin";
+      iframe.style.position = "fixed";
+      iframe.style.right = "20px";
+      iframe.style.bottom = "20px";
+      iframe.style.width = "380px";
+      iframe.style.height = "560px";
+      iframe.style.border = "0";
+      iframe.style.zIndex = "2147483647";
+      iframe.addEventListener("load", function () {
+        iframe.contentWindow.postMessage(
+          { type: "concierge.bootstrap", token: bootstrap.token, config: bootstrap.config },
+          apiBase
+        );
+      });
+      document.body.appendChild(iframe);
+    })
+    .catch(function () {
+      console.warn("Concierge widget unavailable for this origin");
+    });
+})();
+""".strip()
 
 
 class WidgetTokenRequest(BaseModel):
@@ -45,6 +106,11 @@ class WidgetConfigResponse(BaseModel):
     consent_notice: str
 
 
+@router.options("/widget/token", include_in_schema=False)
+async def widget_token_options(origin: str | None = Header(default=None)) -> Response:
+    return _preflight_response(origin, "POST,OPTIONS")
+
+
 @router.post("/widget/token", response_model=WidgetTokenResponse)
 async def issue_widget_token(
     body: WidgetTokenRequest,
@@ -62,6 +128,11 @@ async def issue_widget_token(
 
     _allow_origin(response, body.origin)
     return WidgetTokenResponse(token=issued.token, expires_in_seconds=issued.expires_in_seconds)
+
+
+@router.options("/widget/config", include_in_schema=False)
+async def widget_config_options(origin: str | None = Header(default=None)) -> Response:
+    return _preflight_response(origin, "GET,OPTIONS")
 
 
 @router.get("/widget/config", response_model=WidgetConfigResponse)
@@ -101,11 +172,30 @@ async def get_widget_config(
 
 
 @router.get("/widget.js", response_class=PlainTextResponse, include_in_schema=False)
-async def widget_loader_js() -> PlainTextResponse:
+async def widget_loader_js() -> Response:
+    dist = _widget_dist_dir()
+    if dist is not None:
+        loader = dist / "widget.js"
+        if loader.is_file():
+            return FileResponse(loader, media_type="application/javascript")
+
     return PlainTextResponse(
-        'console.info("Concierge widget loader route is ready");',
+        _FALLBACK_WIDGET_JS,
         media_type="application/javascript",
     )
+
+
+@router.get("/widget/assets/{asset_path:path}", include_in_schema=False)
+async def widget_asset(asset_path: str) -> FileResponse:
+    dist = _widget_dist_dir()
+    if dist is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "widget assets not built")
+
+    assets_root = (dist / "assets").resolve()
+    asset = (assets_root / asset_path).resolve()
+    if not asset.is_file() or assets_root not in asset.parents:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "widget asset not found")
+    return FileResponse(asset)
 
 
 @router.get("/widget/", response_class=HTMLResponse, include_in_schema=False)
@@ -120,8 +210,32 @@ async def widget_iframe(
         origins = await widgets.list_allowed_origins(widget.tenant_id)
         frame_ancestors = " ".join(origin.origin for origin in origins) or "'none'"
 
-    response = HTMLResponse("<!doctype html><div id='root'>Concierge widget</div>")
+    dist = _widget_dist_dir()
+    index = dist / "index.html" if dist is not None else None
+    if index is not None and index.is_file():
+        response = FileResponse(index, media_type="text/html")
+    else:
+        response = HTMLResponse(
+            "<!doctype html><html><body><div id='root'>Concierge widget</div></body></html>"
+        )
     response.headers["Content-Security-Policy"] = f"frame-ancestors {frame_ancestors}"
+    return response
+
+
+def _widget_dist_dir() -> Path | None:
+    for candidate in _WIDGET_DIST_CANDIDATES:
+        if candidate.is_dir():
+            return candidate
+    return None
+
+
+def _preflight_response(origin: str | None, methods: str) -> Response:
+    if origin is None:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "missing origin")
+    response = Response(status_code=status.HTTP_204_NO_CONTENT)
+    _allow_origin(response, origin)
+    response.headers["Access-Control-Allow-Methods"] = methods
+    response.headers["Access-Control-Max-Age"] = "300"
     return response
 
 

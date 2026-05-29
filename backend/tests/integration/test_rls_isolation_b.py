@@ -15,6 +15,7 @@ from __future__ import annotations
 from uuid import uuid4
 
 import pytest
+import pytest_asyncio
 from sqlalchemy import text
 
 pytestmark = [pytest.mark.asyncio, pytest.mark.integration]
@@ -58,7 +59,7 @@ async def _seed(owner_engine) -> None:  # type: ignore[type-arg]
             await conn.execute(
                 text(
                     "INSERT INTO chunks (id, tenant_id, cms_page_id, chunk_index, content, embedding) "
-                    "VALUES (gen_random_uuid(), :tid, :pid, 0, 'text', :emb::vector) ON CONFLICT DO NOTHING"
+                    "VALUES (gen_random_uuid(), :tid, :pid, 0, 'text', CAST(:emb AS vector)) ON CONFLICT DO NOTHING"
                 ),
                 {"tid": str(tid), "pid": str(pid), "emb": zero_vec},
             )
@@ -95,7 +96,7 @@ async def _set_tenant(conn, tenant_id) -> None:  # type: ignore[type-arg]
     await conn.execute(text(f"SET LOCAL app.tenant_id = '{tenant_id}'"))
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest_asyncio.fixture(scope="module", autouse=True)
 async def seed(owner_engine):  # type: ignore[no-untyped-def]
     await _seed(owner_engine)
 

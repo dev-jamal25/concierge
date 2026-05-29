@@ -3,6 +3,7 @@
 GET/PUT /admin/tenant       — persona, theme, plan settings
 GET/PUT /admin/guardrails   — tenant-scoped rails (platform rails read-only; cannot be weakened)
 GET/POST/DELETE /admin/origins — allowed origins management
+GET /admin/widget           — widget public_id for embed snippet
 GET /admin/escalations      — list escalated conversations for this tenant
 
 All endpoints require an authenticated tenant_admin (tenant_id from JWT).
@@ -11,6 +12,7 @@ Platform-rail weakening → 403 + audit-logged (enforced by UpdateGuardrailConfi
 
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from typing import Any
 from uuid import UUID
@@ -20,10 +22,24 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.frameworks.api.deps import db_session, get_current_tenant_id
-from app.frameworks.db.models import ConversationModel, TenantModel
+from app.entities.user import UserRole
+from app.frameworks.api.deps import db_session
+from app.frameworks.api.session_auth import get_principal
+from app.frameworks.db.models import AllowedOriginModel, ConversationModel, TenantModel, WidgetModel
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+# --- Admin Tenant ID Dependency (from session token) ---
+
+
+def get_admin_tenant_id(principal=Depends(get_principal)) -> str:
+    """Extract tenant_id from session token for admin endpoints."""
+    if principal.role is not UserRole.TENANT_ADMIN:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "tenant_admin role required")
+    if principal.tenant_id is None:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Admin role requires tenant_id")
+    return principal.tenant_id
 
 
 # --- Schemas (per api.openapi.yaml) ---
@@ -67,12 +83,19 @@ class EscalatedConversation(BaseModel):
     escalation_reason: str | None = None
 
 
+class WidgetInfoOut(BaseModel):
+    """Public widget info for embed snippet (no secrets)."""
+
+    widget_id: str
+    is_enabled: bool
+
+
 # --- /admin/tenant ---
 
 
 @router.get("/tenant", response_model=TenantSettings)
 async def get_tenant_settings(
-    tenant_id_str: str = Depends(get_current_tenant_id),
+    tenant_id_str: str = Depends(get_admin_tenant_id),
     session: AsyncSession = Depends(db_session),
 ) -> TenantSettings:
     tenant_id = UUID(tenant_id_str)
@@ -95,7 +118,7 @@ async def get_tenant_settings(
 @router.put("/tenant", response_model=TenantSettings)
 async def update_tenant_settings(
     body: TenantSettingsUpdate,
-    tenant_id_str: str = Depends(get_current_tenant_id),
+    tenant_id_str: str = Depends(get_admin_tenant_id),
     session: AsyncSession = Depends(db_session),
 ) -> TenantSettings:
     tenant_id = UUID(tenant_id_str)
@@ -132,7 +155,7 @@ _PLATFORM_RAILS = {"injection_defense", "jailbreak_defense", "cross_tenant_defen
 
 @router.get("/guardrails", response_model=TenantGuardrailConfig)
 async def get_guardrail_config(
-    tenant_id_str: str = Depends(get_current_tenant_id),
+    tenant_id_str: str = Depends(get_admin_tenant_id),
     session: AsyncSession = Depends(db_session),
 ) -> TenantGuardrailConfig:
     tenant_id = UUID(tenant_id_str)
@@ -154,7 +177,7 @@ async def get_guardrail_config(
 @router.put("/guardrails", response_model=TenantGuardrailConfig)
 async def update_guardrail_config(
     body: TenantGuardrailConfig,
-    tenant_id_str: str = Depends(get_current_tenant_id),
+    tenant_id_str: str = Depends(get_admin_tenant_id),
     session: AsyncSession = Depends(db_session),
 ) -> TenantGuardrailConfig:
     tenant_id = UUID(tenant_id_str)
@@ -187,37 +210,137 @@ async def update_guardrail_config(
 # --- /admin/origins ---
 
 
+def _validate_origin_format(origin: str) -> bool:
+    """Validate origin format: https?://host[:port]."""
+    pattern = r"^https?://[a-zA-Z0-9._-]+(?:\.\w+)*(?::\d{2,5})?/?$"
+    return bool(re.match(pattern, origin.strip()))
+
+
 @router.get("/origins", response_model=list[AllowedOriginOut])
 async def list_origins(
-    tenant_id_str: str = Depends(get_current_tenant_id),
+    tenant_id_str: str = Depends(get_admin_tenant_id),
     session: AsyncSession = Depends(db_session),
 ) -> list[AllowedOriginOut]:
-    # AllowedOriginModel is owned by Owner A (migration 003); stub returns empty
-    # until Owner A ships. Annotated with [B→A dependency].
-    return []
+    """List all allowed origins for the current tenant."""
+    tenant_id = UUID(tenant_id_str)
+    result = await session.execute(
+        select(AllowedOriginModel)
+        .where(AllowedOriginModel.tenant_id == tenant_id)
+        .order_by(AllowedOriginModel.created_at)
+    )
+    return [
+        AllowedOriginOut(id=row.id, tenant_id=row.tenant_id, origin=row.origin)
+        for row in result.scalars().all()
+    ]
 
 
 @router.post("/origins", response_model=AllowedOriginOut, status_code=status.HTTP_201_CREATED)
 async def add_origin(
     body: AllowedOriginCreate,
-    tenant_id_str: str = Depends(get_current_tenant_id),
+    tenant_id_str: str = Depends(get_admin_tenant_id),
     session: AsyncSession = Depends(db_session),
 ) -> AllowedOriginOut:
-    raise HTTPException(
-        status.HTTP_501_NOT_IMPLEMENTED,
-        "Origins management requires Owner A's AllowedOriginModel (T116). Not yet available.",
+    """Add a new allowed origin for the current tenant.
+    
+    Validates:
+    - Origin format (https?://host[:port])
+    - No duplicates per tenant
+    - Tenant-scoped isolation
+    """
+    tenant_id = UUID(tenant_id_str)
+    origin = body.origin.strip()
+
+    # Validate origin format
+    if not _validate_origin_format(origin):
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "Invalid origin format. Use https://host[:port] or http://host[:port]",
+        )
+
+    # Check for duplicates within this tenant
+    existing = await session.execute(
+        select(AllowedOriginModel).where(
+            AllowedOriginModel.tenant_id == tenant_id,
+            AllowedOriginModel.origin == origin,
+        )
+    )
+    if existing.scalar_one_or_none() is not None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"Origin already allowed for this tenant: {origin}",
+        )
+
+    # Create new origin record
+    new_origin = AllowedOriginModel(
+        tenant_id=tenant_id,
+        origin=origin,
+    )
+    session.add(new_origin)
+    await session.flush()
+    await session.refresh(new_origin)
+
+    return AllowedOriginOut(
+        id=new_origin.id,
+        tenant_id=new_origin.tenant_id,
+        origin=new_origin.origin,
     )
 
 
 @router.delete("/origins/{origin_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_origin(
     origin_id: UUID,
-    tenant_id_str: str = Depends(get_current_tenant_id),
+    tenant_id_str: str = Depends(get_admin_tenant_id),
     session: AsyncSession = Depends(db_session),
 ) -> None:
-    raise HTTPException(
-        status.HTTP_501_NOT_IMPLEMENTED,
-        "Origins management requires Owner A's AllowedOriginModel (T116). Not yet available.",
+    """Delete an allowed origin. Enforces tenant isolation."""
+    tenant_id = UUID(tenant_id_str)
+
+    # Find and verify ownership
+    result = await session.execute(
+        select(AllowedOriginModel).where(AllowedOriginModel.id == origin_id)
+    )
+    origin_row = result.scalar_one_or_none()
+    if origin_row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Origin not found")
+
+    # Verify tenant ownership
+    if origin_row.tenant_id != tenant_id:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Cannot delete an origin owned by another tenant",
+        )
+
+    await session.delete(origin_row)
+    await session.flush()
+
+
+# --- /admin/widget ---
+
+
+@router.get("/widget", response_model=WidgetInfoOut)
+async def get_widget_info(
+    tenant_id_str: str = Depends(get_admin_tenant_id),
+    session: AsyncSession = Depends(db_session),
+) -> WidgetInfoOut:
+    """Get widget info (public_id) for the current tenant.
+    
+    Used by the embed snippet page to auto-populate the widget ID.
+    Does not expose secrets or internal service tokens.
+    """
+    tenant_id = UUID(tenant_id_str)
+    result = await session.execute(
+        select(WidgetModel).where(WidgetModel.tenant_id == tenant_id)
+    )
+    widget_row = result.scalar_one_or_none()
+    if widget_row is None:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            "No widget provisioned for this tenant",
+        )
+
+    return WidgetInfoOut(
+        widget_id=widget_row.public_id,
+        is_enabled=widget_row.is_enabled,
     )
 
 
@@ -226,7 +349,7 @@ async def delete_origin(
 
 @router.get("/escalations", response_model=list[EscalatedConversation])
 async def list_escalations(
-    tenant_id_str: str = Depends(get_current_tenant_id),
+    tenant_id_str: str = Depends(get_admin_tenant_id),
     session: AsyncSession = Depends(db_session),
 ) -> list[EscalatedConversation]:
     tenant_id = UUID(tenant_id_str)

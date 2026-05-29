@@ -129,6 +129,18 @@ jobs:
       - name: Run public widget chat smoke test
         run: make smoke
 
+      - name: Install backend dev dependencies
+        working-directory: backend
+        run: uv sync --extra dev --locked
+
+      - name: Run modelserver service-token integration tests
+        working-directory: backend
+        env:
+          VAULT_ADDR: http://localhost:8200
+          VAULT_DEV_ROOT_TOKEN_ID: dev-root-token
+          CLASSIFIER_URL: http://localhost:8001
+        run: uv run --extra dev pytest tests/integration/test_modelserver_service_token.py -v --tb=short
+
       - name: Tear down
         if: always()
         run: docker compose down -v
@@ -198,4 +210,4 @@ jobs:
 
       - name: Run integration tests
         working-directory: backend
-        run: uv run --extra dev pytest tests/integration -v --tb=short
+        run: uv run --extra dev pytest tests/integration --ignore=tests/integration/test_modelserver_service_token.py -v --tb=short

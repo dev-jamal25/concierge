@@ -125,7 +125,7 @@ services:
       SERVICE_TOKEN: ${SERVICE_TOKEN:-}
     depends_on:
       vault:
-        condition: service_started
+        condition: service_healthy
     ports:
       - "8001:8001"
     healthcheck:
@@ -175,17 +175,37 @@ services:
       timeout: 3s
       retries: 20
 
-  # Owner D stub — replace with real Streamlit service when admin/ directory lands (T052).
   admin:
-    image: busybox
-    command: ["sh", "-c", "echo 'pending Owner D admin (T052)' && sleep infinity"]
+    build:
+      context: ./admin
+    environment:
+      ADMIN_API_BASE_URL: http://api:8000
+      ADMIN_PUBLIC_API_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
+    depends_on:
+      api:
+        condition: service_healthy
+    command:
+      [
+        "streamlit",
+        "run",
+        "app.py",
+        "--server.address=0.0.0.0",
+        "--server.port=8501",
+        "--server.headless=true",
+      ]
     ports:
       - "8501:8501"
     healthcheck:
-      test: ["CMD", "true"]
-      interval: 10s
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=2)",
+        ]
+      interval: 5s
       timeout: 3s
-      retries: 3
+      retries: 20
 
   # Owner D stub — replace with widget bundle server when widget-static/ lands (T053).
   widget-static:

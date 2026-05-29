@@ -5,49 +5,44 @@ issued from Vault. The modelserver must reject a missing or wrong token with
 401 and accept the active token with 200. `/healthz` and `/readyz` are
 unauthenticated (contract: `security: []`).
 
-The modelserver module loads `services/modelserver/app.py` by file path to
-avoid a name collision with the backend `app` package. TestClient's context
-manager triggers the startup hook which boots the ONNX model from the
-real artifacts; the service token is then overridden in-process to a known
-value to exercise the auth branch without Vault.
+These integration tests exercise the running modelserver over HTTP to avoid
+importing the ONNX runtime inside the backend test environment.
 
 Run with:
-    cd backend && uv run --extra dev --extra notebooks pytest \\
+    cd backend && uv run --extra dev pytest \
         tests/integration/test_modelserver_service_token.py -v
 """
 
 from __future__ import annotations
 
-import importlib.util
-import sys
-from pathlib import Path
-
+import hvac
+import httpx
 import pytest
-from fastapi.testclient import TestClient
 
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
-MODELSERVER_APP = PROJECT_ROOT / "services" / "modelserver" / "app.py"
+from app.frameworks.config import get_settings
 
-TOKEN = "secret-modelserver-token-for-test"
 PREDICT_BODY = {"message": "what are your opening hours?", "tenant_id": None}
 
 
-@pytest.fixture(scope="module")
-def modelserver():
-    spec = importlib.util.spec_from_file_location("modelserver_app", MODELSERVER_APP)
-    assert spec and spec.loader
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return module
+def _service_token_from_vault() -> str:
+    settings = get_settings()
+    client = hvac.Client(url=settings.vault_addr, token=settings.vault_token)
+    try:
+        resp = client.secrets.kv.v2.read_secret_version(
+            path="service/internal-token",
+            mount_point=settings.vault_kv_mount,
+            raise_on_deleted_version=False,
+        )
+    except hvac.exceptions.InvalidPath:
+        return ""
+    return str(resp["data"]["data"].get("token", ""))
 
 
 @pytest.fixture
-def client(modelserver):
-    with TestClient(modelserver.app) as c:
-        modelserver.SERVICE_TOKEN = TOKEN
+def client():
+    settings = get_settings()
+    with httpx.Client(base_url=settings.classifier_url, timeout=10.0) as c:
         yield c
-    modelserver.SERVICE_TOKEN = ""
 
 
 def test_predict_without_token_returns_401(client) -> None:
@@ -61,7 +56,9 @@ def test_predict_with_wrong_token_returns_401(client) -> None:
 
 
 def test_predict_with_valid_token_returns_200(client) -> None:
-    resp = client.post("/predict", json=PREDICT_BODY, headers={"X-Service-Token": TOKEN})
+    token = _service_token_from_vault()
+    assert token, "service token missing in Vault; modelserver auth disabled"
+    resp = client.post("/predict", json=PREDICT_BODY, headers={"X-Service-Token": token})
     assert resp.status_code == 200
     body = resp.json()
     assert body["label"] in ("spam", "faq", "lead_intent", "escalate", "ambiguous")

@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Response, status
 from jinja2 import Template
 from pydantic import BaseModel, Field
 from sqlalchemy import select
@@ -31,6 +31,7 @@ from app.frameworks.api.deps import (
     get_app_settings,
     get_current_widget_context,
     get_guardrails_client,
+    get_service_token,
     get_session_store,
 )
 from app.frameworks.config import Settings
@@ -95,6 +96,17 @@ class UpstreamUnavailableResponse(BaseModel):
     escalated: bool = True
 
 
+@router.options("/chat", include_in_schema=False)
+async def chat_options(origin: str | None = Header(default=None)) -> Response:
+    if origin is None:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "missing origin")
+    response = Response(status_code=status.HTTP_204_NO_CONTENT)
+    _allow_origin(response, origin)
+    response.headers["Access-Control-Allow-Methods"] = "POST,OPTIONS"
+    response.headers["Access-Control-Max-Age"] = "300"
+    return response
+
+
 # --- Dependency: build all B use cases per request ---
 
 
@@ -116,7 +128,7 @@ def _build_context(session: AsyncSession, settings: Settings, session_store: Ses
     )
     classifier = ModelserverClassifier(
         base_url=settings.classifier_url,
-        service_token=settings.service_token,
+        service_token=get_service_token(),
     )
     rag = RAGSearchUseCase(
         chunk_repo,
@@ -186,6 +198,7 @@ def _build_context(session: AsyncSession, settings: Settings, session_store: Ses
 )
 async def chat(
     body: ChatRequest,
+    response: Response,
     widget_context: WidgetTokenContext = Depends(get_current_widget_context),
     session: AsyncSession = Depends(db_session),
     settings: Settings = Depends(get_app_settings),
@@ -193,6 +206,7 @@ async def chat(
 ) -> ChatTurnResponse:
     tenant_id = UUID(widget_context.tenant_id)
     widget_id = UUID(widget_context.widget_id)
+    _allow_origin(response, widget_context.origin)
     ctx = _build_context(session, settings, session_store)
     conv_repo: PostgresConversationRepository = ctx["conv_repo"]
     classify: ClassifyMessageUseCase = ctx["classify"]
@@ -350,3 +364,9 @@ async def chat(
         ],
         capture_lead_status=lead_status,
     )
+
+
+def _allow_origin(response: Response, origin: str) -> None:
+    response.headers["Access-Control-Allow-Origin"] = origin
+    response.headers["Access-Control-Allow-Headers"] = "authorization,content-type,origin"
+    response.headers["Vary"] = "Origin"

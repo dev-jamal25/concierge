@@ -226,7 +226,7 @@ async def seeded_tenant(request):
                     "tid": str(tenant_id),
                     "title": f"Page {page_key[-4:]}",
                     "body": body,
-                    "slug": f"page-{page_key[-4:]}",
+                    "slug": f"page-{page_key[:2]}{page_key[-4:]}",
                 },
             )
 

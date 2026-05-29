@@ -19,7 +19,7 @@ def _engine(url: str):
     return create_async_engine(url, poolclass=NullPool, future=True)
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(scope="module")
 async def owner_engine():
     settings = get_settings()
     eng = _engine(settings.migration_database_url)

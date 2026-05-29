@@ -1,16 +1,16 @@
 # Graph Report - concierge  (2026-05-30)
 
 ## Corpus Check
-- 290 files · ~197,137 words
+- 293 files · ~199,691 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 5865 nodes · 9156 edges · 417 communities (342 shown, 75 thin omitted)
-- Extraction: 76% EXTRACTED · 24% INFERRED · 0% AMBIGUOUS · INFERRED: 2162 edges (avg confidence: 0.56)
+- 5929 nodes · 9334 edges · 408 communities (332 shown, 76 thin omitted)
+- Extraction: 77% EXTRACTED · 23% INFERRED · 0% AMBIGUOUS · INFERRED: 2191 edges (avg confidence: 0.56)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `c2b3e752`
+- Built from commit: `e988ee98`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -290,6 +290,12 @@
 - [[_COMMUNITY_Community 276|Community 276]]
 - [[_COMMUNITY_Community 277|Community 277]]
 - [[_COMMUNITY_Community 278|Community 278]]
+- [[_COMMUNITY_Community 282|Community 282]]
+- [[_COMMUNITY_Community 283|Community 283]]
+- [[_COMMUNITY_Community 284|Community 284]]
+- [[_COMMUNITY_Community 285|Community 285]]
+- [[_COMMUNITY_Community 286|Community 286]]
+- [[_COMMUNITY_Community 287|Community 287]]
 - [[_COMMUNITY_Community 318|Community 318]]
 - [[_COMMUNITY_Community 319|Community 319]]
 - [[_COMMUNITY_Community 320|Community 320]]
@@ -353,37 +359,27 @@
 - [[_COMMUNITY_Community 378|Community 378]]
 - [[_COMMUNITY_Community 379|Community 379]]
 - [[_COMMUNITY_Community 380|Community 380]]
-- [[_COMMUNITY_Community 381|Community 381]]
 - [[_COMMUNITY_Community 382|Community 382]]
 - [[_COMMUNITY_Community 383|Community 383]]
-- [[_COMMUNITY_Community 384|Community 384]]
-- [[_COMMUNITY_Community 385|Community 385]]
 - [[_COMMUNITY_Community 386|Community 386]]
 - [[_COMMUNITY_Community 387|Community 387]]
-- [[_COMMUNITY_Community 388|Community 388]]
 - [[_COMMUNITY_Community 389|Community 389]]
 - [[_COMMUNITY_Community 390|Community 390]]
 - [[_COMMUNITY_Community 391|Community 391]]
 - [[_COMMUNITY_Community 392|Community 392]]
 - [[_COMMUNITY_Community 393|Community 393]]
 - [[_COMMUNITY_Community 394|Community 394]]
-- [[_COMMUNITY_Community 395|Community 395]]
 - [[_COMMUNITY_Community 396|Community 396]]
 - [[_COMMUNITY_Community 397|Community 397]]
 - [[_COMMUNITY_Community 398|Community 398]]
 - [[_COMMUNITY_Community 399|Community 399]]
-- [[_COMMUNITY_Community 400|Community 400]]
 - [[_COMMUNITY_Community 401|Community 401]]
 - [[_COMMUNITY_Community 402|Community 402]]
-- [[_COMMUNITY_Community 403|Community 403]]
 - [[_COMMUNITY_Community 404|Community 404]]
-- [[_COMMUNITY_Community 405|Community 405]]
 - [[_COMMUNITY_Community 406|Community 406]]
 - [[_COMMUNITY_Community 407|Community 407]]
 - [[_COMMUNITY_Community 408|Community 408]]
 - [[_COMMUNITY_Community 409|Community 409]]
-- [[_COMMUNITY_Community 410|Community 410]]
-- [[_COMMUNITY_Community 411|Community 411]]
 - [[_COMMUNITY_Community 412|Community 412]]
 - [[_COMMUNITY_Community 415|Community 415]]
 - [[_COMMUNITY_Community 416|Community 416]]
@@ -392,14 +388,14 @@
 ## God Nodes (most connected - your core abstractions)
 1. `vocab` - 492 edges
 2. `vocab` - 491 edges
-3. `Message` - 59 edges
+3. `Message` - 60 edges
 4. `AuditOutcome` - 56 edges
 5. `Settings` - 56 edges
-6. `AgentTurnUseCase` - 53 edges
-7. `SessionStore` - 52 edges
-8. `PostgresChunkRepository` - 50 edges
+6. `AgentTurnUseCase` - 54 edges
+7. `SessionStore` - 53 edges
+8. `PostgresChunkRepository` - 51 edges
 9. `GuardrailDecision` - 47 edges
-10. `TenantModel` - 44 edges
+10. `PostgresTenantRepository` - 45 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `NeMoGuardrails (HTTP adapter)` --semantically_similar_to--> `Modelserver (Classifier ONNX)`  [INFERRED] [semantically similar]
@@ -408,16 +404,16 @@
   backend/tests/unit/frameworks/test_pii_redaction.py → eval_thresholds.yaml
 - `test_tenant_context_middleware` --conceptually_related_to--> `Threshold: cross_tenant_redteam_success_rate == 1.0`  [INFERRED]
   backend/tests/unit/frameworks/test_tenant_context_middleware.py → eval_thresholds.yaml
+- `get_redaction_filter() singleton` --calls--> `PII Redaction Middleware`  [EXTRACTED]
+  backend/app/frameworks/observability/logging.py → services/guardrails/SPEC.md
 - `Tenant Isolation as First-Class Invariant` --conceptually_related_to--> `Blocked-Origin Isolation Demo Pattern`  [INFERRED]
   .claude/agents/project-qa-agents/qa-orchestrator.md → db/init/seed_demo_tenants.sql
-- `Owner D — Widget/Admin/MinIO/CI/Eval Domain` --conceptually_related_to--> `Widget React App`  [INFERRED]
-  .claude/agents/project-qa-agents/owner-d-auditor.md → widget/src/App.tsx
 
 ## Hyperedges (group relationships)
 - **Owner A Protocol Seam** — use_cases_spec_tenant_repository_protocol, use_cases_spec_user_repository_protocol, use_cases_spec_audit_repository_protocol, use_cases_spec_vault_client_protocol [EXTRACTED 1.00]
 - **Tenant Isolation Stack** — design_isolation_strategy, handoff_tenant_context_middleware, tasks_t033_tenant_context_middleware, tasks_t034_origin_check, handoff_origin_check_middleware [INFERRED 0.85]
 
-## Communities (417 total, 75 thin omitted)
+## Communities (408 total, 76 thin omitted)
 
 ### Community 0 - "Community 0"
 Cohesion: 0.00
@@ -436,8 +432,8 @@ Cohesion: 0.02
 Nodes (110): app, app.adapters, app.adapters.classifier, app.adapters.classifier.modelserver_client, app.adapters.email, app.adapters.email.console_email, app.adapters.embeddings, app.adapters.embeddings.hosted_embeddings (+102 more)
 
 ### Community 4 - "Community 4"
-Cohesion: 0.07
-Nodes (41): db_session(), get_app_settings(), get_classifier_client(), get_current_tenant_id(), get_embedding_client(), get_guardrails_client(), get_llm_client(), get_object_storage() (+33 more)
+Cohesion: 0.29
+Nodes (7): Builds all Owner-A repos + use cases on ONE concierge_manager session so a, Builds all Owner-A repos + use cases on ONE concierge_manager session so a, ConsoleEmailSender (stub EmailSender), ConsoleEmailSender.send_invitation, ManagerContext (composition root), get_manager_context, manager_db_session (FastAPI dep)
 
 ### Community 5 - "Community 5"
 Cohesion: 0.06
@@ -445,18 +441,18 @@ Nodes (58): _byte_length(), check_existing_branches(), clean_branch_name(), _ext
 
 ### Community 6 - "Community 6"
 Cohesion: 0.10
-Nodes (35): GuardrailConfig, UUID, AuditOutcome, GuardrailConfig, object, str, Tenant, TenantStatus (+27 more)
+Nodes (37): AuditRepository, GuardrailConfig, TenantRepository, UUID, AuditOutcome, GuardrailConfig, object, str (+29 more)
 
 ### Community 7 - "Community 7"
-Cohesion: 0.30
-Nodes (20): AsyncSession, str, UUID, BaseModel, ConversationModel, add_origin(), AllowedOriginCreate, AllowedOriginOut (+12 more)
+Cohesion: 0.32
+Nodes (23): AsyncSession, CMSPageModel, Settings, str, UUID, CMSPageModel, CMSPageModel, PublishCMSPageUseCase (+15 more)
 
 ### Community 8 - "Community 8"
-Cohesion: 0.10
-Nodes (52): AsyncSession, CMSPage, CMSPageModel, CMSPageState, datetime, UUID, AsyncSession, CMSPageModel (+44 more)
+Cohesion: 0.16
+Nodes (20): AsyncSession, CMSPage, CMSPageModel, CMSPageState, datetime, UUID, CMSPage, CMSPageState (+12 more)
 
 ### Community 9 - "Community 9"
-Cohesion: 0.22
+Cohesion: 0.23
 Nodes (23): AllowedOriginModel, AllowedOrigin, AsyncSession, object, str, Tenant, TenantStatus, UUID (+15 more)
 
 ### Community 10 - "Community 10"
@@ -464,12 +460,12 @@ Cohesion: 0.08
 Nodes (42): bool, float, int, Settings, str, UUID, str, _emit() (+34 more)
 
 ### Community 11 - "Community 11"
-Cohesion: 0.10
-Nodes (40): bytes, str, TestClient, UUID, client(), client_with_fake_session(), FakeObjectStorage, FakeSessionStore (+32 more)
+Cohesion: 0.09
+Nodes (39): bytes, str, UUID, client(), client_with_fake_session(), FakeObjectStorage, FakeSessionStore, _manager_token() (+31 more)
 
 ### Community 12 - "Community 12"
-Cohesion: 0.19
-Nodes (18): AsyncClient, float, GuardrailDecision, GuardrailRole, str, UUID, Receive, Scope (+10 more)
+Cohesion: 0.11
+Nodes (38): AsyncClient, float, GuardrailDecision, GuardrailRole, str, UUID, ASGIApp, GuardrailsClient (+30 more)
 
 ### Community 13 - "Community 13"
 Cohesion: 0.29
@@ -480,12 +476,12 @@ Cohesion: 0.14
 Nodes (39): EmbeddingClient, float, GuardrailDecision, GuardrailsClient, Message, str, UUID, str (+31 more)
 
 ### Community 15 - "Community 15"
-Cohesion: 0.11
-Nodes (32): AsyncSession, object, str, User, UserRole, UUID, object, str (+24 more)
+Cohesion: 0.12
+Nodes (33): AsyncSession, object, str, User, UserRole, UUID, object, str (+25 more)
 
 ### Community 16 - "Community 16"
-Cohesion: 0.08
-Nodes (30): AsyncClient, AsyncClient, EmbeddingClient, float, str, float, str, float (+22 more)
+Cohesion: 0.17
+Nodes (14): AsyncClient, AsyncClient, EmbeddingClient, float, str, float, HostedEmbeddings, make_hosted_embeddings() (+6 more)
 
 ### Community 17 - "Community 17"
 Cohesion: 0.05
@@ -504,40 +500,40 @@ Cohesion: 0.05
 Nodes (38): 1. No code generation, 1. RLS isolation tests, 1. Security-first testing is mandatory, 2. No happy-path-only approval, 2. Tenant spoofing tests, 2. Test observable behaviour, not implementation trivia, 3. Manager permission limit tests, 3. No database mocks for database guarantees (+30 more)
 
 ### Community 21 - "Community 21"
-Cohesion: 0.10
-Nodes (38): _f1(), _macro_f1(), _NullCaptureLead, _NullEscalate, _NullRAG, Agent tool-selection eval gate (T137).  Runs the 15-example golden set through, Returns a single tool call per turn matching the injected tool name., _ScriptedLLM (+30 more)
+Cohesion: 0.11
+Nodes (34): _f1(), _macro_f1(), _NullCaptureLead, _NullEscalate, _NullRAG, Agent tool-selection eval gate (T137).  Runs the 15-example golden set through, Returns a single tool call per turn matching the injected tool name., _ScriptedLLM (+26 more)
 
 ### Community 22 - "Community 22"
 Cohesion: 0.05
 Nodes (37): Adapters Layer — SPEC (stub — Owner B, T060), Adapters Layer — SPEC (T163), Architecture rules, Classifier, `classifier/modelserver_client.py` — `ModelserverClassifier`, code:sql (SELECT ... ORDER BY embedding <=> $1 LIMIT 20), Email, `email/console_email.py` — `ConsoleEmailSender` (+29 more)
 
 ### Community 23 - "Community 23"
-Cohesion: 0.10
-Nodes (48): AsyncSession, AsyncSession, SessionStore, Settings, str, UUID, float, str (+40 more)
+Cohesion: 0.12
+Nodes (40): AsyncSession, Response, SessionStore, Settings, str, UUID, float, str (+32 more)
 
 ### Community 24 - "Community 24"
-Cohesion: 0.11
-Nodes (28): Any, bool, int, Redactor, TracerProvider, TracerProvider, _provider_with(), Unit tests for tracing.py (T041). (+20 more)
+Cohesion: 0.10
+Nodes (26): Any, bool, int, Redactor, TracerProvider, test_middleware_installs_redactor_on_span_processor(), InMemorySpanExporter, RedactionFilter logging.Filter (+18 more)
 
 ### Community 25 - "Community 25"
-Cohesion: 0.15
-Nodes (31): decode_session_token(), get_principal(), hash_password(), issue_session_token(), Principal, Session auth for the admin/manager surface (supports T113).  Password hashing, require_manager(), verify_password() (+23 more)
+Cohesion: 0.14
+Nodes (32): decode_session_token(), get_principal(), hash_password(), issue_session_token(), Principal, Session auth for the admin/manager surface (supports T113).  Password hashing, require_manager(), verify_password() (+24 more)
 
 ### Community 26 - "Community 26"
 Cohesion: 0.12
 Nodes (34): _apply_redactions(), _apply_refusals(), _apply_tenant_rails(), _bootstrap(), _bootstrap_service_token(), build_tenant_rails(), check(), CheckRequest (+26 more)
 
 ### Community 27 - "Community 27"
-Cohesion: 0.14
-Nodes (29): AuditEntry (entity dataclass), _to_entry (audit row mapper), PostgresAuditRepository.list_all, PostgresAuditRepository.log, AuditEntryModel, AuditOutcome, AuditRepository, AsyncSession (+21 more)
+Cohesion: 0.12
+Nodes (32): AuditEntry (entity dataclass), _to_entry (audit row mapper), PostgresAuditRepository.list_all, PostgresAuditRepository.log, AuditEntryModel, AuditOutcome, AuditRepository, AsyncSession (+24 more)
 
 ### Community 28 - "Community 28"
-Cohesion: 0.12
-Nodes (17): AsyncSession, Chunk, float, int, UUID, Chunk, float, int (+9 more)
+Cohesion: 0.13
+Nodes (18): AsyncSession, Chunk, float, int, UUID, Chunk, float, int (+10 more)
 
 ### Community 29 - "Community 29"
-Cohesion: 0.17
-Nodes (14): ASGIApp, GuardrailsClient, PII in an `extra={...}` structured field must be redacted, not just the     ren, _restore_redactor_slots(), test_middleware_installs_redactor_on_logging_filter(), test_middleware_installs_redactor_on_span_processor(), test_middleware_redacts_structured_log_fields(), get_redaction_filter() (+6 more)
+Cohesion: 0.29
+Nodes (8): datetime, str, UUID, InvitationRecord, InvitationRecord, InvitationRepository, InvitationRepository protocol — Owner A domain aggregate (supports T108/T109/T11, Return an un-accepted, unexpired invitation matching the token hash.
 
 ### Community 30 - "Community 30"
 Cohesion: 0.06
@@ -548,8 +544,8 @@ Cohesion: 0.09
 Nodes (32): Boot Sequence (T148), CLINC OOS Dataset (clinc/clinc_oos), cnn_intent.onnx (Training Output), cnn_vocab.json (Training Output), DECISIONS.md, Encoder (Regex Tokenizer + Vocab Lookup + Pad/Truncate), FastAPI / Starlette ASGI App, GET /healthz Endpoint (+24 more)
 
 ### Community 32 - "Community 32"
-Cohesion: 0.27
-Nodes (17): AsyncSession, HTTPAuthorizationCredentials, PyJWTSigner, Response, str, TenantRepository, HTMLResponse, PostgresWidgetRepository (+9 more)
+Cohesion: 0.22
+Nodes (25): AsyncSession, HTTPAuthorizationCredentials, Path, PyJWTSigner, Response, str, TenantRepository, FileResponse (+17 more)
 
 ### Community 33 - "Community 33"
 Cohesion: 0.06
@@ -576,24 +572,24 @@ Cohesion: 0.07
 Nodes (26): 1. Clone and configure, 2. Bring up the stack, 3. Migrate the database, 4. Bootstrap a tenant_manager and seed a demo tenant, 5. Embed the widget on the test host page, 6. Open the admin UI, 7. Run the smoke test, 8. Run the eval gates locally (+18 more)
 
 ### Community 39 - "Community 39"
-Cohesion: 0.42
-Nodes (8): async_sessionmaker, str, bootstrap_manager() async, main() CLI entrypoint, bootstrap_manager(), main(), Bootstrap one tenant_manager user from environment variables., _required_env()
+Cohesion: 0.14
+Nodes (20): async_sessionmaker, AsyncEngine, str, str, SessionLocal sessionmaker, Default app-role engine, make_engine(), bootstrap_manager() async (+12 more)
 
 ### Community 40 - "Community 40"
 Cohesion: 0.07
 Nodes (26): 1. Treat erasure as a destructive, privacy-critical workflow, 2. Enforce Owner A domain boundaries, 3. Prefer database-enforced referential integrity over brittle loops, 4. Fail closed on uncertainty, code:text (TODO(owner-b): purge tenant Redis session keys through Sessi), code:markdown (# Owner A Erasure Audit Report), Core Directives, Database vs. Distributed Datastore Rules (+18 more)
 
 ### Community 41 - "Community 41"
-Cohesion: 0.14
-Nodes (20): AllowedOrigin, AsyncSession, bool, datetime, object, str, UUID, Widget (+12 more)
+Cohesion: 0.08
+Nodes (30): AllowedOrigin, AsyncSession, bool, datetime, object, str, UUID, Widget (+22 more)
 
 ### Community 42 - "Community 42"
-Cohesion: 0.16
-Nodes (25): app.frameworks.api.main:app, str, TestClient, API Service (dev), integration conftest (role-scoped engines), _admin_token(), client(), _manager_token() (+17 more)
+Cohesion: 0.25
+Nodes (18): str, TestClient, _admin_token(), client(), _manager_token(), Provisioning + invitation-acceptance integration tests (T118).  Requires migra, Invitation past its expiry must be rejected (T149 negative gate)., A token that was never issued must be rejected (T149 negative gate). (+10 more)
 
 ### Community 43 - "Community 43"
-Cohesion: 0.13
-Nodes (17): Agent Tool-Selection Macro-F1 Threshold (≥0.80), Anthropic claude-sonnet-4-6, Classifier Label Taxonomy Decision (5 labels), Classifier Macro-F1 Threshold (≥0.80), notebooks/05_compare_and_export.ipynb, Cohere Rerank / Voyage Rerank (Cross-Encoder), Embedding Candidates (text-embedding-3-small, voyage-3, embed-v3), EmbeddingClient Protocol (+9 more)
+Cohesion: 0.08
+Nodes (33): Chunker Variant Bake-off Decision, Classifier Algorithm Decision, Embedder Choice Decision, Decisions Log, Memory TTL Decision (60-min Fixed Expiry), Reranker A/B Result Decision, Agent Tool-Selection Macro-F1 Threshold (≥0.80), Anthropic claude-sonnet-4-6 (+25 more)
 
 ### Community 44 - "Community 44"
 Cohesion: 0.24
@@ -604,16 +600,16 @@ Cohesion: 0.08
 Nodes (25): dependencies, react, react-dom, devDependencies, eslint, @eslint/js, eslint-plugin-react-hooks, eslint-plugin-react-refresh (+17 more)
 
 ### Community 46 - "Community 46"
-Cohesion: 0.16
-Nodes (14): Any, ASGIApp, Receive, Scope, Send, str, str, Headers (+6 more)
+Cohesion: 0.18
+Nodes (7): datetime, Chunk entity (T067) — Layer 1. Pure dataclass, no I/O.  Embedding dimension is, Lead entity (T068) — Layer 1. Pure dataclass, no I/O., Message, MessageRole, Message entity (T066) — Layer 1. Pure dataclass, no I/O., PyJWT EdDSA signer for widget JWTs.
 
 ### Community 47 - "Community 47"
-Cohesion: 0.14
-Nodes (25): GuardrailDecision, _FakeGuardrails, Unit tests for PIIRedactionMiddleware (T035)., test_middleware_exposes_redaction_service_when_guardrails_provided(), test_middleware_redaction_service_is_none_without_guardrails(), test_redaction_service_delegates_to_guardrails(), test_regex_redactor_api_key(), test_regex_redactor_credit_card() (+17 more)
+Cohesion: 0.11
+Nodes (29): Unit tests for PIIRedactionMiddleware (T035)., PII in an `extra={...}` structured field must be redacted, not just the     ren, _restore_redactor_slots(), test_middleware_installs_redactor_on_logging_filter(), test_middleware_redaction_service_is_none_without_guardrails(), test_middleware_redacts_structured_log_fields(), test_regex_redactor_api_key(), test_regex_redactor_credit_card() (+21 more)
 
 ### Community 48 - "Community 48"
-Cohesion: 0.33
-Nodes (9): TestClient, Body, client(), _make_client(), tenant_id derivation tests (T149).  Tenant context comes only from the verifie, test_body_tenant_spoof_rejected(), test_body_tenant_without_token_rejected(), test_matching_tenant_allowed() (+1 more)
+Cohesion: 0.14
+Nodes (18): ASGIApp, str, TestClient, bytes, str, FastAPI, Body, client() (+10 more)
 
 ### Community 49 - "Community 49"
 Cohesion: 0.20
@@ -632,16 +628,16 @@ Cohesion: 0.10
 Nodes (21): Accuracy comparison, Alternatives considered, Artifacts, Decisions Log, Entry #1.5, Entry #1.5 — Chunker variant, Entry #1 — Agent vs. Workflow vs. Hybrid, Entry #2 — Embedding Provider (+13 more)
 
 ### Community 53 - "Community 53"
-Cohesion: 0.12
-Nodes (23): GuardrailRole, str, UUID, PIIRedactionMiddleware, PIIRedactionMiddleware (T035) — Layer 4.  Wires the platform's redaction seams, Async redactor backed by the guardrails sidecar., RedactionService, _gate_threshold() (+15 more)
+Cohesion: 0.14
+Nodes (11): GuardrailRole, str, UUID, PIIRedactionMiddleware (T035) — Layer 4.  Wires the platform's redaction seams, _gate_threshold(), PII canary eval gate (T143).  Pastes synthetic PII canaries (a fake API key +, No canary may survive unredacted on any logging/tracing/persistence/egress, The sync regex fast path (logs/traces before the sidecar is reachable)     must (+3 more)
 
 ### Community 54 - "Community 54"
 Cohesion: 0.10
 Nodes (21): code:powershell (New-Item -ItemType Directory -Force -Path graphify-out | Out), code:powershell (@'), code:powershell (@'), code:powershell (@'), code:powershell (# Detect Python with graphify — uv/pipx-aware (fixes #831)), code:powershell (@'), code:powershell (@'), code:powershell (@') (+13 more)
 
 ### Community 55 - "Community 55"
-Cohesion: 0.29
-Nodes (7): int, Lead, str, UUID, LeadRepository, LeadRepository protocol (T024) — Layer 2 interface.  Owner B publishes this se, Create a lead. Raises RateLimitExceeded if visitor hit the cap.
+Cohesion: 0.23
+Nodes (9): int, Lead, str, UUID, LeadRepository, RateLimitExceeded, LeadRepository protocol (T024) — Layer 2 interface.  Owner B publishes this se, Raised by LeadRepository.capture when a session breaches rate limits. (+1 more)
 
 ### Community 56 - "Community 56"
 Cohesion: 0.18
@@ -684,24 +680,24 @@ Cohesion: 0.11
 Nodes (17): Artifact layout, Boot sequence (T148), Build constraints, code:json ({ "message": "what are your hours?", "tenant_id": "uuid-here), code:json ({), code:block3 (┌───────────────────────────────────────────────────────────), code:yaml (model_card_version: "1.0"), `GET /healthz` (+9 more)
 
 ### Community 66 - "Community 66"
-Cohesion: 0.14
-Nodes (29): ManagerContext, AuditRepository protocol, datetime, ManagerContext, Response, UUID, UUID, EraseTenantUseCase (+21 more)
+Cohesion: 0.11
+Nodes (34): ManagerContext, AuditRepository protocol, datetime, ManagerContext, Response, UUID, UUID, str (+26 more)
 
 ### Community 67 - "Community 67"
 Cohesion: 0.11
 Nodes (17): analyzer, artifact_path, artifact_sha256, C, cost_per_1k_predictions, latency_ms_per_prediction, macro_f1, model (+9 more)
 
 ### Community 68 - "Community 68"
-Cohesion: 0.14
-Nodes (18): Command: speckit.git.commit, Command: speckit.git.feature, Command: speckit.git.initialize, Command: speckit.git.validate, speckit.git.remote Command, speckit.git.validate Command, Git Config Template, Git Config (Active) (+10 more)
+Cohesion: 0.09
+Nodes (34): Command: speckit.git.commit, Command: speckit.git.feature, Command: speckit.git.initialize, Command: speckit.git.remote, Command: speckit.git.validate, Spec Kit Extensions Manifest, Extensions Configuration, speckit.git.commit Command (+26 more)
 
 ### Community 69 - "Community 69"
 Cohesion: 0.11
 Nodes (17): compilerOptions, allowImportingTsExtensions, erasableSyntaxOnly, lib, module, moduleDetection, moduleResolution, noEmit (+9 more)
 
 ### Community 70 - "Community 70"
-Cohesion: 0.24
-Nodes (7): bool, bytes, str, UUID, _MinioClient, _ObjectInfo, Owner D object storage adapter.  The adapter accepts a MinIO-compatible client
+Cohesion: 0.16
+Nodes (11): bool, bytes, int, object, str, UUID, BytesIO, _MinioClient (+3 more)
 
 ### Community 71 - "Community 71"
 Cohesion: 0.12
@@ -712,8 +708,8 @@ Cohesion: 0.12
 Nodes (16): artifact_path, artifact_sha256, cost_per_1k_predictions, latency_ms_per_prediction, latency_runtime, macro_f1, model, onnx_match_rate (+8 more)
 
 ### Community 73 - "Community 73"
-Cohesion: 0.15
-Nodes (13): Modelserver Boot-Time Artifact Hash Verification, ONNX Runtime Inference Session (CPU-only), Modelserver Service Requirements, Modelserver Specification, model_card.yaml (Modelserver Artifact), Notebook 01: Label Taxonomy, Notebook 02: TF-IDF LogReg Baseline, Notebook 03: Small DL ONNX (+5 more)
+Cohesion: 0.22
+Nodes (9): float, str, _DeterministicEmbeddings, RAG quality eval gate (T139).  Seeds a live tenant with the 15-triple golden s, Create a tenant, seed 8 CMS pages, embed+index them. Skip if unavailable., Create a tenant, seed 8 CMS pages, embed+index them. Skip if unavailable., Bag-of-words hash embedder (SimHash-style, 1024-dim) for CI.      Each token i, seeded_tenant() (+1 more)
 
 ### Community 74 - "Community 74"
 Cohesion: 0.12
@@ -724,20 +720,20 @@ Cohesion: 0.13
 Nodes (14): code:text (specs/001-concierge-platform/), code:text (backend/app/), Complexity Tracking, Constitution Check, Documentation (this feature), Four-slice ownership map (parallel work), Implementation Plan: Concierge Multi-Tenant AI SaaS Platform, Phase 0 — Outline & Research (+6 more)
 
 ### Community 76 - "Community 76"
-Cohesion: 0.14
-Nodes (28): ASGIApp, Receive, Scope, Send, str, int, str, _call() (+20 more)
+Cohesion: 0.18
+Nodes (13): ASGIApp, Receive, Scope, Send, str, int, str, _deny() (+5 more)
 
 ### Community 77 - "Community 77"
-Cohesion: 0.10
-Nodes (29): _client_with(), Unit tests for ModelserverClassifier (T047)., test_classify_defaults_missing_artifact_sha256(), test_classify_parses_modelserver_response(), test_classify_raises_on_401(), AsyncClient, float, str (+21 more)
+Cohesion: 0.08
+Nodes (37): _client_with(), Unit tests for ModelserverClassifier (T047)., test_classify_defaults_missing_artifact_sha256(), test_classify_parses_modelserver_response(), test_classify_raises_on_401(), _client_with(), Unit tests for NeMoGuardrails adapter (T048)., test_check_allow_with_missing_optional_fields() (+29 more)
 
 ### Community 78 - "Community 78"
 Cohesion: 0.30
 Nodes (14): str, RLS isolation tests (T146) — the cross-tenant red-team gate for Owner A tables., Tenant A's app session must not see any Tenant B rows — explicit cross-tenant, RLS WITH CHECK must prevent concierge_app from updating a different tenant's row, Manager must not be able to read visitor content. Verified against a probe, _scoped_query(), _seed(), test_app_role_cannot_update_other_tenant_row() (+6 more)
 
 ### Community 79 - "Community 79"
-Cohesion: 0.16
-Nodes (16): Five-Label Intent Classifier (spam/faq/lead_intent/escalate/ambiguous), Chunker Variant Bake-off Decision, Classifier Algorithm Decision, Embedder Choice Decision, Hybrid Routing Decision (Agent vs Workflow), Decisions Log, Memory TTL Decision (60-min Fixed Expiry), Reranker A/B Result Decision (+8 more)
+Cohesion: 0.36
+Nodes (8): AsyncSession, datetime, str, export_leads(), LeadOut, list_leads(), Leads routes (T119) — GET /leads and GET /leads/export.  Tenant-scoped via Ten, StreamingResponse
 
 ### Community 80 - "Community 80"
 Cohesion: 0.13
@@ -748,12 +744,12 @@ Cohesion: 0.13
 Nodes (15): Audit Protocol, code:text (repository method), code:text (tenant_admin), code:text (platform metadata), code:text (Does this query include an explicit tenant predicate?), code:text (Does the table have tenant_id or equivalent tenant identity?), code:text (Is this metadata/usage/audit only?), code:text (PASS) (+7 more)
 
 ### Community 82 - "Community 82"
-Cohesion: 0.17
-Nodes (12): A. Tenant-owned table classification, C. RLS enablement, code:sql (ALTER TABLE <table_name> ENABLE ROW LEVEL SECURITY;), code:sql (CREATE POLICY leads_tenant_isolation ON leads), code:sql (ALTER ROLE concierge_manager BYPASSRLS;), Content/payload tables, E. WITH CHECK coverage, F. Privilege grants (+4 more)
+Cohesion: 0.13
+Nodes (15): A. Tenant-owned table classification, C. RLS enablement, code:sql (ALTER TABLE <table_name> ENABLE ROW LEVEL SECURITY;), code:sql (tenant_id = current_setting('app.tenant_id')::uuid), code:sql (id = current_setting('app.tenant_id')::uuid), code:sql (CREATE POLICY leads_tenant_isolation ON leads), code:sql (ALTER ROLE concierge_manager BYPASSRLS;), Content/payload tables (+7 more)
 
 ### Community 83 - "Community 83"
-Cohesion: 0.22
-Nodes (15): Clean Architecture (Layered), Defense-in-Depth Security, Evals as CI Gates, Hosted Inference, Lean Containers, SOLID via Dependency Inversion, Spec-Driven, No Vibe Coding, Concierge Constitution, Concierge Constitution (+7 more)
+Cohesion: 0.12
+Nodes (26): Checklist Template, Clean Architecture (Layered), Defense-in-Depth Security, Evals as CI Gates, Hosted Inference, Lean Containers, SOLID via Dependency Inversion, Spec-Driven, No Vibe Coding, Concierge Constitution (+18 more)
 
 ### Community 84 - "Community 84"
 Cohesion: 0.13
@@ -768,8 +764,8 @@ Cohesion: 0.17
 Nodes (13): AnthropicLLM Adapter, HostedEmbeddings Adapter, MinIOObjectStorage Adapter, PyJWTSigner Adapter, Adapters Layer SPEC (T163), Chat Route (frameworks/api/routes/chat.py), FastAPI Dependencies (frameworks/api/deps.py), Widget Route (frameworks/api/routes/widget.py) (+5 more)
 
 ### Community 87 - "Community 87"
-Cohesion: 0.29
-Nodes (16): bytes, str, bytes, Unit tests for TenantContextMiddleware (Phase 2 TDD).  Verifies: (1) tenant/us, _run(), _scope(), test_body_and_header_tenant_id_ignored(), test_context_derived_from_verified_token() (+8 more)
+Cohesion: 0.41
+Nodes (13): Unit tests for TenantContextMiddleware (Phase 2 TDD).  Verifies: (1) tenant/us, _run(), _scope(), test_body_and_header_tenant_id_ignored(), test_context_derived_from_verified_token(), test_invalid_token_yields_no_context(), test_no_token_yields_no_context(), _verifier() (+5 more)
 
 ### Community 88 - "Community 88"
 Cohesion: 0.18
@@ -777,7 +773,7 @@ Nodes (14): cnn_intent.onnx (CNN model artifact), CNN+ONNX classifier eval resul
 
 ### Community 89 - "Community 89"
 Cohesion: 0.11
-Nodes (39): GuardrailDecision, LLMResponse, str, UUID, FakeEscalate, FakeGuardrails, FakeLLM, FakeRAGSearch (+31 more)
+Nodes (43): GuardrailDecision, LLMResponse, Message, str, UUID, CaptureLeadResult, FakeConversation, FakeEscalate (+35 more)
 
 ### Community 90 - "Community 90"
 Cohesion: 0.14
@@ -824,8 +820,8 @@ Cohesion: 0.29
 Nodes (12): CLAUDE.md (project Claude instructions), API Backend Service, Guardrails Sidecar Service, MinIO Service, Postgres Service (pgvector/pg16), Redis Service, HashiCorp Vault Service, docker-compose.dev.yml (dev overrides) (+4 more)
 
 ### Community 101 - "Community 101"
-Cohesion: 0.29
-Nodes (8): datetime, str, UUID, InvitationRecord, InvitationRecord, InvitationRepository, InvitationRepository protocol — Owner A domain aggregate (supports T108/T109/T11, Return an un-accepted, unexpired invitation matching the token hash.
+Cohesion: 0.36
+Nodes (4): str, VaultClient protocol (T032) — Layer 2 interface., Generate a new key version; return the new key identifier., VaultClient
 
 ### Community 102 - "Community 102"
 Cohesion: 0.29
@@ -880,8 +876,8 @@ Cohesion: 0.18
 Nodes (3): memory(), Integration tests for SessionMemory (T190) using fakeredis.  Covers: - Turn 2, test_history_cap_drops_oldest_turns()
 
 ### Community 115 - "Community 115"
-Cohesion: 0.22
-Nodes (11): Checklist Template, Constitution Template, Plan Template, Spec Template, speckit-checklist Skill, speckit-constitution Skill, speckit-implement Skill, speckit-specify Skill (+3 more)
+Cohesion: 0.50
+Nodes (4): CMSPage, UUID, PublishCMSPageUseCase, PublishCMSPageUseCase (T078) — Layer 2.  Manages the CMS page state machine an
 
 ### Community 116 - "Community 116"
 Cohesion: 0.18
@@ -908,8 +904,8 @@ Cohesion: 0.27
 Nodes (7): str, UUID, SessionMemory (T190) — Layer 2 use case.  Wraps SessionStore to provide turn-l, Return stored clean turns, newest-last. Empty list if no prior history., Return stored clean turns, newest-last. Empty list if no prior history., Append the current turn and persist, dropping oldest if over cap., Append the current turn and persist, dropping oldest if over cap.
 
 ### Community 122 - "Community 122"
-Cohesion: 0.19
-Nodes (15): AsyncSession, str, _apply_tenant_guc(), get_manager_session(), _get_manager_sessionmaker(), get_session(), Async session factory + per-request tenant scoping (T017).  `tenant_id` is pro, Request-scoped session bound to the concierge_app role (RLS-enforced). (+7 more)
+Cohesion: 0.14
+Nodes (22): Any, Receive, Scope, Send, str, str, bytes, Async session factory + per-request tenant scoping (T017).  `tenant_id` is pro (+14 more)
 
 ### Community 123 - "Community 123"
 Cohesion: 0.31
@@ -956,8 +952,8 @@ Cohesion: 0.22
 Nodes (7): Any, int, str, Persist value under key for ttl seconds., Persist value under key with a fixed expiry of ttl seconds.          First wri, Return stored value or None if missing / expired., Return stored value or None if missing / expired.
 
 ### Community 134 - "Community 134"
-Cohesion: 0.31
-Nodes (5): FakeMinioClient, FakeObject, test_delete_prefix_removes_all_objects_under_tenant_prefix(), bool, str
+Cohesion: 0.14
+Nodes (12): FakeMinioClient, FakeObject, FakeResponse, test_delete_prefix_removes_all_objects_under_tenant_prefix(), test_fetch_object_raises_file_not_found_for_missing_object(), test_fetch_object_reads_bytes_and_releases_response(), test_store_object_rejects_relative_path_segments(), test_store_object_writes_bytes_under_tenant_prefix() (+4 more)
 
 ### Community 135 - "Community 135"
 Cohesion: 0.36
@@ -988,8 +984,8 @@ Cohesion: 0.22
 Nodes (9): Auth & fastapi-users Integration, Contract Tests, Database Migrations (Story-Specific), Integration Tests, Manager Routes, Phase 6: User Story 4 — tenant_manager provisions a new tenant and invites its first admin (Priority: P2), Tenant & Invitation Entities, Tenant Management Use Cases (+1 more)
 
 ### Community 142 - "Community 142"
-Cohesion: 0.33
-Nodes (6): NeMoGuardrailsClient Adapter, TenantContextMiddleware, GuardrailsClient Protocol, Security Isolation Auditor Agent, PostgreSQL RLS + SET LOCAL app.tenant_id, Tenant Isolation as First-Class Invariant
+Cohesion: 0.29
+Nodes (7): Reject requests whose body/path claims a tenant different from the token's., Reject requests whose body/path claims a tenant different from the token's., Reject requests whose body/path claims a tenant different from the token's., Reject requests whose body/path claims a tenant different from the token's., Reject requests whose body/path claims a tenant different from the token's., Reject requests whose body/path claims a tenant different from the token's., require_matching_tenant()
 
 ### Community 143 - "Community 143"
 Cohesion: 0.22
@@ -1008,8 +1004,8 @@ Cohesion: 0.31
 Nodes (5): Unit tests for RedisSession fixed-TTL behaviour (T184) and delete_by_tenant (T19, store(), test_delete_by_tenant_removes_only_target_tenant(), test_first_write_sets_ttl(), test_second_write_does_not_reset_ttl()
 
 ### Community 147 - "Community 147"
-Cohesion: 0.30
-Nodes (12): _client_with(), Unit tests for NeMoGuardrails adapter (T048)., test_check_allow_with_missing_optional_fields(), test_check_redact_response(), test_check_refuse_response(), AsyncClient, MockTransport, GuardrailsClient protocol (+4 more)
+Cohesion: 0.40
+Nodes (14): _call(), Unit tests for OriginCheckMiddleware (H1 — server-side origin enforcement)., _scope(), test_legacy_mode_no_lookup_passes_all(), test_legacy_mode_with_lookup_allows_missing_origin(), test_legacy_mode_with_lookup_blocks_disallowed_present_origin(), test_non_http_scope_passes_through(), test_protected_path_allowed_origin_passes() (+6 more)
 
 ### Community 148 - "Community 148"
 Cohesion: 0.22
@@ -1044,16 +1040,16 @@ Cohesion: 0.22
 Nodes (9): code:text (FAIL: `get_invitation(invitation_id)` fetches a tenant-owned), code:text (FAIL: the repository relies on RLS alone. The query must exp), code:text (FAIL: `tenant_manager` query reads content payload fields. T), code:text (OUT OF SCOPE: this repository implements Owner B conversatio), Examples of Required Rejections, Manager content read, Missing tenant predicate, Owner scope creep (+1 more)
 
 ### Community 156 - "Community 156"
-Cohesion: 0.39
-Nodes (9): Command: speckit.git.remote, Spec Kit Extensions Manifest, Principle VII: Spec-Driven, No Vibe Coding, Skill: speckit-git-remote, Skill: speckit-implement, Skill: speckit-plan, Skill: speckit-specify, Skill: speckit-tasks (+1 more)
+Cohesion: 0.29
+Nodes (6): create_app(), FastAPI application (T012 — [ALL] skeleton).  Owner A wires the tenant_context, openapi(), openapi(), openapi(), openapi()
 
 ### Community 157 - "Community 157"
 Cohesion: 0.25
 Nodes (8): Chat Route (Endpoint), Contract Tests (Before Implementation), Database Migrations (Story-Specific), Entities (Story-Specific), Phase 3: User Story 1 — Visitor gets a useful, grounded answer from the tenant's AI agent (Priority: P1), Prompts & Memory, Repository Implementations (Story-Specific), Router & Agent Use Cases (Core Logic)
 
 ### Community 158 - "Community 158"
-Cohesion: 0.36
-Nodes (4): str, VaultClient protocol (T032) — Layer 2 interface., Generate a new key version; return the new key identifier., VaultClient
+Cohesion: 0.38
+Nodes (11): TracerProvider, _provider_with(), Unit tests for tracing.py (T041)., test_configure_tracing_returns_concierge_tracer(), test_redaction_processor_passthrough_by_default(), test_redaction_processor_runs_redactor_on_string_attributes(), RedactionSpanProcessor, test_configure_tracing_returns_concierge_tracer (+3 more)
 
 ### Community 159 - "Community 159"
 Cohesion: 0.43
@@ -1080,8 +1076,8 @@ Cohesion: 0.25
 Nodes (8): Spec quality checklist (requirements.md), Decision: paragraph-aware chunking (400/50/600), Decision: Anthropic claude-sonnet-4-6 default, Decision: cross-encoder rerank top-20 to top-5, Edge Case: Cross-Tenant Question, FR-009: Classifier-Driven Router, FR-012: Agent Tools (rag_search, capture_lead, escalate), US1: Visitor Gets Grounded Answer
 
 ### Community 165 - "Community 165"
-Cohesion: 0.46
-Nodes (8): Jinja2 persona_summary Variable in Agent Prompt, Guardrails POST /check Endpoint, System Prompt — Concierge Agent, Tool Spec — capture_lead, Tool Spec — escalate, Tool Spec — rag_search, Prompts Changelog, Phase 3: User Story 1 Tasks
+Cohesion: 0.24
+Nodes (13): Five-Label Intent Classifier (spam/faq/lead_intent/escalate/ambiguous), Jinja2 persona_summary Variable in Agent Prompt, Hybrid Routing Decision (Agent vs Workflow), Guardrails POST /check Endpoint, Modelserver POST /predict Endpoint, System Prompt — Concierge Agent, System Prompt — Router LLM Fallback Classifier, Tool Spec — capture_lead (+5 more)
 
 ### Community 166 - "Community 166"
 Cohesion: 0.25
@@ -1128,8 +1124,8 @@ Cohesion: 0.25
 Nodes (7): code:block1 ([specify] Warning: Git repository not detected; skipped bran), code:bash (git rev-parse --abbrev-ref HEAD), Execution, Graceful Degradation, Prerequisites, Validate Feature Branch, Validation Rules
 
 ### Community 177 - "Community 177"
-Cohesion: 0.36
-Nodes (3): fetchWidgetConfig(), sendChatMessage(), WidgetConfig
+Cohesion: 0.17
+Nodes (13): ChatResponse, fetchWidgetConfig(), sendChatMessage(), WidgetConfig, bootstrap(), ChatRequestMessage, issueToken(), loadConfig() (+5 more)
 
 ### Community 178 - "Community 178"
 Cohesion: 0.29
@@ -1139,13 +1135,9 @@ Nodes (7): Git & Commit Workflow, Phase 12: Polish & Cross-Cutting Concerns, Qui
 Cohesion: 0.29
 Nodes (7): code:block1 (Team pairs on:), code:block2 (Slice A: (idle in P1; owns US4 which is P2)), code:block3 (After Phase 2, each slice proceeds in parallel:), Parallel Execution Examples, Phase 2 Parallelization, Phase 3–4 Parallelization (P1 Stories), Phase 5–9 Parallelization (P2+P3 Stories)
 
-### Community 180 - "Community 180"
-Cohesion: 0.13
-Nodes (15): Async Alembic environment (T013).  Targets Base.metadata. Importing app.framew, run_migrations_online() async, SQLAlchemy Base (DeclarativeBase), InvitationModel, DELETE /manager/tenants/{id}, GET /manager/tenants, POST /manager/tenants, GET /manager/audit (+7 more)
-
 ### Community 181 - "Community 181"
-Cohesion: 0.28
-Nodes (7): UUID, Exception, RateLimitExceeded, Raised by LeadRepository.capture when a session breaches rate limits., Return visitor-safe widget config., WidgetConfig, WidgetConfigNotFoundError
+Cohesion: 0.38
+Nodes (5): UUID, Exception, Return visitor-safe widget config., WidgetConfig, WidgetConfigNotFoundError
 
 ### Community 182 - "Community 182"
 Cohesion: 0.29
@@ -1164,8 +1156,8 @@ Cohesion: 0.29
 Nodes (7): Alembic Database Migrations, Concierge Quickstart Guide, eval_thresholds.yaml, RUNBOOK.md Operator Playbook, GDPR-Aligned Consent Notice (Q5), SC-001: Under 30 Minutes Quickstart, SC-006: Grounded Reply Within 5 Seconds
 
 ### Community 186 - "Community 186"
-Cohesion: 0.25
-Nodes (9): Tenant Erasure Four-Store Cascade (PG+pgvector, Redis, MinIO), Cross-Owner Blocking Matrix, Baseline CI Scaffold, EraseTenantUseCase Four-Store Cascade, Owner A Handoff Document, Research: Row-Level Security Pattern (SET LOCAL), Cross-Owner Blocking Rules (Tasks), Tasks: Concierge Platform Implementation Checklist (+1 more)
+Cohesion: 0.10
+Nodes (22): Tenant Erasure Four-Store Cascade (PG+pgvector, Redis, MinIO), Cross-Owner Blocking Matrix, Baseline CI Scaffold, EraseTenantUseCase Four-Store Cascade, Owner A Handoff Document, Modelserver Boot-Time Artifact Hash Verification, ONNX Runtime Inference Session (CPU-only), Modelserver Service Requirements (+14 more)
 
 ### Community 187 - "Community 187"
 Cohesion: 0.29
@@ -1192,16 +1184,16 @@ Cohesion: 0.29
 Nodes (7): CI Job: Backend baseline, CI Step: docker compose config validate, CI Step: lint-imports, CI Step: pytest unit + contract, CI Step: ruff check, CI Workflow (GitHub Actions), Principle VI: Evals as CI Gates
 
 ### Community 193 - "Community 193"
-Cohesion: 0.29
-Nodes (7): Extensions Configuration, speckit.git.commit Command, speckit.git.feature Command, speckit.git.initialize Command, speckit-git-commit Skill, speckit-git-feature Skill, speckit-git-initialize Skill
+Cohesion: 0.38
+Nodes (7): AsyncSession, _apply_tenant_guc(), get_manager_session(), _get_manager_sessionmaker(), get_session(), Request-scoped session bound to the concierge_app role (RLS-enforced)., Session bound to the concierge_manager role. Its grants (set in the     migrati
 
 ### Community 194 - "Community 194"
 Cohesion: 0.29
 Nodes (6): Auto-Commit Changes, Behavior, code:yaml (auto_commit:), Configuration, Execution, Graceful Degradation
 
 ### Community 195 - "Community 195"
-Cohesion: 0.43
-Nodes (6): bootstrap(), issueToken(), positionIframe(), refresh(), script, TokenResponse
+Cohesion: 0.22
+Nodes (7): Leads flow integration test (T121).  Seeds Tenant A and Tenant B, captures lea, Querying with Tenant A context must not return anything with tenant_id = B., CSV export contains correct headers and data rows for Tenant A leads., test_cross_tenant_isolation_a_cannot_see_b(), test_csv_export_format(), test_list_leads_tenant_a_returns_only_a_leads(), test_list_leads_tenant_b_returns_zero()
 
 ### Community 196 - "Community 196"
 Cohesion: 0.33
@@ -1212,8 +1204,8 @@ Cohesion: 0.33
 Nodes (6): Admin Routes (Extended), Guardrail Config Entity, Guardrail Management Use Case, Integration Tests, Phase 8: User Story 6 — Tenant admin configures persona, guardrails, and theme (Priority: P3), Tenant Persona Injection
 
 ### Community 198 - "Community 198"
-Cohesion: 0.33
-Nodes (6): ModelserverClassifier Adapter, Modelserver Service, Owner C — Classifier/Modelserver/Guardrails/Redaction Domain, ClassifierClient Protocol, Owner C Auditor Agent, ClassifyMessageUseCase
+Cohesion: 0.25
+Nodes (8): ModelserverClassifier Adapter, NeMoGuardrailsClient Adapter, Modelserver Service, Owner C — Classifier/Modelserver/Guardrails/Redaction Domain, ClassifierClient Protocol, GuardrailsClient Protocol, Owner C Auditor Agent, ClassifyMessageUseCase
 
 ### Community 199 - "Community 199"
 Cohesion: 0.33
@@ -1229,7 +1221,7 @@ Nodes (6): app.adapters (Clean Arch interface adapters), app.entities (Clean Arc
 
 ### Community 202 - "Community 202"
 Cohesion: 0.29
-Nodes (7): SessionLocal sessionmaker, Default app-role engine, concierge_app DB role (RLS-bound), RLS policies (tenants/users/roles/invitations/audit), _apply_tenant_guc() (sets RLS GUCs), get_session() app-role dependency, tenant_id_ctx ContextVar
+Nodes (7): DELETE /manager/tenants/{id}, GET /manager/tenants, POST /manager/tenants, GET /manager/audit, GET /manager/usage, get_principal() bearer dependency, require_manager() dependency
 
 ### Community 203 - "Community 203"
 Cohesion: 0.33
@@ -1288,8 +1280,8 @@ Cohesion: 0.33
 Nodes (5): Architecture, Current Scope, Purpose, Security Contract, Widget SPEC
 
 ### Community 217 - "Community 217"
-Cohesion: 0.40
-Nodes (3): Config, pytest_configure(), Contract test fixtures.  Sets SERVICE_TOKEN env var before any module-level im
+Cohesion: 0.11
+Nodes (15): AdminAPI, APIResult, error_message(), Any, bool, str, require_token(), object (+7 more)
 
 ### Community 218 - "Community 218"
 Cohesion: 0.40
@@ -1375,9 +1367,13 @@ Nodes (4): Admin Routes (Shared with US3, US6), CMS Route (Endpoint), Integratio
 Cohesion: 0.50
 Nodes (4): /auth router, FastAPI app instance, create_app() FastAPI factory, /manager router
 
+### Community 239 - "Community 239"
+Cohesion: 0.32
+Nodes (7): float, str, eval_engine(), _pick_winner(), Chunker bake-off eval (T182).  For each of the three chunker variants [fixed_5, _run_variant(), test_chunker_bakeoff()
+
 ### Community 240 - "Community 240"
-Cohesion: 0.29
-Nodes (8): PII Redaction Middleware, RedactionFilter logging.Filter, get_redaction_filter() singleton, Pass-through ASGI middleware; construction installs the sync redactors.      O, PII regex pattern set, RedactionService (async), regex_redactor() sync, get_redaction_processor() singleton
+Cohesion: 0.43
+Nodes (6): str, app_engine(), _engine(), manager_engine(), owner_engine(), Integration-test fixtures: role-scoped async engines.  Skips the whole integra
 
 ### Community 241 - "Community 241"
 Cohesion: 0.50
@@ -1400,8 +1396,8 @@ Cohesion: 0.50
 Nodes (4): Tool Spec - capture_lead, Tool Spec - escalate, Tool Spec - rag_search, System Prompt - Concierge Agent
 
 ### Community 247 - "Community 247"
-Cohesion: 0.12
-Nodes (16): AsyncSession, datetime, str, datetime, Chunk entity (T067) — Layer 1. Pure dataclass, no I/O.  Embedding dimension is, Lead entity (T068) — Layer 1. Pure dataclass, no I/O., Message, MessageRole (+8 more)
+Cohesion: 0.09
+Nodes (38): AsyncSession, Conversation, str, UUID, AsyncSession, str, UUID, Conversation (+30 more)
 
 ### Community 248 - "Community 248"
 Cohesion: 0.50
@@ -1443,6 +1439,22 @@ Nodes (3): code:powershell (@'), code:block26 (Graph complete. Outputs in PATH_T
 Cohesion: 0.67
 Nodes (3): Decision: egress-side PII redactor via NeMo, T143: PII canary test (synthetic API key), T173: PII redaction middleware impl
 
+### Community 282 - "Community 282"
+Cohesion: 0.40
+Nodes (5): 4.7 Editor Fix Request Schema, code:md (# 🛠️ Editor Fix Request: [Short Title]), code:block25, code:block26, code:block27
+
+### Community 283 - "Community 283"
+Cohesion: 0.50
+Nodes (4): 4.1 Auditor Finding Schema, code:md (### 🚨 Finding: [Short Title]), code:block13 (- **Expected Behavior:** [What the Speckit/task/security rul), code:block14
+
+### Community 284 - "Community 284"
+Cohesion: 0.33
+Nodes (4): UUID, SessionStore protocol (T029, T191) — Layer 2 interface.  Owner B publishes thi, Delete all session keys belonging to tenant_id (T191 erasure seam).          P, SessionStore
+
+### Community 286 - "Community 286"
+Cohesion: 0.67
+Nodes (3): default_api_base_url(), public_api_base_url(), str
+
 ### Community 368 - "Community 368"
 Cohesion: 0.05
 Nodes (42): 10. Audit Logging, 11. Right-to-Erasure Across Stores, 12. Cost Attribution and Rate Limiting, 13. Boundary Enforcement Against Other Owners, 1. Owner A Task and Requirement Mapping, 2. Tenant Data Model and Lifecycle, 3. Authentication and Identity Boundary, 4. RBAC and Role Boundaries (+34 more)
@@ -1472,8 +1484,8 @@ Cohesion: 0.06
 Nodes (33): Auditor Finding Schema, Blocker Schema, ⚠️ Blocker: [Short Title], Clean Architecture Checks While Verifying Tasks, code:bash (pwd), code:bash (nl -ba specs/001-concierge-platform/tasks.md | sed -n '1,260), code:bash (rg -n "\[[xX]\]|COMPLETE|Done|done" specs/001-concierge-plat), code:bash (rg -n "T123|task text keyword|owner keyword" .) (+25 more)
 
 ### Community 375 - "Community 375"
-Cohesion: 0.15
-Nodes (38): get_current_widget_context(), get_current_widget_tenant_id(), get_manager_context(), Builds all Owner-A repos + use cases on ONE concierge_manager session so a, Builds all Owner-A repos + use cases on ONE concierge_manager session so a, Builds all Owner-A repos + use cases on ONE concierge_manager session so a, Builds all Owner-A repos + use cases on ONE concierge_manager session so a, WidgetTokenContext (+30 more)
+Cohesion: 0.09
+Nodes (67): db_session(), get_app_settings(), get_classifier_client(), get_current_tenant_id(), get_current_widget_context(), get_current_widget_tenant_id(), get_embedding_client(), get_guardrails_client() (+59 more)
 
 ### Community 376 - "Community 376"
 Cohesion: 0.06
@@ -1484,8 +1496,8 @@ Cohesion: 0.06
 Nodes (29): A. Syntax/Type Error, Authorized Tools and Commands, B. Assertion Error / Logic Mismatch, C. Environment/Dependency Failure, code:bash (pwd), code:bash (uv run --extra dev pytest -v --tb=short), code:bash (pwd), code:bash (uv run --extra dev pytest tests/unit/test_auth.py::test_widg) (+21 more)
 
 ### Community 378 - "Community 378"
-Cohesion: 0.10
-Nodes (34): AsyncSession, datetime, str, UUID, int, str, UUID, str (+26 more)
+Cohesion: 0.12
+Nodes (30): AsyncSession, datetime, str, UUID, int, str, UUID, str (+22 more)
 
 ### Community 379 - "Community 379"
 Cohesion: 0.07
@@ -1495,37 +1507,21 @@ Nodes (27): 1. Speckit vs Project Documentation, 2. README vs Environment and Se
 Cohesion: 0.08
 Nodes (23): A. Workflow Existence and Trigger Coverage, Allowed Tools and Commands, B. Existing CI Command Extraction, C. Local Verification Execution, code:bash (pwd), code:md (### 🚨 Finding: [Short Title]), code:bash (uv run --extra dev ruff check .), code:bash (pwd) (+15 more)
 
-### Community 381 - "Community 381"
-Cohesion: 0.29
-Nodes (7): create_app(), FastAPI application (T012 — [ALL] skeleton).  Owner A wires the tenant_context, openapi(), openapi(), openapi(), openapi(), FastAPI
-
 ### Community 382 - "Community 382"
-Cohesion: 0.11
-Nodes (19): 4.1 Auditor Finding Schema, 4.2 Task Status Finding Schema, 4.4 CI Gate Finding Schema, 4.5 Edge-Case Gap Schema, 4.6 Orchestrator Final Audit Report Schema, 4.7 Editor Fix Request Schema, 4. Mandatory Cross-Agent Communication Schemas, code:md (### 🚨 Finding: [Short Title]) (+11 more)
+Cohesion: 0.13
+Nodes (15): 4.2 Task Status Finding Schema, 4.3 Test Failure Triage Schema, 4.4 CI Gate Finding Schema, 4.5 Edge-Case Gap Schema, 4.6 Orchestrator Final Audit Report Schema, 4. Mandatory Cross-Agent Communication Schemas, code:md (### 📌 Task Status: [T### — Short Task Name]), code:md (### 🧪 Test Failure: [Short Title]) (+7 more)
 
 ### Community 383 - "Community 383"
 Cohesion: 0.11
 Nodes (17): Cleanup Discipline, code:text (.claude/agents/project-qa-agents/project-qa-orchestrator.md), code:text (CLAUDE.md), code:text (docs/HANDOFF.md), code:text (Edit), code:text (.claude/agents/project-qa-agents/implementation-editor.md), Final Instruction, Full Project QA Auditor Skill (+9 more)
 
-### Community 384 - "Community 384"
-Cohesion: 0.26
-Nodes (10): AsyncSession, Conversation, str, UUID, ConversationModel, ConversationRepository, Conversation, Conversation entity (T065) — Layer 1. Pure dataclass, no I/O. (+2 more)
-
-### Community 385 - "Community 385"
-Cohesion: 0.21
-Nodes (7): AllowedOrigin, str, Tenant, UUID, TenantRepository protocol (T019) — Layer 2 interface.  Owner A publishes this, Cascade-delete the tenant and all tenant-scoped rows (erasure, PG store)., TenantRepository
-
 ### Community 386 - "Community 386"
-Cohesion: 0.30
-Nodes (9): int, Lead, str, UUID, LeadModel, LeadModel, LeadRepository, PostgresLeadRepository (T072) — implements LeadRepository.  Rate-limiting enfo (+1 more)
+Cohesion: 0.24
+Nodes (10): AsyncSession, int, Lead, str, UUID, LeadModel, LeadModel, LeadRepository (+2 more)
 
 ### Community 387 - "Community 387"
 Cohesion: 0.12
 Nodes (16): 4.10 CI Security Gates, 4.2 Repository-Layer Scoping Must Exist in Addition to RLS, 4.3 FastAPI Must Derive Tenant Context from Verified Identity, 4.5 pgvector Retrieval Must Be Tenant-Filtered, 4.6 Widget Auth and Origin Isolation, 4.7 Redis Memory and Session Isolation, 4.9 Guardrails, Prompt Injection, and PII Redaction, 4. Inspection Checklist (+8 more)
-
-### Community 388 - "Community 388"
-Cohesion: 0.32
-Nodes (7): AsyncEngine, str, make_engine(), make_engine(), SQLAlchemy declarative base + async engine/sessionmaker (T013 — [ALL] stub)., concierge_manager DB role (elevated), get_manager_session() manager-role dependency
 
 ### Community 389 - "Community 389"
 Cohesion: 0.39
@@ -1543,9 +1539,9 @@ Nodes (13): 5.1 Preferred Backend Verification Matrix, 5.2 Compose and Migration
 Cohesion: 0.20
 Nodes (7): str, _props(), Contract conformance for the chat + CMS surface (T081).  Asserts the FastAPI a, Follow a single $ref into components/schemas., _resolve_ref(), test_chat_request_body(), test_chat_turn_response_shape()
 
-### Community 395 - "Community 395"
-Cohesion: 0.67
-Nodes (3): code:sql (tenant_id = current_setting('app.tenant_id')::uuid), code:sql (id = current_setting('app.tenant_id')::uuid), D. Policy expression correctness
+### Community 394 - "Community 394"
+Cohesion: 0.15
+Nodes (6): app.frameworks.api.main:app, Contract conformance for leads routes (T120).  Asserts /leads and /leads/expor, API Service (dev), Concierge Platform README, Compose-Up Procedure, Migrations Procedure
 
 ### Community 396 - "Community 396"
 Cohesion: 0.18
@@ -1563,25 +1559,13 @@ Nodes (10): 1.1 Read-Only Orchestrator, 1.2 Single Writer Principle, 1.3 Evidenc
 Cohesion: 0.25
 Nodes (9): AllowedOrigin (entity dataclass), Tenant (entity dataclass), TenantPlan (enum), TenantStatus (enum), WidgetTable (Core handle), PostgresTenantRepository.add_allowed_origin, PostgresTenantRepository.create, PostgresTenantRepository.list_allowed_origins (+1 more)
 
-### Community 400 - "Community 400"
-Cohesion: 0.39
-Nodes (5): Conversation, str, UUID, ConversationRepository, ConversationRepository protocol (T022) — Layer 2 interface.  Owner B publishes
-
 ### Community 402 - "Community 402"
 Cohesion: 0.29
 Nodes (6): 2.1 Repository Orientation, 2.2 Mandatory Source-of-Truth Read Order, 2.3 Ground Truth Baseline, 2. Required Project Context Before Delegation, code:bash (pwd), Project QA Orchestrator — Concierge Full-System Audit Brain
 
-### Community 403 - "Community 403"
-Cohesion: 0.29
-Nodes (7): Reject requests whose body/path claims a tenant different from the token's., Reject requests whose body/path claims a tenant different from the token's., Reject requests whose body/path claims a tenant different from the token's., Reject requests whose body/path claims a tenant different from the token's., Reject requests whose body/path claims a tenant different from the token's., Reject requests whose body/path claims a tenant different from the token's., require_matching_tenant()
-
 ### Community 404 - "Community 404"
 Cohesion: 0.40
 Nodes (3): Any, str, timedelta
-
-### Community 405 - "Community 405"
-Cohesion: 0.33
-Nodes (4): Conversation, UUID, EscalationReason, EscalateUseCase (T076) — Layer 2.  Flags a conversation for human follow-up. R
 
 ### Community 406 - "Community 406"
 Cohesion: 0.33
@@ -1596,40 +1580,32 @@ Cohesion: 0.33
 Nodes (6): 7. Required Output Format, Auditor Finding Schema, code:md (### 🚨 Finding: [Short Title]), code:block18 (- **Required Fix:** [Precise remediation requirement for the), code:md (## Security Isolation Audit Result), No Confirmed Security Findings Schema
 
 ### Community 409 - "Community 409"
-Cohesion: 0.40
-Nodes (5): PostgresChunkRepository Adapter, Owner B — Agent/RAG/CMS/Memory/Tools Domain, pgvector HNSW Cosine-Distance RAG Retrieval, ChunkRepository Protocol, Owner B Auditor Agent
-
-### Community 410 - "Community 410"
-Cohesion: 1.00
-Nodes (3): User (entity dataclass), UserRole (enum), PostgresUserRepository.create
-
-### Community 411 - "Community 411"
-Cohesion: 0.40
-Nodes (5): 4.3 Test Failure Triage Schema, code:md (### 🧪 Test Failure: [Short Title]), code:block17 (- **Failure Type:** [unit | contract | integration | eval | ), code:block18 (- **Root Cause:** [Code issue | Test issue | Fixture issue |), code:block19
+Cohesion: 0.22
+Nodes (9): PostgresChunkRepository Adapter, TenantContextMiddleware, Owner B — Agent/RAG/CMS/Memory/Tools Domain, pgvector HNSW Cosine-Distance RAG Retrieval, ChunkRepository Protocol, Owner B Auditor Agent, Security Isolation Auditor Agent, PostgreSQL RLS + SET LOCAL app.tenant_id (+1 more)
 
 ### Community 412 - "Community 412"
 Cohesion: 0.40
 Nodes (5): 6. Severity Classification, Critical, High, Low, Medium
 
 ## Knowledge Gaps
-- **2916 isolated node(s):** `PreToolUse`, `feature_directory`, `ai`, `ai_skills`, `branch_numbering` (+2911 more)
+- **2919 isolated node(s):** `PreToolUse`, `feature_directory`, `ai`, `ai_skills`, `branch_numbering` (+2914 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **75 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **76 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `app.frameworks.api.main:app` connect `Community 42` to `Community 2`, `Community 3`, `Community 392`, `Community 393`, `Community 394`, `Community 11`, `Community 13`?**
-  _High betweenness centrality (0.033) - this node is a cross-community bridge._
-- **Why does `test_tenant_provisioning (T118)` connect `Community 42` to `Community 378`, `Community 66`?**
-  _High betweenness centrality (0.027) - this node is a cross-community bridge._
-- **Why does `vocab` connect `Community 0` to `Community 1`?**
-  _High betweenness centrality (0.023) - this node is a cross-community bridge._
-- **Are the 57 inferred relationships involving `Message` (e.g. with `_NullCaptureLead` and `_NullEscalate`) actually correct?**
-  _`Message` has 57 INFERRED edges - model-reasoned connections that need verification._
+- **Why does `app.frameworks.api.main:app` connect `Community 394` to `Community 2`, `Community 3`, `Community 392`, `Community 393`, `Community 42`, `Community 11`, `Community 13`?**
+  _High betweenness centrality (0.038) - this node is a cross-community bridge._
+- **Why does `test_tenant_provisioning (T118)` connect `Community 42` to `Community 378`, `Community 394`, `Community 66`, `Community 287`?**
+  _High betweenness centrality (0.029) - this node is a cross-community bridge._
+- **Why does `FastAPI` connect `Community 48` to `Community 32`, `Community 66`, `Community 26`, `Community 7`, `Community 76`, `Community 12`, `Community 79`, `Community 50`, `Community 23`, `Community 247`, `Community 25`, `Community 122`, `Community 156`, `Community 375`?**
+  _High betweenness centrality (0.024) - this node is a cross-community bridge._
+- **Are the 58 inferred relationships involving `Message` (e.g. with `_NullCaptureLead` and `_NullEscalate`) actually correct?**
+  _`Message` has 58 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 53 inferred relationships involving `AuditOutcome` (e.g. with `AuditEntryModel` and `AsyncSession`) actually correct?**
   _`AuditOutcome` has 53 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 53 inferred relationships involving `Settings` (e.g. with `ManagerContext` and `WidgetTokenContext`) actually correct?**
   _`Settings` has 53 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `PreToolUse`, `feature_directory`, `ai` to the rest of the system?**
-  _3192 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _3195 weakly-connected nodes found - possible documentation gaps or missing edges._

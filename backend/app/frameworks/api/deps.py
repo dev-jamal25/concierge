@@ -87,6 +87,11 @@ def _resolve_service_token() -> str:
     return HvacVaultClient(settings).ensure_service_token_sync()
 
 
+def get_service_token() -> str:
+    """Return the shared X-Service-Token (Vault-first, env fallback)."""
+    return _resolve_service_token()
+
+
 def get_guardrails_client() -> NeMoGuardrails:
     settings = get_settings()
     return NeMoGuardrails(
