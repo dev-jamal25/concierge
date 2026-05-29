@@ -29,5 +29,11 @@ eval-redteam:
 eval-modelserver:
 	cd $(BACKEND_DIR) && $(UV) run --extra dev --extra notebooks pytest tests/integration/test_modelserver_service_token.py -v
 
-seed-demo-tenant serve-test-host smoke eval eval-agent eval-rag:
+eval-agent:
+	cd $(BACKEND_DIR) && $(UV) run --extra dev pytest tests/evals/agent_tool_selection/ -v -s -m eval
+
+eval-rag:
+	cd $(BACKEND_DIR) && $(UV) run --extra dev pytest tests/evals/rag/ -v -s -m eval
+
+seed-demo-tenant serve-test-host smoke eval:
 	@echo "$@ pending Owner C/D"
