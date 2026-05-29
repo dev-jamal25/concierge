@@ -45,6 +45,10 @@ class Settings(BaseSettings):
 
     # MinIO (object storage — Owner D owns the adapter)
     minio_endpoint: str = Field(default="localhost:9000")
+    minio_access_key: str = Field(default="minioadmin")
+    minio_secret_key: str = Field(default="minioadmin")
+    minio_bucket: str = Field(default="concierge")
+    minio_secure: bool = Field(default=False)
 
     # Vault
     vault_addr: str = Field(default="http://localhost:8200")

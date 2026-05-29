@@ -19,9 +19,9 @@ from functools import lru_cache
 from uuid import UUID
 
 import jwt
-from fastapi import Depends, HTTPException, status
-from fastapi import Header
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from minio import Minio
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.adapters.email.console_email import ConsoleEmailSender
@@ -100,7 +100,14 @@ async def get_token_signer() -> PyJWTSigner:
 
 
 def get_object_storage() -> MinIOObjectStorage:
-    return MinIOObjectStorage()
+    settings = get_settings()
+    client = Minio(
+        settings.minio_endpoint,
+        access_key=settings.minio_access_key,
+        secret_key=settings.minio_secret_key,
+        secure=settings.minio_secure,
+    )
+    return MinIOObjectStorage(client=client, bucket_name=settings.minio_bucket)
 
 
 # --- DB sessions (re-exported as FastAPI dependencies) ---
