@@ -80,7 +80,9 @@ async def get_widget_config(
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid widget token") from exc
 
     issued_origin = str(claims["origin"])
-    if origin is not None and origin != issued_origin:
+    if origin is None:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "missing origin")
+    if origin != issued_origin:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "origin mismatch")
 
     tenant_id = UUID(str(claims["tenant_id"]))

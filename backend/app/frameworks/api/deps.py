@@ -149,7 +149,9 @@ async def get_current_widget_tenant_id(
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid widget token") from exc
 
     issued_origin = str(claims.get("origin", ""))
-    if origin is not None and origin != issued_origin:
+    if origin is None:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "missing origin")
+    if origin != issued_origin:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "origin mismatch")
 
     tenant_id = claims.get("tenant_id")

@@ -11,7 +11,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./db/init:/docker-entrypoint-initdb.d:ro
+      - ./db/init/01-roles.sh:/docker-entrypoint-initdb.d/01-roles.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -60,6 +60,17 @@ services:
       timeout: 5s
       retries: 20
 
+  migrate:
+    build:
+      context: ./backend
+    environment:
+      MIGRATION_DATABASE_URL: postgresql+asyncpg://concierge:${POSTGRES_PASSWORD:-concierge}@postgres:5432/${POSTGRES_DB:-concierge}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["alembic", "-c", "app/frameworks/db/alembic.ini", "upgrade", "head"]
+    restart: "no"
+
   api:
     build:
       context: ./backend
@@ -86,7 +97,9 @@ services:
       minio:
         condition: service_healthy
       vault:
-        condition: service_started
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     ports:
       - "8000:8000"
     healthcheck:

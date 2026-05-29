@@ -26,4 +26,8 @@ ALTER ROLE concierge_app WITH LOGIN PASSWORD :'app_password';
 ALTER ROLE concierge_manager WITH LOGIN PASSWORD :'manager_password';
 GRANT CONNECT ON DATABASE :"db_name" TO concierge_app, concierge_manager;
 GRANT USAGE ON SCHEMA public TO concierge_app, concierge_manager;
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE EXTENSION IF NOT EXISTS "vector";
 EOSQL

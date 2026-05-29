@@ -100,7 +100,7 @@ jobs:
         run: cp .env.example .env
 
       - name: Build service images
-        run: docker compose build api modelserver guardrails
+        run: docker compose build migrate api modelserver guardrails
 
       - name: Assert modelserver image ≤ 500 MB (T147)
         run: |

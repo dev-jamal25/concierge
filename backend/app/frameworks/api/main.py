@@ -24,11 +24,19 @@ def create_app() -> FastAPI:
 
     # --- Middleware (registered in Phase 2; outermost first) ---
     from app.frameworks.api.deps import get_guardrails_client
+    from app.frameworks.api.middleware.origin_check import OriginCheckMiddleware
     from app.frameworks.api.middleware.pii_redaction import PIIRedactionMiddleware
     from app.frameworks.api.middleware.tenant_context import TenantContextMiddleware
 
     app.add_middleware(PIIRedactionMiddleware, guardrails=get_guardrails_client())
     app.add_middleware(TenantContextMiddleware)
+    # OriginCheckMiddleware is outermost: added last so it runs before TenantContext.
+    # Route-level deps perform the tenant-aware DB lookup; the middleware enforces
+    # that the Origin header is present at all for protected browser-facing routes.
+    app.add_middleware(
+        OriginCheckMiddleware,
+        protected_paths=frozenset({"/widget/config", "/chat"}),
+    )
 
     # --- Routers (registered as slices land) ---
     from app.frameworks.api.routes import admin as admin_routes
