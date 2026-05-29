@@ -162,21 +162,29 @@ services:
       timeout: 3s
       retries: 20
 
-  # Owner D placeholder:
-  # admin:
-  #   profiles: ["owner-d"]
-  #   image: busybox
-  #   command: ["sh", "-c", "echo pending Owner D admin && sleep infinity"]
-  #   ports:
-  #     - "8501:8501"
+  # Owner D stub — replace with real Streamlit service when admin/ directory lands (T052).
+  admin:
+    image: busybox
+    command: ["sh", "-c", "echo 'pending Owner D admin (T052)' && sleep infinity"]
+    ports:
+      - "8501:8501"
+    healthcheck:
+      test: ["CMD", "true"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
 
-  # Owner D placeholder:
-  # widget-static:
-  #   profiles: ["owner-d"]
-  #   image: busybox
-  #   command: ["sh", "-c", "echo pending Owner D widget static && sleep infinity"]
-  #   ports:
-  #     - "8003:8003"
+  # Owner D stub — replace with widget bundle server when widget-static/ lands (T053).
+  widget-static:
+    image: busybox
+    command: ["sh", "-c", "echo 'pending Owner D widget-static (T053)' && sleep infinity"]
+    ports:
+      - "8003:8003"
+    healthcheck:
+      test: ["CMD", "true"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
 
 volumes:
   postgres_data:

@@ -138,7 +138,7 @@ four-layer split; non-Python services and the offline training surface live
 in sibling top-level directories.
 
 ```text
-src/
+backend/app/
 ├── entities/                       # Layer 1 — pure dataclasses, no I/O
 │   ├── __init__.py
 │   ├── tenant.py
@@ -319,8 +319,8 @@ docs/                               # Required by constitution Principle VII
 └── SECURITY.md                     # Threat model, jurisdictional posture (GDPR-aligned)
 
 # Per-component SPEC.md files live alongside the code:
-src/use_cases/SPEC.md
-src/adapters/SPEC.md
+backend/app/use_cases/SPEC.md
+backend/app/adapters/SPEC.md
 services/modelserver/SPEC.md
 services/guardrails/SPEC.md
 admin/SPEC.md
@@ -341,12 +341,12 @@ CLAUDE.md                           # Points at the current plan
 ```
 
 **Structure Decision**: A polyglot monorepo with four Python layers
-strictly separated under `src/` (Entities → Use Cases → Interface Adapters
+strictly separated under `backend/app/` (Entities → Use Cases → Interface Adapters
 → Frameworks). Non-Python sub-products (`services/modelserver`,
 `services/guardrails`, `widget/`) and offline training (`notebooks/`) are
-siblings of `src/`, not nested under it. The chief constraint enforced by
-this layout is that **nothing under `src/entities/` or `src/use_cases/`
-may import from `src/adapters/` or `src/frameworks/`** — this is checked
+siblings of `backend/`, not nested under it. The chief constraint enforced by
+this layout is that **nothing under `backend/app/entities/` or `backend/app/use_cases/`
+may import from `backend/app/adapters/` or `backend/app/frameworks/`** — this is checked
 by a static import-rule guard in CI (Principle I gate). Streamlit admin
 and React widget are deployed independently from the API; the API and the
 two sidecars are the three Python-runtime images shipped.
@@ -495,7 +495,7 @@ satisfied:
   composition root; no use case imports a concrete adapter module.
 - **III (Tenant Isolation)**: confirm every tenant-scoped table in
   `data-model.md` has an RLS policy and the policy is exercised by
-  `tests/integration/test_rls_isolation.py`.
+  `backend/tests/integration/test_rls_isolation.py`.
 - **IV (Lean Containers)**: confirm `services/modelserver/Dockerfile`
   builds an image ≤ 500MB and contains no `torch` (CI assertion).
 - **V (Defense-in-Depth)**: confirm `/widget/token` issuance binds JWT

@@ -62,8 +62,8 @@
 **Purpose**: Repository scaffold and foundational tooling
 
 - [ ] T001 [ALL] Initialize git repo with initial commit and branch `001-concierge-platform` in `.github/` with protection rules
-- [ ] T002 [ALL] Create `pyproject.toml` with workspace setup (src/, services/modelserver, services/guardrails) and Python 3.11 pins
-- [ ] T003 [P] [ALL] Create the four-layer `src/` tree structure (entities/, use_cases/, adapters/, frameworks/) with `__init__.py` files
+- [ ] T002 [ALL] Create `pyproject.toml` with workspace setup (backend/, services/modelserver, services/guardrails) and Python 3.11 pins
+- [ ] T003 [P] [ALL] Create the four-layer `backend/app/` tree structure (entities/, use_cases/, adapters/, frameworks/) with `__init__.py` files
 - [ ] T004 [P] [ALL] Initialize `pytest`, `pytest-asyncio`, `pytest-cov`, `ruff`, `mypy`, and `vitest` configs (setup.cfg, pyproject.toml)
 - [X] T005 [ALL] Create `README.md` with project overview, prereqs, and link to quickstart.md
 - [X] T006 [ALL] Create `.env.example` with required env vars (ANTHROPIC_API_KEY, EMBEDDING_PROVIDER, EMBEDDING_API_KEY, POSTGRES_PASSWORD, VAULT_DEV_ROOT_TOKEN_ID, RERANK_PROVIDER, RERANK_API_KEY)
@@ -80,52 +80,52 @@
 ### Shared Infrastructure & Integration Points
 
 - [X] T010 [ALL] Create `eval_thresholds.yaml` at repo root with thresholds: classifier_macro_f1 ≥ 0.80, agent_tool_selection_macro_f1 ≥ 0.80, rag_golden_set_recall_at_5 ≥ 0.85, rag_golden_set_answer_grounded_rate ≥ 0.85, cross_tenant_redteam_success_rate = 1.0, injection_redteam_success_rate ≥ 0.95, pii_redaction_rate = 1.0
-- [X] T011 [ALL] Create `src/frameworks/config.py`: settings class for database, redis, minio, vault, llm, embedding, classifier, guardrails URLs + credentials (read from env/.env, then Vault via hvac)
-- [X] T012 [ALL] Create `src/frameworks/api/main.py`: FastAPI app skeleton with CORS, middleware hooks (app startup/shutdown), health endpoints `/healthz`, `/readyz`
-- [X] T013 [ALL] Create `src/frameworks/db/base.py`: SQLAlchemy base model, async sessionmaker, alembic config for migrations under `src/frameworks/db/alembic/versions/`
+- [X] T011 [ALL] Create `backend/app/frameworks/config.py`: settings class for database, redis, minio, vault, llm, embedding, classifier, guardrails URLs + credentials (read from env/.env, then Vault via hvac)
+- [X] T012 [ALL] Create `backend/app/frameworks/api/main.py`: FastAPI app skeleton with CORS, middleware hooks (app startup/shutdown), health endpoints `/healthz`, `/readyz`
+- [X] T013 [ALL] Create `backend/app/frameworks/db/base.py`: SQLAlchemy base model, async sessionmaker, alembic config for migrations under `backend/app/frameworks/db/alembic/versions/`
 
 ### Isolation Reference Pattern (Slice A leads; all consume)
 
-- [X] T014 [A] Create `src/entities/tenant.py`: Tenant dataclass with id, slug, display_name, plan, persona_config, theme_config, guardrail_config, status, created_at, updated_at
-- [X] T015 [A] Create `src/entities/user.py`: User dataclass with id, email, hashed_password, role (tenant_manager | tenant_admin), is_active, is_verified, created_at
-- [X] T016 [A] Create `src/frameworks/db/models.py`: SQLAlchemy ORM models mirroring entities (tenants, users, user_tenant_roles, invitations, audit_entries tables with RLS schema placeholders)
-- [X] T017 [A] Create `src/frameworks/db/session.py`: SessionLocal factory with async scope; TenantContextMiddleware that extracts tenant_id from JWT/credential and executes `SET LOCAL app.tenant_id = '<uuid>'`
+- [X] T014 [A] Create `backend/app/entities/tenant.py`: Tenant dataclass with id, slug, display_name, plan, persona_config, theme_config, guardrail_config, status, created_at, updated_at
+- [X] T015 [A] Create `backend/app/entities/user.py`: User dataclass with id, email, hashed_password, role (tenant_manager | tenant_admin), is_active, is_verified, created_at
+- [X] T016 [A] Create `backend/app/frameworks/db/models.py`: SQLAlchemy ORM models mirroring entities (tenants, users, user_tenant_roles, invitations, audit_entries tables with RLS schema placeholders)
+- [X] T017 [A] Create `backend/app/frameworks/db/session.py`: SessionLocal factory with async scope; TenantContextMiddleware that extracts tenant_id from JWT/credential and executes `SET LOCAL app.tenant_id = '<uuid>'`
 - [X] T018 [A] Create Alembic migration `001_init_tenants_users_audit.sql`: creates tenants, users, user_tenant_roles, invitations, audit_entries tables with `tenant_id` on all tenant-scoped tables; installs pgcrypto, uuid-ossp, vector extensions; applies ONE RLS policy on tenants table as the reference pattern
 
 ### Protocol Interfaces (Slice leaders publish; others code against fakes)
 
-- [X] T019 [A] Create `src/use_cases/protocols/tenant_repository.py`: Protocol for ProvisionTenant, EraseTenant, GetTenant, ListTenants, UpdateTenant
-- [X] T020 [A] Create `src/use_cases/protocols/user_repository.py`: Protocol for CreateUser, GetUser, UpdateUser (role binding)
-- [X] T021 [A] Create `src/use_cases/protocols/audit_repository.py`: Protocol for LogAuditEntry (append-only)
-- [X] T022 [B] Create `src/use_cases/protocols/conversation_repository.py`: Protocol for CreateConversation, GetConversation, UpdateEscalation
-- [X] T023 [B] Create `src/use_cases/protocols/chunk_repository.py`: Protocol for CreateChunk, QueryChunks (with tenant_id filter at query time)
-- [X] T024 [B] Create `src/use_cases/protocols/lead_repository.py`: Protocol for CaptureLead, ListLeads, RateLimitLeads
-- [X] T025 [B] Create `src/use_cases/protocols/llm_client.py`: Protocol for CallLLM(system, messages, tools, max_tokens, temp) → ToolChoice result
-- [X] T026 [B] Create `src/use_cases/protocols/embedding_client.py`: Protocol for EmbedTexts(texts) → List[Vector]
-- [X] T027 [C] Create `src/use_cases/protocols/classifier_client.py`: Protocol for Classify(message, tenant_id) → Label, confidence, per_class scores
-- [X] T028 [C] Create `src/use_cases/protocols/guardrails_client.py`: Protocol for Check(tenant_id, role, content) → action (allow|redact|refuse), redacted_content, triggered_rails
-- [X] T029 [B] Create `src/use_cases/protocols/session_store.py`: Protocol for StoreSession(key, value, ttl), RetrieveSession(key), DeleteSession(key) (Redis backend)
-- [ ] T030 [D] Create `src/use_cases/protocols/token_signer.py`: Protocol for SignToken(claims, ttl) → JWT, VerifyToken(jwt) → claims
-- [ ] T031 [D] Create `src/use_cases/protocols/object_storage.py`: Protocol for StoreObject(tenant_id, path, data), FetchObject(tenant_id, path) → bytes, DeleteObject(tenant_id, path), DeletePrefix(tenant_id, prefix)
-- [X] T032 [A] Create `src/use_cases/protocols/vault_client.py`: Protocol for GetSecret(path) → value, SetSecret(path, value), RotateKey(key_id)
+- [X] T019 [A] Create `backend/app/use_cases/protocols/tenant_repository.py`: Protocol for ProvisionTenant, EraseTenant, GetTenant, ListTenants, UpdateTenant
+- [X] T020 [A] Create `backend/app/use_cases/protocols/user_repository.py`: Protocol for CreateUser, GetUser, UpdateUser (role binding)
+- [X] T021 [A] Create `backend/app/use_cases/protocols/audit_repository.py`: Protocol for LogAuditEntry (append-only)
+- [X] T022 [B] Create `backend/app/use_cases/protocols/conversation_repository.py`: Protocol for CreateConversation, GetConversation, UpdateEscalation
+- [X] T023 [B] Create `backend/app/use_cases/protocols/chunk_repository.py`: Protocol for CreateChunk, QueryChunks (with tenant_id filter at query time)
+- [X] T024 [B] Create `backend/app/use_cases/protocols/lead_repository.py`: Protocol for CaptureLead, ListLeads, RateLimitLeads
+- [X] T025 [B] Create `backend/app/use_cases/protocols/llm_client.py`: Protocol for CallLLM(system, messages, tools, max_tokens, temp) → ToolChoice result
+- [X] T026 [B] Create `backend/app/use_cases/protocols/embedding_client.py`: Protocol for EmbedTexts(texts) → List[Vector]
+- [X] T027 [C] Create `backend/app/use_cases/protocols/classifier_client.py`: Protocol for Classify(message, tenant_id) → Label, confidence, per_class scores
+- [X] T028 [C] Create `backend/app/use_cases/protocols/guardrails_client.py`: Protocol for Check(tenant_id, role, content) → action (allow|redact|refuse), redacted_content, triggered_rails
+- [X] T029 [B] Create `backend/app/use_cases/protocols/session_store.py`: Protocol for StoreSession(key, value, ttl), RetrieveSession(key), DeleteSession(key) (Redis backend)
+- [ ] T030 [D] Create `backend/app/use_cases/protocols/token_signer.py`: Protocol for SignToken(claims, ttl) → JWT, VerifyToken(jwt) → claims
+- [ ] T031 [D] Create `backend/app/use_cases/protocols/object_storage.py`: Protocol for StoreObject(tenant_id, path, data), FetchObject(tenant_id, path) → bytes, DeleteObject(tenant_id, path), DeletePrefix(tenant_id, prefix)
+- [X] T032 [A] Create `backend/app/use_cases/protocols/vault_client.py`: Protocol for GetSecret(path) → value, SetSecret(path, value), RotateKey(key_id)
 
 ### Middleware & Cross-Slice Seams
 
-- [X] T033 [A] Create `src/frameworks/api/middleware/tenant_context.py`: TenantContextMiddleware extracts tenant_id from JWT (widget) or session (admin/manager), calls `SET LOCAL app.tenant_id`, resets at response end
-- [X] T034 [A] Create `src/frameworks/api/middleware/origin_check.py`: OriginCheckMiddleware validates request Origin header against tenant.allowed_origins from DB
-- [X] T035 [C] Create `src/frameworks/api/middleware/pii_redaction.py`: PIIRedactionMiddleware wraps logger, tracer, Redis writer to redact outbound data via guardrails_client
-- [X] T036 [ALL] Create `src/frameworks/api/deps.py`: Composition root. Wires concrete adapters (PostgresRepository, RedisSession, AnthropicLLM, HostedEmbeddings, ModelserverClassifier, NeMoGuardrails, PyJWTSigner, MinIOStorage, VaultClient) into use-case protocols. No use case imports a concrete adapter.
-- [X] T037 [ALL] Wire static import-linter rule in CI (or custom ruff rule) to enforce: no file in `src/entities/` or `src/use_cases/` imports from `src/adapters/` or `src/frameworks/`
+- [X] T033 [A] Create `backend/app/frameworks/api/middleware/tenant_context.py`: TenantContextMiddleware extracts tenant_id from JWT (widget) or session (admin/manager), calls `SET LOCAL app.tenant_id`, resets at response end
+- [X] T034 [A] Create `backend/app/frameworks/api/middleware/origin_check.py`: OriginCheckMiddleware validates request Origin header against tenant.allowed_origins from DB
+- [X] T035 [C] Create `backend/app/frameworks/api/middleware/pii_redaction.py`: PIIRedactionMiddleware wraps logger, tracer, Redis writer to redact outbound data via guardrails_client
+- [X] T036 [ALL] Create `backend/app/frameworks/api/deps.py`: Composition root. Wires concrete adapters (PostgresRepository, RedisSession, AnthropicLLM, HostedEmbeddings, ModelserverClassifier, NeMoGuardrails, PyJWTSigner, MinIOStorage, VaultClient) into use-case protocols. No use case imports a concrete adapter.
+- [X] T037 [ALL] Wire static import-linter rule in CI (or custom ruff rule) to enforce: no file in `backend/app/entities/` or `backend/app/use_cases/` imports from `backend/app/adapters/` or `backend/app/frameworks/`
 
 ### Vault & Service-to-Service Auth
 
-- [X] T038 [A] Create `src/frameworks/secrets/vault_client.py`: HvacClient wrapper for KV v2. At startup, generate or retrieve Ed25519 signing key from `secret/jwt/widget/active` and store in deps. Service credential issued to modelserver and guardrails sidecar.
+- [X] T038 [A] Create `backend/app/frameworks/secrets/vault_client.py`: HvacClient wrapper for KV v2. At startup, generate or retrieve Ed25519 signing key from `secret/jwt/widget/active` and store in deps. Service credential issued to modelserver and guardrails sidecar.
 - [X] T039 [ALL] Document in `.env.example` and RUNBOOK.md: Vault dev-mode bootstrap (VAULT_DEV_ROOT_TOKEN_ID), unsealing, KV v2 mount at `secret/`
 
 ### Observability Wiring
 
-- [X] T040 [C] Create `src/frameworks/observability/logging.py`: Structured JSON logger with redaction-aware filter; log level from env (INFO default)
-- [X] T041 [C] Create `src/frameworks/observability/tracing.py`: Tracer (e.g., OpenTelemetry) with egress-side redaction interceptor; exports to console (dev) or backend (via env)
+- [X] T040 [C] Create `backend/app/frameworks/observability/logging.py`: Structured JSON logger with redaction-aware filter; log level from env (INFO default)
+- [X] T041 [C] Create `backend/app/frameworks/observability/tracing.py`: Tracer (e.g., OpenTelemetry) with egress-side redaction interceptor; exports to console (dev) or backend (via env)
 
 ### GitHub Actions CI Skeleton
 
@@ -134,19 +134,19 @@
 
 ### Protocol-Driven LLM & Embedding Adapters (Fakes for now; impl in slice work)
 
-- [X] T044 [B] Create `src/adapters/llm/anthropic_client.py`: Stub implementing LLMClient protocol; calls Anthropic API with tool_choice result handling. Actual implementation in Slice B / US1.
-- [X] T045 [B] Create `src/adapters/embeddings/hosted_embeddings.py`: Stub implementing EmbeddingClient; calls hosted API (Voyage/Cohere/OpenAI per env). Actual impl in Slice B / US1.
-- [X] T046 [B] Create `src/adapters/session/redis_session.py`: Stub implementing SessionStore protocol; Redis client wrapper with TTL. Actual impl in Slice B / US1.
+- [X] T044 [B] Create `backend/app/adapters/llm/anthropic_client.py`: Stub implementing LLMClient protocol; calls Anthropic API with tool_choice result handling. Actual implementation in Slice B / US1.
+- [X] T045 [B] Create `backend/app/adapters/embeddings/hosted_embeddings.py`: Stub implementing EmbeddingClient; calls hosted API (Voyage/Cohere/OpenAI per env). Actual impl in Slice B / US1.
+- [X] T046 [B] Create `backend/app/adapters/session/redis_session.py`: Stub implementing SessionStore protocol; Redis client wrapper with TTL. Actual impl in Slice B / US1.
 
 ### Classifier & Guardrails HTTP Clients
 
-- [X] T047 [C] Create `src/adapters/classifier/modelserver_client.py`: Stub implementing ClassifierClient; POSTs to `http://modelserver:8001/predict` with service token. Actual impl in Slice C.
-- [X] T048 [C] Create `src/adapters/guardrails/nemo_client.py`: Stub implementing GuardrailsClient; POSTs to `http://guardrails:8002/check` with service token. Actual impl in Slice C.
+- [X] T047 [C] Create `backend/app/adapters/classifier/modelserver_client.py`: Stub implementing ClassifierClient; POSTs to `http://modelserver:8001/predict` with service token. Actual impl in Slice C.
+- [X] T048 [C] Create `backend/app/adapters/guardrails/nemo_client.py`: Stub implementing GuardrailsClient; POSTs to `http://guardrails:8002/check` with service token. Actual impl in Slice C.
 
 ### Token & Storage Adapters
 
-- [ ] T049 [D] Create `src/adapters/tokens/pyjwt_signer.py`: Stub implementing TokenSigner; PyJWT with Ed25519 key from Vault. Actual impl in Slice D.
-- [ ] T050 [D] Create `src/adapters/storage/minio_object_storage.py`: Stub implementing ObjectStorage; MinIO client. Actual impl in Slice D.
+- [ ] T049 [D] Create `backend/app/adapters/tokens/pyjwt_signer.py`: Stub implementing TokenSigner; PyJWT with Ed25519 key from Vault. Actual impl in Slice D.
+- [ ] T050 [D] Create `backend/app/adapters/storage/minio_object_storage.py`: Stub implementing ObjectStorage; MinIO client. Actual impl in Slice D.
 
 ### Minimal Widget & Admin Stubs
 
@@ -161,8 +161,8 @@
 - [ ] T056 [A] Create `docs/RUNBOOK.md` stub: sections for compose-up, restore, on-call troubleshooting; Slice A + Slice D populate
 - [X] T057 [C] Create `docs/EVALS.md` stub: sections for how each gate is built and how to read results; populated by Slice C
 - [X] T058 [C] Create `docs/SECURITY.md` stub: threat model, GDPR posture, jurisdictional notes; Slice C populates
-- [X] T059 [P] [A] Create `src/use_cases/SPEC.md` stub (Slice A)
-- [X] T060 [P] [B] Create `src/adapters/SPEC.md` stub (Slice B)
+- [X] T059 [P] [A] Create `backend/app/use_cases/SPEC.md` stub (Slice A)
+- [X] T060 [P] [B] Create `backend/app/adapters/SPEC.md` stub (Slice B)
 - [X] T061 [P] [C] Create `services/modelserver/SPEC.md` stub (Slice C)
 - [X] T062 [P] [C] Create `services/guardrails/SPEC.md` stub (Slice C)
 - [ ] T063 [P] [D] Create `admin/SPEC.md` stub (Slice D)
@@ -180,36 +180,36 @@
 
 ### Entities (Story-Specific)
 
-- [X] T065 [B] Create `src/entities/conversation.py`: Conversation dataclass with id, tenant_id, widget_id, visitor_session, escalated_at, escalation_reason, started_at, last_turn_at
-- [X] T066 [B] Create `src/entities/message.py`: Message dataclass with id, tenant_id, conversation_id, role (visitor|agent|tool|system), router_label, content (PII-redacted), tool_calls, created_at
-- [X] T067 [B] Create `src/entities/chunk.py`: Chunk dataclass with id, tenant_id, cms_page_id, chunk_index, content, embedding (vector), metadata, embedded_at
-- [X] T068 [B] Create `src/entities/lead.py`: Lead dataclass with id, tenant_id, conversation_id, name, contact, intent, created_at
-- [X] T069 [B] Create `src/entities/cms_page.py`: CMSPage dataclass with id, tenant_id, title, body, state (draft|published|unpublished), slug, published_at, created_at, updated_at
+- [X] T065 [B] Create `backend/app/entities/conversation.py`: Conversation dataclass with id, tenant_id, widget_id, visitor_session, escalated_at, escalation_reason, started_at, last_turn_at
+- [X] T066 [B] Create `backend/app/entities/message.py`: Message dataclass with id, tenant_id, conversation_id, role (visitor|agent|tool|system), router_label, content (PII-redacted), tool_calls, created_at
+- [X] T067 [B] Create `backend/app/entities/chunk.py`: Chunk dataclass with id, tenant_id, cms_page_id, chunk_index, content, embedding (vector), metadata, embedded_at
+- [X] T068 [B] Create `backend/app/entities/lead.py`: Lead dataclass with id, tenant_id, conversation_id, name, contact, intent, created_at
+- [X] T069 [B] Create `backend/app/entities/cms_page.py`: CMSPage dataclass with id, tenant_id, title, body, state (draft|published|unpublished), slug, published_at, created_at, updated_at
 
 ### Repository Implementations (Story-Specific)
 
-- [X] T070 [P] [B] Create `src/adapters/repositories/conversation_repository.py`: Implements ConversationRepository protocol; queries include `WHERE tenant_id = :tenant_id`; RLS enforced at DB layer
-- [X] T071 [P] [B] Create `src/adapters/repositories/chunk_repository.py`: Implements ChunkRepository protocol; vector query returns top-20 by cosine similarity, filters `WHERE tenant_id = :tenant_id AND cms_page.state = 'published'` at query time (NOT post-filter); indexes: HNSW/ivfflat on embedding, B-tree on tenant_id
-- [X] T072 [P] [B] Create `src/adapters/repositories/lead_repository.py`: Implements LeadRepository protocol; rate limits per-visitor/session (≤1 per 60s, ≤5 lifetime); appends rate-limit details to conversation for audit
+- [X] T070 [P] [B] Create `backend/app/adapters/repositories/conversation_repository.py`: Implements ConversationRepository protocol; queries include `WHERE tenant_id = :tenant_id`; RLS enforced at DB layer
+- [X] T071 [P] [B] Create `backend/app/adapters/repositories/chunk_repository.py`: Implements ChunkRepository protocol; vector query returns top-20 by cosine similarity, filters `WHERE tenant_id = :tenant_id AND cms_page.state = 'published'` at query time (NOT post-filter); indexes: HNSW/ivfflat on embedding, B-tree on tenant_id
+- [X] T072 [P] [B] Create `backend/app/adapters/repositories/lead_repository.py`: Implements LeadRepository protocol; rate limits per-visitor/session (≤1 per 60s, ≤5 lifetime); appends rate-limit details to conversation for audit
 
 ### Router & Agent Use Cases (Core Logic)
 
-- [X] T073 [B] Create `src/use_cases/classify_message.py`: ClassifyMessageUseCase; calls classifier_client.Classify(message) → label; routes: spam (drop), faq (rag_search), lead_intent (capture_lead), escalate (flag), ambiguous (agent_turn). Returns route and route-specific result.
-- [X] T074 [B] Create `src/use_cases/rag_search.py`: RAGSearchUseCase; chunk_repo.QueryChunks(embedding of user message) → top-20; reranker API (if enabled) → top-5; returns top-5 with cms_page_id and snippet
-- [X] T075 [B] Create `src/use_cases/capture_lead.py`: CaptureLeadUseCase; schema-validates (name, contact, intent); rate-limits per-visitor/session; calls lead_repo.CaptureLead(…) → Lead; returns success or rate_limited status
-- [X] T076 [B] Create `src/use_cases/escalate.py`: EscalateUseCase; sets conversation.escalated_at = now(), escalation_reason = 'visitor_request' (or 'llm_unavailable', 'tool_loop_cap'); audit-logs
-- [X] T077 [B] Create `src/use_cases/agent_turn.py`: AgentTurnUseCase; bounded tool-calling loop: calls llm_client.CallLLM(system_prompt + persona + top-5 chunks + conversation history, tools=[rag_search, capture_lead, escalate], max_iterations=5, max_tokens=2048). Each tool call returns a result; loop terminates on max_iterations or stop token. Returns synthesized reply + any tool side effects (lead captured, conversation escalated).
-- [X] T078 [B] Create `src/use_cases/publish_cms_page.py`: PublishCMSPageUseCase; transitions cms_page.state from draft → published; calls reindex_tenant_chunks (async or sync).
-- [X] T079 [B] Create `src/use_cases/reindex_tenant_chunks.py`: ReindexTenantChunksUseCase; deletes existing chunks for the page; chunks the page body (paragraph-aware, token-bounded 400/50/600 tokens per research.md#1); embeds each chunk via embedding_client.EmbedTexts; inserts into chunk_repo. Transition published ↔ unpublished triggers deletion of chunks.
+- [X] T073 [B] Create `backend/app/use_cases/classify_message.py`: ClassifyMessageUseCase; calls classifier_client.Classify(message) → label; routes: spam (drop), faq (rag_search), lead_intent (capture_lead), escalate (flag), ambiguous (agent_turn). Returns route and route-specific result.
+- [X] T074 [B] Create `backend/app/use_cases/rag_search.py`: RAGSearchUseCase; chunk_repo.QueryChunks(embedding of user message) → top-20; reranker API (if enabled) → top-5; returns top-5 with cms_page_id and snippet
+- [X] T075 [B] Create `backend/app/use_cases/capture_lead.py`: CaptureLeadUseCase; schema-validates (name, contact, intent); rate-limits per-visitor/session; calls lead_repo.CaptureLead(…) → Lead; returns success or rate_limited status
+- [X] T076 [B] Create `backend/app/use_cases/escalate.py`: EscalateUseCase; sets conversation.escalated_at = now(), escalation_reason = 'visitor_request' (or 'llm_unavailable', 'tool_loop_cap'); audit-logs
+- [X] T077 [B] Create `backend/app/use_cases/agent_turn.py`: AgentTurnUseCase; bounded tool-calling loop: calls llm_client.CallLLM(system_prompt + persona + top-5 chunks + conversation history, tools=[rag_search, capture_lead, escalate], max_iterations=5, max_tokens=2048). Each tool call returns a result; loop terminates on max_iterations or stop token. Returns synthesized reply + any tool side effects (lead captured, conversation escalated).
+- [X] T078 [B] Create `backend/app/use_cases/publish_cms_page.py`: PublishCMSPageUseCase; transitions cms_page.state from draft → published; calls reindex_tenant_chunks (async or sync).
+- [X] T079 [B] Create `backend/app/use_cases/reindex_tenant_chunks.py`: ReindexTenantChunksUseCase; deletes existing chunks for the page; chunks the page body (paragraph-aware, token-bounded 400/50/600 tokens per research.md#1); embeds each chunk via embedding_client.EmbedTexts; inserts into chunk_repo. Transition published ↔ unpublished triggers deletion of chunks.
 
 ### Chat Route (Endpoint)
 
-- [X] T080 [B] Create `src/frameworks/api/routes/chat.py`: POST `/chat` endpoint; extracts conversation_id, message from body; gets tenant_id from TenantContext; calls classify_message → routes to rag_search | capture_lead | escalate | agent_turn | (spam → silent drop); returns ChatTurnResponse with route, reply, escalated, retrieved_chunks, capture_lead_status. On LLM/embedding timeout, returns 503 with "service temporarily unavailable", auto-flags conversation as escalated (FR-014a).
+- [X] T080 [B] Create `backend/app/frameworks/api/routes/chat.py`: POST `/chat` endpoint; extracts conversation_id, message from body; gets tenant_id from TenantContext; calls classify_message → routes to rag_search | capture_lead | escalate | agent_turn | (spam → silent drop); returns ChatTurnResponse with route, reply, escalated, retrieved_chunks, capture_lead_status. On LLM/embedding timeout, returns 503 with "service temporarily unavailable", auto-flags conversation as escalated (FR-014a).
 
 ### Contract Tests (Before Implementation)
 
-- [X] T081 [P] [B] Create `tests/contract/test_chat_schema.py`: OpenAPI schema conformance tests for POST `/chat` request/response shapes, status codes
-- [X] T082 [P] [B] Create `tests/integration/test_rls_isolation.py`: RLS enforcement test; create two tenants with chunks; query chunk_repo.QueryChunks from tenant A context; assert zero results from tenant B's chunks. REQUIRED: cross-tenant red-team gate.
+- [X] T081 [P] [B] Create `backend/tests/contract/test_chat_schema.py`: OpenAPI schema conformance tests for POST `/chat` request/response shapes, status codes
+- [X] T082 [P] [B] Create `backend/tests/integration/test_rls_isolation.py`: RLS enforcement test; create two tenants with chunks; query chunk_repo.QueryChunks from tenant A context; assert zero results from tenant B's chunks. REQUIRED: cross-tenant red-team gate.
 
 ### Prompts & Memory
 
@@ -235,16 +235,16 @@
 
 ### CMS Route (Endpoint)
 
-- [X] T089 [US2] [B] Create `src/frameworks/api/routes/cms.py`: CRUD for `/cms/pages` (GET, POST, PUT, DELETE, publish, unpublish). Each write triggers async reindex_tenant_chunks if publish/unpublish. Returns CMSPage schema from contract.
-- [X] T090 [P] [US2] [B] Create `tests/contract/test_cms_schema.py`: Schema conformance tests for `/cms/pages` CRUD endpoints
+- [X] T089 [US2] [B] Create `backend/app/frameworks/api/routes/cms.py`: CRUD for `/cms/pages` (GET, POST, PUT, DELETE, publish, unpublish). Each write triggers async reindex_tenant_chunks if publish/unpublish. Returns CMSPage schema from contract.
+- [X] T090 [P] [US2] [B] Create `backend/tests/contract/test_cms_schema.py`: Schema conformance tests for `/cms/pages` CRUD endpoints
 
 ### Admin Routes (Shared with US3, US6)
 
-- [X] T091 [US2] [B] Create `src/frameworks/api/routes/admin.py`: Placeholder for `/admin/tenant`, `/admin/guardrails`, `/admin/origins`, `/admin/escalations`. T091 focuses on structure; individual endpoints populated as needed by slices.
+- [X] T091 [US2] [B] Create `backend/app/frameworks/api/routes/admin.py`: Placeholder for `/admin/tenant`, `/admin/guardrails`, `/admin/origins`, `/admin/escalations`. T091 focuses on structure; individual endpoints populated as needed by slices.
 
 ### Integration Tests (US1 + US2 Together)
 
-- [X] T092 [US2] [B] Create `tests/integration/test_chat_flow.py`: Seeded tenant with 2 published pages. Chat turn asks a question. Asserts route=faq, retrieved_chunks not empty, reply contains text from a chunk, within 5s (SC-006). Asserts chunks from other tenants are NOT retrieved (RLS gate).
+- [X] T092 [US2] [B] Create `backend/tests/integration/test_chat_flow.py`: Seeded tenant with 2 published pages. Chat turn asks a question. Asserts route=faq, retrieved_chunks not empty, reply contains text from a chunk, within 5s (SC-006). Asserts chunks from other tenants are NOT retrieved (RLS gate).
 
 **Checkpoint**: US1 + US2 complete and independently testable. Admin can manage content; agent retrieves from published pages only. Unpublished/draft pages do NOT leak to agent. Chunks deleted when page unpublished.
 
@@ -258,14 +258,14 @@
 
 ### Widget Entity & Token Issuance Use Case
 
-- [ ] T093 [US3] [D] Create `src/entities/widget.py`: Widget dataclass with id, tenant_id (UNIQUE), public_id, is_enabled, created_at
-- [ ] T094 [US3] [D] Create `src/use_cases/issue_widget_token.py`: IssueWidgetTokenUseCase; validates widget_public_id exists; validates origin against tenant.allowed_origins; calls token_signer.SignToken with claims (tenant_id, widget_id, origin, visitor_session, iat, exp ≤ 5min); returns token + expires_in_seconds
-- [ ] T095 [US3] [D] Create `src/use_cases/get_widget_config.py`: GetWidgetConfigUseCase; returns tenant's theme_config, greeting, persona_summary (redacted for visitor), consent_notice
+- [ ] T093 [US3] [D] Create `backend/app/entities/widget.py`: Widget dataclass with id, tenant_id (UNIQUE), public_id, is_enabled, created_at
+- [ ] T094 [US3] [D] Create `backend/app/use_cases/issue_widget_token.py`: IssueWidgetTokenUseCase; validates widget_public_id exists; validates origin against tenant.allowed_origins; calls token_signer.SignToken with claims (tenant_id, widget_id, origin, visitor_session, iat, exp ≤ 5min); returns token + expires_in_seconds
+- [ ] T095 [US3] [D] Create `backend/app/use_cases/get_widget_config.py`: GetWidgetConfigUseCase; returns tenant's theme_config, greeting, persona_summary (redacted for visitor), consent_notice
 
 ### Widget Endpoints
 
-- [ ] T096 [P] [US3] [D] Create `src/frameworks/api/routes/widget.py`: POST `/widget/token` (public; validates origin), GET `/widget/config` (bearer JWT). Returns WidgetConfig schema.
-- [ ] T097 [P] [US3] [D] Create `tests/contract/test_widget_token_schema.py`: Schema conformance for `/widget/token` and `/widget/config`
+- [ ] T096 [P] [US3] [D] Create `backend/app/frameworks/api/routes/widget.py`: POST `/widget/token` (public; validates origin), GET `/widget/config` (bearer JWT). Returns WidgetConfig schema.
+- [ ] T097 [P] [US3] [D] Create `backend/tests/contract/test_widget_token_schema.py`: Schema conformance for `/widget/token` and `/widget/config`
 
 ### Widget Bundle & Loader
 
@@ -282,7 +282,7 @@
 
 ### Integration Tests
 
-- [ ] T105 [US3] [D] Create `tests/integration/test_widget_token_origin.py`: POST `/widget/token` with widget_id + origin. Assert 200 if origin in allowed_origins. Assert 403 if origin not in allowed_origins. Token issued → chat with that token from a different origin → assert 403 (origin mismatch rejects).
+- [ ] T105 [US3] [D] Create `backend/tests/integration/test_widget_token_origin.py`: POST `/widget/token` with widget_id + origin. Assert 200 if origin in allowed_origins. Assert 403 if origin not in allowed_origins. Token issued → chat with that token from a different origin → assert 403 (origin mismatch rejects).
 
 **Checkpoint**: Widget embeddable. Origin-gating enforced at server (+ client-side CSP for defense-in-depth). Visitors can chat via widget on permitted origins only.
 
@@ -296,28 +296,28 @@
 
 ### Tenant & Invitation Entities
 
-- [X] T106 [US4] [A] Create `src/entities/allowed_origin.py`: AllowedOrigin dataclass with id, tenant_id, origin, created_at
-- [X] T107 [US4] [A] Create `src/entities/audit_entry.py`: AuditEntry dataclass with id, actor_user_id, target_tenant_id, action, outcome, details, created_at
+- [X] T106 [US4] [A] Create `backend/app/entities/allowed_origin.py`: AllowedOrigin dataclass with id, tenant_id, origin, created_at
+- [X] T107 [US4] [A] Create `backend/app/entities/audit_entry.py`: AuditEntry dataclass with id, actor_user_id, target_tenant_id, action, outcome, details, created_at
 
 ### Tenant Management Use Cases
 
-- [X] T108 [US4] [A] Create `src/use_cases/provision_tenant.py`: ProvisionTenantUseCase; creates tenant row, widget row, seeds allowed_origins, creates invitation, audit-logs the action. Calls external email service (stub) to dispatch invitation link.
-- [X] T109 [US4] [A] Create `src/use_cases/invite_admin.py`: InviteAdminUseCase; creates invitations row with token_hash, expires_at, sends email (stub). Called during provisioning and by admins inviting more admins to their tenant.
-- [X] T110 [US4] [A] Create `src/use_cases/erase_tenant.py`: EraseTenantUseCase; sets tenant.status = 'erasing'; deletes from postgres (cascades to cms_pages, conversations, leads, chunks, widgets, allowed_origins, user_tenant_roles, invitations); purges Redis keys matching `tenant:<tenant_id>:*`; purges MinIO prefix `tenant-<tenant_id>/`; audit-logs completion. Must complete within ≤1 hour SLA (SC-009).
+- [X] T108 [US4] [A] Create `backend/app/use_cases/provision_tenant.py`: ProvisionTenantUseCase; creates tenant row, widget row, seeds allowed_origins, creates invitation, audit-logs the action. Calls external email service (stub) to dispatch invitation link.
+- [X] T109 [US4] [A] Create `backend/app/use_cases/invite_admin.py`: InviteAdminUseCase; creates invitations row with token_hash, expires_at, sends email (stub). Called during provisioning and by admins inviting more admins to their tenant.
+- [X] T110 [US4] [A] Create `backend/app/use_cases/erase_tenant.py`: EraseTenantUseCase; sets tenant.status = 'erasing'; deletes from postgres (cascades to cms_pages, conversations, leads, chunks, widgets, allowed_origins, user_tenant_roles, invitations); purges Redis keys matching `tenant:<tenant_id>:*`; purges MinIO prefix `tenant-<tenant_id>/`; audit-logs completion. Must complete within ≤1 hour SLA (SC-009).
 
 ### Tenant Repository
 
-- [X] T111 [P] [US4] [A] Create `src/adapters/repositories/tenant_repository.py`: Implements TenantRepository; CRUD for tenants, widget, allowed_origins. RLS: tenant_admin sees only their tenant; tenant_manager bypasses RLS on read.
-- [X] T112 [P] [US4] [A] Create `src/adapters/repositories/user_repository.py`: Implements UserRepository; wired with fastapi-users for email + password auth. Creates user rows with role column.
+- [X] T111 [P] [US4] [A] Create `backend/app/adapters/repositories/tenant_repository.py`: Implements TenantRepository; CRUD for tenants, widget, allowed_origins. RLS: tenant_admin sees only their tenant; tenant_manager bypasses RLS on read.
+- [X] T112 [P] [US4] [A] Create `backend/app/adapters/repositories/user_repository.py`: Implements UserRepository; wired with fastapi-users for email + password auth. Creates user rows with role column.
 
 ### Auth & fastapi-users Integration
 
-- [X] T113 [US4] [A] Create `src/frameworks/api/routes/auth.py`: fastapi-users routes (login, logout, register, password-reset, email-verify, invitation acceptance). Adapted: on invitation acceptance, creates user_tenant_roles row mapping the new admin to the tenant.
+- [X] T113 [US4] [A] Create `backend/app/frameworks/api/routes/auth.py`: fastapi-users routes (login, logout, register, password-reset, email-verify, invitation acceptance). Adapted: on invitation acceptance, creates user_tenant_roles row mapping the new admin to the tenant.
 - [X] T114 [US4] [A] Implement invitation acceptance endpoint: POST `/auth/invitations/{token}/accept` with password; hashes token, looks up invitations row, creates user if not exists, sets role=tenant_admin, creates user_tenant_roles row for the target tenant, sets accepted_at, audit-logs.
 
 ### Manager Routes
 
-- [X] T115 [US4] [A] Create `src/frameworks/api/routes/manager.py`: Manager-only endpoints (/manager/tenants GET/POST, /manager/tenants/{id} DELETE, /manager/audit GET, /manager/usage GET). Requires role=tenant_manager. POST /tenants calls provision_tenant. DELETE calls erase_tenant (async, returns 202). GET /audit returns all audit entries (no tenant scoping). GET /usage returns aggregate (not per-tenant).
+- [X] T115 [US4] [A] Create `backend/app/frameworks/api/routes/manager.py`: Manager-only endpoints (/manager/tenants GET/POST, /manager/tenants/{id} DELETE, /manager/audit GET, /manager/usage GET). Requires role=tenant_manager. POST /tenants calls provision_tenant. DELETE calls erase_tenant (async, returns 202). GET /audit returns all audit entries (no tenant scoping). GET /usage returns aggregate (not per-tenant).
 
 ### Database Migrations (Story-Specific)
 
@@ -325,11 +325,11 @@
 
 ### Contract Tests
 
-- [X] T117 [P] [US4] [A] Create `tests/contract/test_manager_schema.py`: Schema conformance for `/manager/tenants` and `/auth/invitations/{token}/accept`
+- [X] T117 [P] [US4] [A] Create `backend/tests/contract/test_manager_schema.py`: Schema conformance for `/manager/tenants` and `/auth/invitations/{token}/accept`
 
 ### Integration Tests
 
-- [X] T118 [US4] [A] Create `tests/integration/test_tenant_provisioning.py`: Call provision_tenant → assert tenant created, widget created, allowed_origins seeded, invitation created, audit_entry logged. Call invite_admin → assert new user created, user_tenant_roles bound. Cross-tenant access attempt → assert denied.
+- [X] T118 [US4] [A] Create `backend/tests/integration/test_tenant_provisioning.py`: Call provision_tenant → assert tenant created, widget created, allowed_origins seeded, invitation created, audit_entry logged. Call invite_admin → assert new user created, user_tenant_roles bound. Cross-tenant access attempt → assert denied.
 
 **Checkpoint**: Provisioning flow works. Managers can create and erase tenants (within SLA). Audit log records all manager actions. tenant_admin cannot see other tenants' data or audit entries.
 
@@ -343,12 +343,12 @@
 
 ### Leads Routes
 
-- [X] T119 [US5] [B] Extend `src/frameworks/api/routes/leads.py` (or create new): GET `/leads` (list, optionally filtered by `since` date), GET `/leads/export` (CSV). Tenant-scoped via RLS.
-- [X] T120 [P] [US5] [B] Create `tests/contract/test_leads_schema.py`: Schema conformance for `/leads` list and export endpoints
+- [X] T119 [US5] [B] Extend `backend/app/frameworks/api/routes/leads.py` (or create new): GET `/leads` (list, optionally filtered by `since` date), GET `/leads/export` (CSV). Tenant-scoped via RLS.
+- [X] T120 [P] [US5] [B] Create `backend/tests/contract/test_leads_schema.py`: Schema conformance for `/leads` list and export endpoints
 
 ### Integration Tests
 
-- [X] T121 [US5] [B] Create `tests/integration/test_leads_flow.py`: Seed tenant A + B; capture leads on A; list leads from A context → assert only A's leads returned. List leads from B context → assert 0 leads. Export → CSV format correct.
+- [X] T121 [US5] [B] Create `backend/tests/integration/test_leads_flow.py`: Seed tenant A + B; capture leads on A; list leads from A context → assert only A's leads returned. List leads from B context → assert 0 leads. Export → CSV format correct.
 
 **Checkpoint**: Leads view functional. Tenant isolation verified. Leads exported for CRM integration.
 
@@ -362,16 +362,16 @@
 
 ### Guardrail Config Entity
 
-- [X] T122 [US6] [C] Create `src/entities/guardrail_config.py`: GuardrailConfig dataclass with allowed_topics, blocked_topics, refusal_tone, enabled_tools (subset of [rag_search, capture_lead, escalate])
+- [X] T122 [US6] [C] Create `backend/app/entities/guardrail_config.py`: GuardrailConfig dataclass with allowed_topics, blocked_topics, refusal_tone, enabled_tools (subset of [rag_search, capture_lead, escalate])
 
 ### Guardrail Management Use Case
 
-- [X] T123 [US6] [C] Create `src/use_cases/update_guardrail_config.py`: UpdateGuardrailConfigUseCase; validates tenant cannot weaken platform rails; persists to tenant.guardrail_config JSONB; audit-logs any attempt to weaken (403 + logged).
+- [X] T123 [US6] [C] Create `backend/app/use_cases/update_guardrail_config.py`: UpdateGuardrailConfigUseCase; validates tenant cannot weaken platform rails; persists to tenant.guardrail_config JSONB; audit-logs any attempt to weaken (403 + logged).
 
 ### Admin Routes (Extended)
 
-- [ ] T124 [US6] [D] Extend `src/frameworks/api/routes/admin.py`: GET/PUT `/admin/tenant` (persona, theme, plan), GET/PUT `/admin/guardrails` (tenant rails only; platform rails shown read-only), GET/POST/DELETE `/admin/origins`. All return 200 on success, 403 if attempting to weaken platform rails.
-- [ ] T125 [P] [US6] [D] Create `tests/contract/test_admin_settings_schema.py`: Schema conformance for `/admin/*` endpoints
+- [ ] T124 [US6] [D] Extend `backend/app/frameworks/api/routes/admin.py`: GET/PUT `/admin/tenant` (persona, theme, plan), GET/PUT `/admin/guardrails` (tenant rails only; platform rails shown read-only), GET/POST/DELETE `/admin/origins`. All return 200 on success, 403 if attempting to weaken platform rails.
+- [ ] T125 [P] [US6] [D] Create `backend/tests/contract/test_admin_settings_schema.py`: Schema conformance for `/admin/*` endpoints
 
 ### Tenant Persona Injection
 
@@ -379,7 +379,7 @@
 
 ### Integration Tests
 
-- [ ] T127 [US6] [D] Create `tests/integration/test_guardrail_config.py`: Update persona → chat → assert reply reflects new persona. Attempt to weaken injection rail → assert 403 and audit entry. Update allowed topics → next chat respects the list (or is handled by guardrails sidecar on egress).
+- [ ] T127 [US6] [D] Create `backend/tests/integration/test_guardrail_config.py`: Update persona → chat → assert reply reflects new persona. Attempt to weaken injection rail → assert 403 and audit entry. Update allowed topics → next chat respects the list (or is handled by guardrails sidecar on egress).
 
 **Checkpoint**: Tenant can customize persona, theme, tenant-scoped guardrails. Platform rails are locked. Settings propagate to agent and guardrails sidecar on next request.
 
@@ -393,11 +393,11 @@
 
 ### Erasure Integration Test (Critical Gate)
 
-- [ ] T128 [US7] [A] Create `tests/integration/test_erasure_path.py`: Create tenant + seed content + conversation + lead + session. Call erase_tenant (POST `/manager/tenants/{id}` DELETE). Poll audit log until tenant_erase_complete. Query each store (Postgres with BYPASSRLS, Redis, MinIO, pgvector) for residual data; assert zero matches. Required for cross-tenant red-team gate and SC-009.
+- [ ] T128 [US7] [A] Create `backend/tests/integration/test_erasure_path.py`: Create tenant + seed content + conversation + lead + session. Call erase_tenant (POST `/manager/tenants/{id}` DELETE). Poll audit log until tenant_erase_complete. Query each store (Postgres with BYPASSRLS, Redis, MinIO, pgvector) for residual data; assert zero matches. Required for cross-tenant red-team gate and SC-009.
 
 ### Erasure Use Case (Already in T110; verify completeness)
 
-- [x] T129 [US7] [A] Enhance `src/use_cases/erase_tenant.py` (from T110): Implement all four store purges in sequence (Postgres cascade, Redis scan+delete, MinIO list+delete, pgvector implicitly via cascade). Measure completion time; assert ≤ 1 hour SLA. Audit-log the completion with details.stores_purged list.
+- [x] T129 [US7] [A] Enhance `backend/app/use_cases/erase_tenant.py` (from T110): Implement all four store purges in sequence (Postgres cascade, Redis scan+delete, MinIO list+delete, pgvector implicitly via cascade). Measure completion time; assert ≤ 1 hour SLA. Audit-log the completion with details.stores_purged list.
 
 **Checkpoint**: Erasure functional. Tenant data fully purged within SLA. Post-erasure consistency verified by integration test.
 
@@ -418,13 +418,13 @@
 
 ### Agent Tool-Selection Golden Set & Eval Gate
 
-- [X] T136 [B] Create `tests/evals/agent_tool_selection/golden.jsonl`: 15 curated examples; each row: {"message": "...", "expected_tool": "rag_search|capture_lead|escalate", "expected_routing": "faq|lead_intent|escalate"}
-- [X] T137 [B] Create `tests/evals/agent_tool_selection/test_tool_selection.py`: Runs agent on golden set; collects tool-call decisions; computes macro-F1 per tool; asserts ≥ agent_tool_selection_macro_f1 threshold. Exits non-zero on regression.
+- [X] T136 [B] Create `backend/tests/evals/agent_tool_selection/golden.jsonl`: 15 curated examples; each row: {"message": "...", "expected_tool": "rag_search|capture_lead|escalate", "expected_routing": "faq|lead_intent|escalate"}
+- [X] T137 [B] Create `backend/tests/evals/agent_tool_selection/test_tool_selection.py`: Runs agent on golden set; collects tool-call decisions; computes macro-F1 per tool; asserts ≥ agent_tool_selection_macro_f1 threshold. Exits non-zero on regression.
 
 ### RAG Golden Set & Eval Gate
 
-- [X] T138 [B] Create `tests/evals/rag/golden.jsonl`: 15 curated examples; each row: {"query": "...", "expected_cms_page_id": "...", "expected_answer_snippet": "..."}
-- [X] T139 [B] Create `tests/evals/rag/test_rag_quality.py`: Seeds tenant with the 15 questions' source pages; retrieves chunks for each query; reranks; computes the four Design-D metrics — recall@5/hit@5 (chunk from expected page in top-5), MRR, faithfulness/answer-grounding (expected_answer_snippet present in / entailed by top-5), and answer relevancy (does the generated answer actually address the query, scored by the chosen RAGAS/judge framework). Asserts ≥ thresholds for rag_golden_set_recall_at_5 and rag_golden_set_answer_grounded_rate. Exits non-zero on regression. **Faithfulness method (per Design D brief)**: choose and justify the evaluation framework — RAGAS or a frozen judge model (record the choice + why in `docs/DECISIONS.md`); hand-label at least 5 of the 15 triples for faithfulness and report inter-rater agreement between the hand labels and the judge/RAGAS score (e.g. Cohen's κ or simple % agreement) so the automated grounding metric is itself validated, not trusted blind.
+- [X] T138 [B] Create `backend/tests/evals/rag/golden.jsonl`: 15 curated examples; each row: {"query": "...", "expected_cms_page_id": "...", "expected_answer_snippet": "..."}
+- [X] T139 [B] Create `backend/tests/evals/rag/test_rag_quality.py`: Seeds tenant with the 15 questions' source pages; retrieves chunks for each query; reranks; computes the four Design-D metrics — recall@5/hit@5 (chunk from expected page in top-5), MRR, faithfulness/answer-grounding (expected_answer_snippet present in / entailed by top-5), and answer relevancy (does the generated answer actually address the query, scored by the chosen RAGAS/judge framework). Asserts ≥ thresholds for rag_golden_set_recall_at_5 and rag_golden_set_answer_grounded_rate. Exits non-zero on regression. **Faithfulness method (per Design D brief)**: choose and justify the evaluation framework — RAGAS or a frozen judge model (record the choice + why in `docs/DECISIONS.md`); hand-label at least 5 of the 15 triples for faithfulness and report inter-rater agreement between the hand labels and the judge/RAGAS score (e.g. Cohen's κ or simple % agreement) so the automated grounding metric is itself validated, not trusted blind.
 
 ### Red-Team Set: Injection, Cross-Tenant, PII
 
@@ -442,8 +442,8 @@ These tasks operationalise `research.md §1a` (3-way chunker bake-off),
 `§2a` (reranker A/B with ≥0.05 ship-rule), and `§5` (60-min fixed TTL).
 
 - [X] T181 [B] Create `backend/app/use_cases/_chunkers/` with three modules implementing the bake-off variants per research.md §1a: `fixed_500.py` (500-token windows, no overlap, no heading awareness), `paragraph_aware.py` (the 400/50/600 implementation already in `reindex_tenant_chunks.py`, refactored out so it's swappable), and `header_first.py` (Markdown heading split → recursive `\n\n` split to 400/50/600 bounds, **prepend full heading path `H1 > H2 > H3\n\n` to every child chunk**). Each module exports `chunk(body: str) -> list[str]`. Refactor `reindex_tenant_chunks.py` to import the active chunker from this package via a `CHUNKER` env var (default `paragraph_aware`).
-- [X] T182 [B] Create `backend/tests/evals/rag/test_chunker_comparison.py` and `notebooks/06_chunking_bake_off.ipynb`: for each chunker in [fixed_500, paragraph_aware, header_first], re-embed the seed corpus, run the 15-triple RAG golden set, report `hit@5`, `MRR`, and mean retrieval latency (ms). Emit a Markdown comparison table to stdout and append it to `docs/DECISIONS.md` as "Decision 1.5 — Chunker variant" with the winner row highlighted. Winner = highest `hit@5` that satisfies `rag_golden_set_recall_at_5 ≥ 0.85` AND retrieval latency ≤ 200ms p95; ties broken by `MRR`, then latency.
-- [X] T183 [B] Create `backend/tests/evals/rag/test_reranker_ab.py`: runs the existing 15-triple RAG golden set TWICE — once with `RERANKER_URL` set, once with it unset (the no-rerank path is already supported by `rag_search.py`'s graceful fallback). Reports `hit@5` for both modes and the delta. Records the result in `docs/DECISIONS.md` entry 3 (Reranker provider). **Ship-rule**: if reranker lifts `hit@5` by < 0.05 over no-rerank, the test prints a recommendation to disable the reranker (`RERANKER_URL` unset in v1). Does NOT fail CI; it's a decision aid.
+- [X] T182 [B] Create `backend/backend/tests/evals/rag/test_chunker_comparison.py` and `notebooks/06_chunking_bake_off.ipynb`: for each chunker in [fixed_500, paragraph_aware, header_first], re-embed the seed corpus, run the 15-triple RAG golden set, report `hit@5`, `MRR`, and mean retrieval latency (ms). Emit a Markdown comparison table to stdout and append it to `docs/DECISIONS.md` as "Decision 1.5 — Chunker variant" with the winner row highlighted. Winner = highest `hit@5` that satisfies `rag_golden_set_recall_at_5 ≥ 0.85` AND retrieval latency ≤ 200ms p95; ties broken by `MRR`, then latency.
+- [X] T183 [B] Create `backend/backend/tests/evals/rag/test_reranker_ab.py`: runs the existing 15-triple RAG golden set TWICE — once with `RERANKER_URL` set, once with it unset (the no-rerank path is already supported by `rag_search.py`'s graceful fallback). Reports `hit@5` for both modes and the delta. Records the result in `docs/DECISIONS.md` entry 3 (Reranker provider). **Ship-rule**: if reranker lifts `hit@5` by < 0.05 over no-rerank, the test prints a recommendation to disable the reranker (`RERANKER_URL` unset in v1). Does NOT fail CI; it's a decision aid.
 - [X] T184 [B] Update `backend/app/adapters/session/redis_session.py` per `research.md §5` revision: default TTL changes from 30 min → **60 min, fixed expiry** (TTL set on first write only, NOT refreshed on subsequent writes). Implementation: `store()` uses `SET ... NX EX <ttl>` on first write, plain `SET` (no `EX`) thereafter (or `SETNX`+`EXPIRE` for the same effect). Explicitly do NOT add a `touch()` method — sliding TTL was considered and rejected. Add unit test asserting that two consecutive `store()` calls 1s apart, with TTL=60, leave the actual Redis TTL at <60 (not 60). Append "Decision 5 — Memory TTL" entry to `docs/DECISIONS.md`. **Migration note**: existing in-flight session keys at the time of deployment inherit new semantics on their next write; no backfill is needed at PoC scale (≤10 tenants, short session count).
 
 ### Stack Smoke Test
@@ -452,7 +452,7 @@ These tasks operationalise `research.md §1a` (3-way chunker bake-off),
 
 ### CI/CD Wiring
 
-- [ ] T145 [D] Update `.github/workflows/ci.yml`: Add jobs for lint (ruff check src/), type-check (mypy src/), build API/modelserver/guardrails images, run unit tests, run integration tests (including test_rls_isolation, test_chat_flow, test_erasure_path), invoke four eval gates (classifier, agent, RAG, redteam), run smoke test. All jobs passing = green check. Any eval gate below threshold = red check + block merge (FR-039).
+- [ ] T145 [D] Update `.github/workflows/ci.yml`: Add jobs for lint (ruff check backend/app/), type-check (mypy backend/app/), build API/modelserver/guardrails images, run unit tests, run integration tests (including test_rls_isolation, test_chat_flow, test_erasure_path), invoke four eval gates (classifier, agent, RAG, redteam), run smoke test. All jobs passing = green check. Any eval gate below threshold = red check + block merge (FR-039).
 
 ---
 
@@ -462,17 +462,17 @@ These tasks operationalise `research.md §1a` (3-way chunker bake-off),
 
 ### Tenant Isolation Gates
 
-- [X] T146 [A] Create `tests/integration/test_rls_isolation.py` (detailed): Multiple tables tested; for each, create rows for Tenant A and B; execute queries in Tenant A context; assert zero rows from Tenant B returned. Tests: tenants, users, user_tenant_roles, cms_pages, chunks, conversations, messages, leads, widgets, allowed_origins, invitations. Required: RLS policies on EVERY tenant-scoped table (data-model.md). Gates the cross-tenant red-team eval (SC-003).
+- [X] T146 [A] Create `backend/tests/integration/test_rls_isolation.py` (detailed): Multiple tables tested; for each, create rows for Tenant A and B; execute queries in Tenant A context; assert zero rows from Tenant B returned. Tests: tenants, users, user_tenant_roles, cms_pages, chunks, conversations, messages, leads, widgets, allowed_origins, invitations. Required: RLS policies on EVERY tenant-scoped table (data-model.md). Gates the cross-tenant red-team eval (SC-003).
 - [ ] T147 [A] Create CI assertion: `docker build` modelserver with `no-torch` check in Dockerfile; image size assertion ≤ 500MB (FR-004, Constitution IV).
 - [ ] T148 [A] Create CI assertion: Modelserver boot-time artifact hash verification; model_card.yaml's artifact_sha256 is computed on boot and compared (FR-023); mismatch = process exits 1 (asserted in smoke test).
 - [ ] T149 [A] Implement tenant_id derivation only from JWT/credential; TenantContextMiddleware rejects requests where body claims a different tenant (FR-007/008). Integration test: POST `/chat` with JWT claiming Tenant A but body claiming Tenant B → assert 403 or JWT tenant wins.
 - [X] T150 [B] Implement pgvector query-time filtering (NOT post-filter): ChunkRepository.QueryChunks includes `WHERE tenant_id = :tenant_id AND cms_page.state = 'published'` in the SQL query sent to Postgres; planner applies tenant_id filter before vector ANN. Integration test verifies via EXPLAIN ANALYZE (FR-017).
-- [X] T151 [C] Implement service-to-service Vault credential: modelserver and guardrails sidecar receive X-Service-Token header on every request from API; token issued from Vault and rotated per Vault policy. Integration test: unauthorized calls return 401 (FR-036). _(guardrails sidecar: `tests/integration/test_guardrails_service_token.py`; modelserver: `services/modelserver/app.py` + `tests/integration/test_modelserver_service_token.py`.)_
+- [X] T151 [C] Implement service-to-service Vault credential: modelserver and guardrails sidecar receive X-Service-Token header on every request from API; token issued from Vault and rotated per Vault policy. Integration test: unauthorized calls return 401 (FR-036). _(guardrails sidecar: `backend/tests/integration/test_guardrails_service_token.py`; modelserver: `services/modelserver/app.py` + `backend/tests/integration/test_modelserver_service_token.py`.)_
 - [X] T152 [B] Implement tenant persona injection at runtime: prompts/system_agent.md uses {{persona_summary}} placeholder; at agent invocation, extract tenant.persona_config and render the prompt. Test: two tenants with different personas → agent replies reflect the respective personas (FR-025, Constitution VII).
 
 ### Import Linter Rule (Clean Architecture Gate)
 
-- [ ] T153 [ALL] Implement static import checker: Ruff custom rule or import-linter contract `no-inner-from-outer`; asserts NO file in `src/entities/` or `src/use_cases/` imports from `src/adapters/` or `src/frameworks/`. CI runs this rule; failure blocks merge (Constitution I).
+- [ ] T153 [ALL] Implement static import checker: Ruff custom rule or import-linter contract `no-inner-from-outer`; asserts NO file in `backend/app/entities/` or `backend/app/use_cases/` imports from `backend/app/adapters/` or `backend/app/frameworks/`. CI runs this rule; failure blocks merge (Constitution I).
 
 ### Documentation Required Docs
 
@@ -484,8 +484,8 @@ These tasks operationalise `research.md §1a` (3-way chunker bake-off),
 - [X] T159 [C] Populate `docs/EVALS.md`: Four evaluation gates (classifier, agent, RAG, redteam); how each is built (source data, held-out split), how to run locally (`make eval-classifier`, etc.), how to read results. Thresholds from eval_thresholds.yaml. Pass/fail interpretation.
 - [X] T160 [C] Populate `docs/SECURITY.md`: Threat model (token compromise, prompt injection, cross-tenant misconfiguration, PII leakage), mitigations (short-lived JWTs, guardrails rails, RLS + repository + middleware layers, PII redactor). GDPR-aligned design (lawful basis, right of access, right of erasure, data minimization). No certification claimed; design rationale only. Jurisdictional posture.
 - [ ] T161 [A] Populate `docs/RUNBOOK.md` (Slice A + D): Compose-up troubleshooting, restore procedures (backup/restore Postgres + pgvector + Redis + MinIO), on-call playbook (common alerts, remediation). Links to SECURITY.md and EVALS.md for context.
-- [ ] T162 [A] Populate `src/use_cases/SPEC.md` (Slice A): Tenant provisioning / erasure / authentication flows; contract with use-case interfaces.
-- [X] T163 [B] Populate `src/adapters/SPEC.md` (Slice B): Repository layer contract; protocol implementations (LLM, Embedding, Session); integration points with other adapters.
+- [ ] T162 [A] Populate `backend/app/use_cases/SPEC.md` (Slice A): Tenant provisioning / erasure / authentication flows; contract with use-case interfaces.
+- [X] T163 [B] Populate `backend/app/adapters/SPEC.md` (Slice B): Repository layer contract; protocol implementations (LLM, Embedding, Session); integration points with other adapters.
 - [X] T164 [C] Populate `services/modelserver/SPEC.md` (Slice C): Model serving architecture; artifact loading + hash verification; inference API; no torch constraint. Model card schema and build process.
 - [X] T165 [C] Populate `services/guardrails/SPEC.md` (Slice C): Platform rails (injection, jailbreak, cross-tenant, PII) + tenant rails configuration. API contract. Integration with NeMo Guardrails library.
 - [ ] T166 [D] Populate `admin/SPEC.md` (Slice D): Streamlit app structure; pages (dashboard, CMS, leads, settings, embed snippet); auth via fastapi-users session cookie. No custom auth in admin.
@@ -528,15 +528,15 @@ operationalise `research.md §5/§5a`.
 
 - [X] T190 [B] Wire short-term session memory into the chat loop. Create `backend/app/use_cases/session_memory.py` (`SessionMemory`, depending only on the `SessionStore` protocol): `load(tenant_id, conversation_id) -> list[Message]` and `append_turn(tenant_id, conversation_id, *, visitor, assistant)`; stores clean `{role, content}` turns only (NOT the agent's intermediate tool-call/tool-result messages), caps to `session_max_messages` (default 20). Wire into `backend/app/frameworks/api/routes/chat.py`: load prior history before classify, build agent history as `prior + current turn`, and `append_turn` after every route. Implement `get_session_store()` in `backend/app/frameworks/api/deps.py` (currently raises `NotImplementedError`) to return `make_redis_session(settings.redis_url)`. Add `session_ttl_seconds=3600` and `session_max_messages=20` to `backend/app/frameworks/config.py`. Integration test: two turns on one `conversation_id` → turn 2's agent history contains turn 1.
 - [X] T191 [B] Tenant-scoped Redis key schema + erasure seam (per `research.md §5a`). Change `backend/app/adapters/session/redis_session.py` key format to `session:{tenant_id}:{conversation_id}` and update the docstring (supersedes the old `session:<key>` / `session:*` scheme). Add `delete_by_tenant(tenant_id)` to the `SessionStore` protocol (`backend/app/use_cases/protocols/session_store.py`) and implement it in `RedisSession` via `scan_iter("session:{tenant_id}:*")` + pipelined delete. This is the seam Owner A's erasure use case (T129) injects and calls. **Do NOT edit `erase_tenant.py`** — publish the protocol method and notify Owner A. Unit test: `delete_by_tenant` removes only the target tenant's keys.
-- [X] T192 [B] Routing cost measurement + DECISIONS cost-story (depends on T189 telemetry). Create `backend/tests/evals/cost/test_routing_cost.py` (or a small script/notebook) that replays a representative turn mix through the router, reads the `log_turn_cost` output, and computes the headline numbers: % of turns handled off the agent (workflow paths) vs. on the agent, average $/turn per path, and the pure-agent counterfactual. Write the resulting sentence into `docs/DECISIONS.md` entry 1 (Agent vs. Workflow vs. Hybrid) and feed the figure to Owner A for `docs/DESIGN.md` (scaling story). This is the number FR/Principle VII expects behind the hybrid-routing decision.
+- [X] T192 [B] Routing cost measurement + DECISIONS cost-story (depends on T189 telemetry). Create `backend/backend/tests/evals/cost/test_routing_cost.py` (or a small script/notebook) that replays a representative turn mix through the router, reads the `log_turn_cost` output, and computes the headline numbers: % of turns handled off the agent (workflow paths) vs. on the agent, average $/turn per path, and the pure-agent counterfactual. Write the resulting sentence into `docs/DECISIONS.md` entry 1 (Agent vs. Workflow vs. Hybrid) and feed the figure to Owner A for `docs/DESIGN.md` (scaling story). This is the number FR/Principle VII expects behind the hybrid-routing decision.
 - [X] T193 [B] Prompt versioning discipline (per Design B brief: "prompts are code — a prompt change with no diff history is an outage you can't bisect"). Add a versioning convention to `prompts/`: a header block at the top of each prompt file (`system_agent.md`, `system_router.md`, `tool_specs/*.md`) carrying `version:` (semver or date) and a one-line `changelog:` entry per change, plus a `prompts/CHANGELOG.md` rolling up notable prompt edits with the commit SHA. Goal: any agent-behaviour regression can be bisected to a specific prompt revision, not just inferred from git blame. Ties into T188 (Jinja2) — the version header is a comment/front-matter block the loader ignores at render time.
 
 
 ### Testing & Coverage
 
-- [ ] T174 [ALL] Run `pytest --cov` on all unit tests; aim for ≥ 80% coverage on src/ (exclude __init__, stubs). Report in CI.
-- [ ] T175 [ALL] Run `mypy --strict` on src/ and services/; resolve all type errors. Commit mypy cache.
-- [ ] T176 [ALL] Run `ruff check src/ tests/ services/`; fix any lint violations.
+- [ ] T174 [ALL] Run `pytest --cov` on all unit tests; aim for ≥ 80% coverage on backend/app/ (exclude __init__, stubs). Report in CI.
+- [ ] T175 [ALL] Run `mypy --strict` on backend/app/ and services/; resolve all type errors. Commit mypy cache.
+- [ ] T176 [ALL] Run `ruff check backend/app/ backend/tests/ services/`; fix any lint violations.
 - [ ] T177 [ALL] Run Vitest on widget/ (< 50 tests; focus on loader, token exchange, iframe communication).
 
 ### Quickstart Validation
@@ -741,7 +741,7 @@ After MVP:
 ✅ **Story phases have [USX] labels** (US1–US7 mapped from spec.md)  
 ✅ **Setup + Foundational + Polish have NO story labels** (owner tags only)  
 ✅ **Parallelizable tasks marked [P]** (different files, no cross-dependencies)  
-✅ **File paths from plan.md "Source Code" tree** (src/, services/, admin/, widget/, tests/, docs/, etc.)  
+✅ **File paths from plan.md "Source Code" tree** (backend/app/, services/, admin/, widget/, tests/, docs/, etc.)  
 ✅ **Protocol interfaces published in Phase 2** so consumers code against fakes  
 ✅ **Eval gates explicit and committed** to eval_thresholds.yaml  
 ✅ **Cross-slice integration points surfaced** as task dependencies  
