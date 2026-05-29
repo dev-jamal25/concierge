@@ -129,6 +129,14 @@ async def manager_db_session() -> AsyncIterator[AsyncSession]:
 _bearer = HTTPBearer(auto_error=False)
 
 
+@dataclass(slots=True)
+class WidgetTokenContext:
+    tenant_id: str
+    widget_id: str
+    origin: str
+    visitor_session: str | None
+
+
 def get_current_tenant_id() -> str:
     tid = tenant_id_ctx.get()
     if tid is None:
@@ -136,11 +144,11 @@ def get_current_tenant_id() -> str:
     return tid
 
 
-async def get_current_widget_tenant_id(
+async def get_current_widget_context(
     origin: str | None = Header(default=None),
     creds: HTTPAuthorizationCredentials | None = Depends(_bearer),
     signer: PyJWTSigner = Depends(get_token_signer),
-) -> AsyncIterator[str]:
+) -> AsyncIterator[WidgetTokenContext]:
     if creds is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "missing widget token")
     try:
@@ -157,12 +165,26 @@ async def get_current_widget_tenant_id(
     tenant_id = claims.get("tenant_id")
     if tenant_id is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "missing tenant claim")
+    widget_id = claims.get("widget_id")
+    if widget_id is None:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "missing widget claim")
 
     token = set_tenant_id(str(tenant_id))
     try:
-        yield str(tenant_id)
+        yield WidgetTokenContext(
+            tenant_id=str(tenant_id),
+            widget_id=str(widget_id),
+            origin=issued_origin,
+            visitor_session=claims.get("visitor_session"),
+        )
     finally:
         reset_tenant_id(token)
+
+
+def get_current_widget_tenant_id(
+    widget_context: WidgetTokenContext = Depends(get_current_widget_context),
+) -> str:
+    return widget_context.tenant_id
 
 
 def require_matching_tenant(body_tenant_id: UUID | str | None) -> None:

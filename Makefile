@@ -35,5 +35,11 @@ eval-agent:
 eval-rag:
 	cd $(BACKEND_DIR) && $(UV) run --extra dev pytest tests/evals/rag/ -v -s -m eval
 
-seed-demo-tenant serve-test-host smoke eval:
+seed-demo-tenant:
+	cd $(BACKEND_DIR) && $(UV) run python -m app.frameworks.cli.seed_demo_tenants
+
+smoke: seed-demo-tenant
+	cd $(BACKEND_DIR) && $(UV) run --extra dev pytest ../tests/smoke_test.py -v
+
+serve-test-host eval:
 	@echo "$@ pending Owner C/D"

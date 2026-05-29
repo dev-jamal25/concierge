@@ -10,7 +10,6 @@ On LLM/embedding timeout: returns 503, auto-flags conversation as escalated.
 from __future__ import annotations
 
 import time
-import uuid
 from pathlib import Path
 from typing import Literal
 from uuid import UUID
@@ -27,9 +26,10 @@ from app.adapters.repositories.chunk_repository import PostgresChunkRepository
 from app.adapters.repositories.conversation_repository import PostgresConversationRepository
 from app.adapters.repositories.lead_repository import PostgresLeadRepository
 from app.frameworks.api.deps import (
+    WidgetTokenContext,
     db_session,
     get_app_settings,
-    get_current_widget_tenant_id,
+    get_current_widget_context,
     get_guardrails_client,
     get_session_store,
 )
@@ -186,12 +186,13 @@ def _build_context(session: AsyncSession, settings: Settings, session_store: Ses
 )
 async def chat(
     body: ChatRequest,
-    tenant_id_str: str = Depends(get_current_widget_tenant_id),
+    widget_context: WidgetTokenContext = Depends(get_current_widget_context),
     session: AsyncSession = Depends(db_session),
     settings: Settings = Depends(get_app_settings),
     session_store: SessionStore = Depends(get_session_store),
 ) -> ChatTurnResponse:
-    tenant_id = UUID(tenant_id_str)
+    tenant_id = UUID(widget_context.tenant_id)
+    widget_id = UUID(widget_context.widget_id)
     ctx = _build_context(session, settings, session_store)
     conv_repo: PostgresConversationRepository = ctx["conv_repo"]
     classify: ClassifyMessageUseCase = ctx["classify"]
@@ -203,10 +204,9 @@ async def chat(
     # Ensure conversation exists (create on first turn)
     conversation = await conv_repo.get(body.conversation_id, tenant_id)
     if conversation is None:
-        # widget_id stub: use a zero UUID until widget token carries widget_id
         conversation = await conv_repo.create(
             tenant_id=tenant_id,
-            widget_id=uuid.UUID(int=0),
+            widget_id=widget_id,
             visitor_session=str(body.conversation_id),
         )
 
