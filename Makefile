@@ -6,7 +6,7 @@ endif
 BACKEND_DIR := backend
 UV ?= uv
 
-.PHONY: migrate bootstrap-manager lint test seed-demo-tenant serve-test-host smoke eval eval-classifier eval-agent eval-rag eval-redteam
+.PHONY: migrate bootstrap-manager lint test seed-demo-tenant serve-test-host smoke eval eval-classifier eval-agent eval-rag eval-redteam eval-modelserver
 
 migrate:
 	cd $(BACKEND_DIR) && $(UV) run alembic -c app/frameworks/db/alembic.ini upgrade head
@@ -25,6 +25,9 @@ eval-classifier:
 
 eval-redteam:
 	cd $(BACKEND_DIR) && $(UV) run --extra dev pytest ../tests/evals/redteam/ -v -s
+
+eval-modelserver:
+	cd $(BACKEND_DIR) && $(UV) run --extra dev --extra notebooks pytest tests/integration/test_modelserver_service_token.py -v
 
 seed-demo-tenant serve-test-host smoke eval eval-agent eval-rag:
 	@echo "$@ pending Owner C/D"
