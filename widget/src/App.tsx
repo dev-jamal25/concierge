@@ -1,5 +1,5 @@
-import { type FormEvent, useEffect, useState } from "react"
-import { fetchWidgetConfig, sendChatMessage, type WidgetConfig } from "./api"
+import { type FormEvent, useEffect, useRef, useState } from "react"
+import type { ChatResponse, WidgetConfig } from "./api"
 
 function createConversationId() {
   if ("randomUUID" in crypto) {
@@ -15,6 +15,8 @@ function createConversationId() {
 
 function App() {
   const [token, setToken] = useState<string | null>(null)
+  const [parentOrigin, setParentOrigin] = useState<string | null>(null)
+  const parentOriginRef = useRef<string | null>(null)
   const [conversationId] = useState(createConversationId)
   const [config, setConfig] = useState<WidgetConfig | null>(null)
   const [accepted, setAccepted] = useState(false)
@@ -24,47 +26,62 @@ function App() {
 
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
-      if (event.data?.type !== "concierge.bootstrap") {
+      if (event.data?.type === "concierge.bootstrap") {
+        setToken(event.data.token)
+        setConfig(event.data.config)
+        parentOriginRef.current = event.origin
+        setParentOrigin(event.origin)
+        setStatus("Ready")
         return
       }
-      setToken(event.data.token)
+
+      if (event.origin !== parentOriginRef.current) {
+        return
+      }
+
+      if (
+        event.data?.type === "concierge.chat.response" &&
+        event.data.ok === true
+      ) {
+        const payload = event.data.payload as ChatResponse
+        setMessages((current) => [
+          ...current,
+          `Concierge: ${payload.reply ?? "Thanks, I received your message."}`,
+        ])
+        return
+      }
+
+      if (
+        event.data?.type === "concierge.chat.response" &&
+        event.data.ok === false
+      ) {
+        setMessages((current) => [
+          ...current,
+          "Concierge: Service temporarily unavailable.",
+        ])
+      }
     }
     window.addEventListener("message", onMessage)
     return () => window.removeEventListener("message", onMessage)
   }, [])
 
-  useEffect(() => {
-    if (!token) {
-      return
-    }
-    fetchWidgetConfig(token)
-      .then((nextConfig) => {
-        setConfig(nextConfig)
-        setStatus("Ready")
-      })
-      .catch(() => setStatus("Service temporarily unavailable"))
-  }, [token])
-
   const submit = async (event: FormEvent) => {
     event.preventDefault()
-    if (!token || !message.trim()) {
+    if (!token || !parentOrigin || !message.trim()) {
       return
     }
     const visitorMessage = message.trim()
     setMessage("")
     setMessages((current) => [...current, `You: ${visitorMessage}`])
-    try {
-      const reply = await sendChatMessage(token, conversationId, visitorMessage)
-      setMessages((current) => [
-        ...current,
-        `Concierge: ${reply.reply ?? "Thanks, I received your message."}`,
-      ])
-    } catch {
-      setMessages((current) => [
-        ...current,
-        "Concierge: Service temporarily unavailable.",
-      ])
-    }
+    window.parent.postMessage(
+      {
+        type: "concierge.chat",
+        requestId: createConversationId(),
+        conversation_id: conversationId,
+        message: visitorMessage,
+      },
+      parentOrigin,
+    )
   }
 
   return (

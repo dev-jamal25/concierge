@@ -44,6 +44,7 @@ from app.frameworks.db.session import (
 from app.frameworks.secrets.vault_client import HvacVaultClient, WIDGET_SIGNING_KEY_PATH
 from app.use_cases.erase_tenant import EraseTenantUseCase
 from app.use_cases.invite_admin import InviteAdminUseCase
+from app.use_cases.protocols.session_store import SessionStore
 from app.use_cases.provision_tenant import ProvisionTenantUseCase
 
 # --- Settings ---
@@ -65,7 +66,7 @@ def get_embedding_client() -> object:
     raise NotImplementedError("embedding client provider is owned by Owner B tasks T026/T045")
 
 
-def get_session_store() -> object:
+def get_session_store() -> SessionStore:
     return make_redis_session(get_settings().redis_url)
 
 
@@ -84,6 +85,11 @@ def _resolve_service_token() -> str:
     if settings.service_token:
         return settings.service_token
     return HvacVaultClient(settings).ensure_service_token_sync()
+
+
+def get_service_token() -> str:
+    """Return the shared X-Service-Token (Vault-first, env fallback)."""
+    return _resolve_service_token()
 
 
 def get_guardrails_client() -> NeMoGuardrails:
@@ -128,6 +134,14 @@ async def manager_db_session() -> AsyncIterator[AsyncSession]:
 _bearer = HTTPBearer(auto_error=False)
 
 
+@dataclass(slots=True)
+class WidgetTokenContext:
+    tenant_id: str
+    widget_id: str
+    origin: str
+    visitor_session: str | None
+
+
 def get_current_tenant_id() -> str:
     tid = tenant_id_ctx.get()
     if tid is None:
@@ -135,11 +149,11 @@ def get_current_tenant_id() -> str:
     return tid
 
 
-async def get_current_widget_tenant_id(
+async def get_current_widget_context(
     origin: str | None = Header(default=None),
     creds: HTTPAuthorizationCredentials | None = Depends(_bearer),
     signer: PyJWTSigner = Depends(get_token_signer),
-) -> AsyncIterator[str]:
+) -> AsyncIterator[WidgetTokenContext]:
     if creds is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "missing widget token")
     try:
@@ -148,18 +162,34 @@ async def get_current_widget_tenant_id(
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid widget token") from exc
 
     issued_origin = str(claims.get("origin", ""))
-    if origin is not None and origin != issued_origin:
+    if origin is None:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "missing origin")
+    if origin != issued_origin:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "origin mismatch")
 
     tenant_id = claims.get("tenant_id")
     if tenant_id is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "missing tenant claim")
+    widget_id = claims.get("widget_id")
+    if widget_id is None:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "missing widget claim")
 
     token = set_tenant_id(str(tenant_id))
     try:
-        yield str(tenant_id)
+        yield WidgetTokenContext(
+            tenant_id=str(tenant_id),
+            widget_id=str(widget_id),
+            origin=issued_origin,
+            visitor_session=claims.get("visitor_session"),
+        )
     finally:
         reset_tenant_id(token)
+
+
+def get_current_widget_tenant_id(
+    widget_context: WidgetTokenContext = Depends(get_current_widget_context),
+) -> str:
+    return widget_context.tenant_id
 
 
 def require_matching_tenant(body_tenant_id: UUID | str | None) -> None:
@@ -191,6 +221,8 @@ class ManagerContext:
 
 async def get_manager_context(
     session: AsyncSession = Depends(manager_db_session),
+    session_store: SessionStore = Depends(get_session_store),
+    object_storage: MinIOObjectStorage = Depends(get_object_storage),
 ) -> ManagerContext:
     """Builds all Owner-A repos + use cases on ONE concierge_manager session so a
     provisioning request (tenant + widget + origins + invitation + audit) commits
@@ -209,7 +241,7 @@ async def get_manager_context(
         accept_url_base=settings.public_base_url,
     )
     provision = ProvisionTenantUseCase(tenants, audit, invite)
-    erase = EraseTenantUseCase(tenants, audit)
+    erase = EraseTenantUseCase(tenants, audit, session_store, object_storage)
     return ManagerContext(
         session=session,
         tenants=tenants,

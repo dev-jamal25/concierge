@@ -84,7 +84,7 @@ async def _seed(engine) -> None:
             await conn.execute(
                 text(
                     "INSERT INTO chunks (id, tenant_id, cms_page_id, chunk_index, content, embedding) "
-                    "VALUES (gen_random_uuid(), :tid, :pid, 0, :content, :emb::vector) ON CONFLICT DO NOTHING"
+                    "VALUES (gen_random_uuid(), :tid, :pid, 0, :content, CAST(:emb AS vector)) ON CONFLICT DO NOTHING"
                 ),
                 {"tid": str(tid), "pid": str(pid), "content": content, "emb": _ZERO_VEC},
             )
