@@ -18,7 +18,10 @@ from dataclasses import dataclass
 from functools import lru_cache
 from uuid import UUID
 
+import jwt
 from fastapi import Depends, HTTPException, status
+from fastapi import Header
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.adapters.email.console_email import ConsoleEmailSender
@@ -34,6 +37,8 @@ from app.frameworks.config import Settings, get_settings
 from app.frameworks.db.session import (
     get_manager_session,
     get_session,
+    reset_tenant_id,
+    set_tenant_id,
     tenant_id_ctx,
 )
 from app.frameworks.secrets.vault_client import HvacVaultClient, WIDGET_SIGNING_KEY_PATH
@@ -113,12 +118,41 @@ async def manager_db_session() -> AsyncIterator[AsyncSession]:
 
 # --- Tenant context dependencies ---
 
+_bearer = HTTPBearer(auto_error=False)
+
 
 def get_current_tenant_id() -> str:
     tid = tenant_id_ctx.get()
     if tid is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "missing tenant context")
     return tid
+
+
+async def get_current_widget_tenant_id(
+    origin: str | None = Header(default=None),
+    creds: HTTPAuthorizationCredentials | None = Depends(_bearer),
+    signer: PyJWTSigner = Depends(get_token_signer),
+) -> AsyncIterator[str]:
+    if creds is None:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "missing widget token")
+    try:
+        claims = signer.verify_token(creds.credentials)
+    except jwt.PyJWTError as exc:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid widget token") from exc
+
+    issued_origin = str(claims.get("origin", ""))
+    if origin is not None and origin != issued_origin:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "origin mismatch")
+
+    tenant_id = claims.get("tenant_id")
+    if tenant_id is None:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "missing tenant claim")
+
+    token = set_tenant_id(str(tenant_id))
+    try:
+        yield str(tenant_id)
+    finally:
+        reset_tenant_id(token)
 
 
 def require_matching_tenant(body_tenant_id: UUID | str | None) -> None:
