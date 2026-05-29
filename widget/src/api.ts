@@ -20,14 +20,18 @@ export async function fetchWidgetConfig(token: string): Promise<WidgetConfig> {
   return response.json()
 }
 
-export async function sendChatMessage(token: string, message: string) {
+export async function sendChatMessage(
+  token: string,
+  conversationId: string,
+  message: string,
+) {
   const response = await fetch(`${API_BASE_URL}/chat`, {
     method: "POST",
     headers: {
       authorization: `Bearer ${token}`,
       "content-type": "application/json",
     },
-    body: JSON.stringify({ message }),
+    body: JSON.stringify({ conversation_id: conversationId, message }),
   })
   if (!response.ok) {
     throw new Error("Chat endpoint unavailable")
