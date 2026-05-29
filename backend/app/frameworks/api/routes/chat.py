@@ -26,9 +26,14 @@ from app.adapters.embeddings.hosted_embeddings import HostedEmbeddings
 from app.adapters.repositories.chunk_repository import PostgresChunkRepository
 from app.adapters.repositories.conversation_repository import PostgresConversationRepository
 from app.adapters.repositories.lead_repository import PostgresLeadRepository
-from app.frameworks.db.models import TenantModel
-from app.frameworks.api.deps import db_session, get_current_tenant_id, get_app_settings, get_session_store
+from app.frameworks.api.deps import (
+    db_session,
+    get_app_settings,
+    get_current_widget_tenant_id,
+    get_session_store,
+)
 from app.frameworks.config import Settings
+from app.frameworks.db.models import TenantModel
 from app.use_cases.agent_turn import AgentTurnUseCase
 from app.use_cases.capture_lead import CaptureLeadUseCase
 from app.use_cases.classify_message import ClassifyMessageUseCase
@@ -177,7 +182,7 @@ def _build_context(session: AsyncSession, settings: Settings, session_store: Ses
 )
 async def chat(
     body: ChatRequest,
-    tenant_id_str: str = Depends(get_current_tenant_id),
+    tenant_id_str: str = Depends(get_current_widget_tenant_id),
     session: AsyncSession = Depends(db_session),
     settings: Settings = Depends(get_app_settings),
     session_store: SessionStore = Depends(get_session_store),

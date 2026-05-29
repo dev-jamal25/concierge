@@ -1,8 +1,21 @@
 import { type FormEvent, useEffect, useState } from "react"
 import { fetchWidgetConfig, sendChatMessage, type WidgetConfig } from "./api"
 
+function createConversationId() {
+  if ("randomUUID" in crypto) {
+    return crypto.randomUUID()
+  }
+  return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (char) =>
+    (
+      Number(char) ^
+      (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (Number(char) / 4)))
+    ).toString(16),
+  )
+}
+
 function App() {
   const [token, setToken] = useState<string | null>(null)
+  const [conversationId] = useState(createConversationId)
   const [config, setConfig] = useState<WidgetConfig | null>(null)
   const [accepted, setAccepted] = useState(false)
   const [message, setMessage] = useState("")
@@ -41,7 +54,7 @@ function App() {
     setMessage("")
     setMessages((current) => [...current, `You: ${visitorMessage}`])
     try {
-      const reply = await sendChatMessage(token, visitorMessage)
+      const reply = await sendChatMessage(token, conversationId, visitorMessage)
       setMessages((current) => [
         ...current,
         `Concierge: ${reply.reply ?? "Thanks, I received your message."}`,
