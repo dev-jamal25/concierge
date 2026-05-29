@@ -16,7 +16,6 @@ from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.responses import JSONResponse
 from jinja2 import Template
 from pydantic import BaseModel, Field
 from sqlalchemy import select
@@ -24,13 +23,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.adapters.classifier.modelserver_client import ModelserverClassifier
 from app.adapters.embeddings.hosted_embeddings import HostedEmbeddings
-from app.adapters.llm.anthropic_client import AnthropicLLM
 from app.adapters.repositories.chunk_repository import PostgresChunkRepository
 from app.adapters.repositories.conversation_repository import PostgresConversationRepository
 from app.adapters.repositories.lead_repository import PostgresLeadRepository
-from app.frameworks.db.models import TenantModel
-from app.frameworks.api.deps import db_session, get_current_tenant_id, get_app_settings, get_session_store
+from app.frameworks.api.deps import (
+    db_session,
+    get_app_settings,
+    get_current_widget_tenant_id,
+    get_session_store,
+)
 from app.frameworks.config import Settings
+from app.frameworks.db.models import TenantModel
 from app.use_cases.agent_turn import AgentTurnUseCase
 from app.use_cases.capture_lead import CaptureLeadUseCase
 from app.use_cases.classify_message import ClassifyMessageUseCase
@@ -38,7 +41,6 @@ from app.use_cases.escalate import EscalateUseCase
 from app.use_cases.protocols.llm_client import Message
 from app.use_cases.protocols.session_store import SessionStore
 from app.use_cases.rag_search import RAGSearchUseCase
-from app.use_cases.reindex_tenant_chunks import ReindexTenantChunksUseCase
 from app.use_cases.session_memory import SessionMemory
 from app.frameworks.observability.logging import log_turn_cost
 
@@ -105,6 +107,8 @@ def _build_context(session: AsyncSession, settings: Settings, session_store: Ses
         api_key=getattr(settings, "embedding_api_key", ""),
         model=getattr(settings, "embedding_model", None),
     )
+    from app.adapters.llm.anthropic_client import AnthropicLLM
+
     llm_client = AnthropicLLM(
         api_key=getattr(settings, "anthropic_api_key", ""),
         model=getattr(settings, "llm_model", "claude-sonnet-4-6"),
@@ -113,7 +117,6 @@ def _build_context(session: AsyncSession, settings: Settings, session_store: Ses
         base_url=settings.classifier_url,
         service_token=settings.service_token,
     )
-    reindex = ReindexTenantChunksUseCase(chunk_repo, embedding_client)
     rag = RAGSearchUseCase(
         chunk_repo,
         embedding_client,
@@ -145,11 +148,41 @@ def _build_context(session: AsyncSession, settings: Settings, session_store: Ses
 @router.post(
     "/chat",
     response_model=ChatTurnResponse,
-    responses={503: {"model": UpstreamUnavailableResponse, "description": "LLM unavailable; conversation escalated"}},
+    responses={
+        503: {
+            "model": UpstreamUnavailableResponse,
+            "description": "LLM unavailable; conversation escalated",
+        }
+    },
+    openapi_extra={
+        "requestBody": {
+            "required": True,
+            "content": {
+                "application/json": {
+                    "schema": {
+                        "type": "object",
+                        "required": ["conversation_id", "message"],
+                        "properties": {
+                            "conversation_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "title": "Conversation Id",
+                            },
+                            "message": {
+                                "type": "string",
+                                "maxLength": 4000,
+                                "title": "Message",
+                            },
+                        },
+                    }
+                }
+            },
+        }
+    },
 )
 async def chat(
     body: ChatRequest,
-    tenant_id_str: str = Depends(get_current_tenant_id),
+    tenant_id_str: str = Depends(get_current_widget_tenant_id),
     session: AsyncSession = Depends(db_session),
     settings: Settings = Depends(get_app_settings),
     session_store: SessionStore = Depends(get_session_store),
@@ -159,7 +192,6 @@ async def chat(
     conv_repo: PostgresConversationRepository = ctx["conv_repo"]
     classify: ClassifyMessageUseCase = ctx["classify"]
     rag: RAGSearchUseCase = ctx["rag"]
-    capture_lead_uc: CaptureLeadUseCase = ctx["capture_lead"]
     escalate_uc: EscalateUseCase = ctx["escalate"]
     agent_turn_uc: AgentTurnUseCase = ctx["agent_turn"]
     memory: SessionMemory = ctx["memory"]

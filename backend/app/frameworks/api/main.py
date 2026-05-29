@@ -40,11 +40,11 @@ def create_app() -> FastAPI:
     from app.frameworks.api.routes import widget as widget_routes
 
     app.include_router(auth_routes.router)
-    app.include_router(manager_routes.router)
-    app.include_router(widget_routes.router)
     app.include_router(chat_routes.router)
     app.include_router(cms_routes.router)
     app.include_router(leads_routes.router)
+    app.include_router(manager_routes.router)
+    app.include_router(widget_routes.router)
     app.include_router(admin_routes.router)
 
     return app
