@@ -39,6 +39,7 @@ from app.frameworks.db.session import (
 from app.frameworks.secrets.vault_client import HvacVaultClient, WIDGET_SIGNING_KEY_PATH
 from app.use_cases.erase_tenant import EraseTenantUseCase
 from app.use_cases.invite_admin import InviteAdminUseCase
+from app.use_cases.protocols.session_store import SessionStore
 from app.use_cases.provision_tenant import ProvisionTenantUseCase
 
 # --- Settings ---
@@ -60,7 +61,7 @@ def get_embedding_client() -> object:
     raise NotImplementedError("embedding client provider is owned by Owner B tasks T026/T045")
 
 
-def get_session_store() -> object:
+def get_session_store() -> SessionStore:
     return make_redis_session(get_settings().redis_url)
 
 
@@ -150,6 +151,7 @@ class ManagerContext:
 
 async def get_manager_context(
     session: AsyncSession = Depends(manager_db_session),
+    session_store: SessionStore = Depends(get_session_store),
 ) -> ManagerContext:
     """Builds all Owner-A repos + use cases on ONE concierge_manager session so a
     provisioning request (tenant + widget + origins + invitation + audit) commits
@@ -168,7 +170,7 @@ async def get_manager_context(
         accept_url_base=settings.public_base_url,
     )
     provision = ProvisionTenantUseCase(tenants, audit, invite)
-    erase = EraseTenantUseCase(tenants, audit, get_session_store())
+    erase = EraseTenantUseCase(tenants, audit, session_store)
     return ManagerContext(
         session=session,
         tenants=tenants,
