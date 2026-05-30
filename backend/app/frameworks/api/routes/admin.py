@@ -13,6 +13,7 @@ Platform-rail weakening → 403 + audit-logged (enforced by UpdateGuardrailConfi
 from __future__ import annotations
 
 import re
+from collections.abc import AsyncIterator
 from datetime import datetime
 from typing import Any
 from uuid import UUID
@@ -23,9 +24,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.entities.user import UserRole
-from app.frameworks.api.deps import db_session
 from app.frameworks.api.session_auth import get_principal
 from app.frameworks.db.models import AllowedOriginModel, ConversationModel, TenantModel, WidgetModel
+from app.frameworks.db.session import get_session, reset_tenant_id, reset_user_id, set_tenant_id, set_user_id
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -33,13 +34,37 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 # --- Admin Tenant ID Dependency (from session token) ---
 
 
-def get_admin_tenant_id(principal=Depends(get_principal)) -> str:
-    """Extract tenant_id from session token for admin endpoints."""
+async def get_admin_tenant_id(principal=Depends(get_principal)) -> AsyncIterator[str]:
+    """Validate the session token is tenant_admin, set RLS ContextVars, yield tenant_id.
+
+    This MUST be a generator so that set_tenant_id() runs before admin_db_session
+    creates the session and applies the app.tenant_id GUC via _apply_tenant_guc().
+    The ContextVars are reset in the finally block to keep request isolation clean.
+    """
     if principal.role is not UserRole.TENANT_ADMIN:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "tenant_admin role required")
     if principal.tenant_id is None:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Admin role requires tenant_id")
-    return principal.tenant_id
+    tid_token = set_tenant_id(principal.tenant_id)
+    uid_token = set_user_id(principal.user_id)
+    try:
+        yield principal.tenant_id
+    finally:
+        reset_tenant_id(tid_token)
+        reset_user_id(uid_token)
+
+
+async def admin_db_session(
+    tenant_id_str: str = Depends(get_admin_tenant_id),
+) -> AsyncIterator[AsyncSession]:
+    """RLS-scoped DB session for admin routes.
+
+    Depends on get_admin_tenant_id to guarantee the ContextVar is set before
+    get_session() calls _apply_tenant_guc(). FastAPI resolves generator
+    dependencies in dependency order, so the GUC is correctly applied.
+    """
+    async for s in get_session():
+        yield s
 
 
 # --- Schemas (per api.openapi.yaml) ---
@@ -96,7 +121,7 @@ class WidgetInfoOut(BaseModel):
 @router.get("/tenant", response_model=TenantSettings)
 async def get_tenant_settings(
     tenant_id_str: str = Depends(get_admin_tenant_id),
-    session: AsyncSession = Depends(db_session),
+    session: AsyncSession = Depends(admin_db_session),
 ) -> TenantSettings:
     tenant_id = UUID(tenant_id_str)
     result = await session.execute(
@@ -119,7 +144,7 @@ async def get_tenant_settings(
 async def update_tenant_settings(
     body: TenantSettingsUpdate,
     tenant_id_str: str = Depends(get_admin_tenant_id),
-    session: AsyncSession = Depends(db_session),
+    session: AsyncSession = Depends(admin_db_session),
 ) -> TenantSettings:
     tenant_id = UUID(tenant_id_str)
     result = await session.execute(
@@ -156,7 +181,7 @@ _PLATFORM_RAILS = {"injection_defense", "jailbreak_defense", "cross_tenant_defen
 @router.get("/guardrails", response_model=TenantGuardrailConfig)
 async def get_guardrail_config(
     tenant_id_str: str = Depends(get_admin_tenant_id),
-    session: AsyncSession = Depends(db_session),
+    session: AsyncSession = Depends(admin_db_session),
 ) -> TenantGuardrailConfig:
     tenant_id = UUID(tenant_id_str)
     result = await session.execute(
@@ -178,7 +203,7 @@ async def get_guardrail_config(
 async def update_guardrail_config(
     body: TenantGuardrailConfig,
     tenant_id_str: str = Depends(get_admin_tenant_id),
-    session: AsyncSession = Depends(db_session),
+    session: AsyncSession = Depends(admin_db_session),
 ) -> TenantGuardrailConfig:
     tenant_id = UUID(tenant_id_str)
 
@@ -219,7 +244,7 @@ def _validate_origin_format(origin: str) -> bool:
 @router.get("/origins", response_model=list[AllowedOriginOut])
 async def list_origins(
     tenant_id_str: str = Depends(get_admin_tenant_id),
-    session: AsyncSession = Depends(db_session),
+    session: AsyncSession = Depends(admin_db_session),
 ) -> list[AllowedOriginOut]:
     """List all allowed origins for the current tenant."""
     tenant_id = UUID(tenant_id_str)
@@ -238,7 +263,7 @@ async def list_origins(
 async def add_origin(
     body: AllowedOriginCreate,
     tenant_id_str: str = Depends(get_admin_tenant_id),
-    session: AsyncSession = Depends(db_session),
+    session: AsyncSession = Depends(admin_db_session),
 ) -> AllowedOriginOut:
     """Add a new allowed origin for the current tenant.
     
@@ -290,7 +315,7 @@ async def add_origin(
 async def delete_origin(
     origin_id: UUID,
     tenant_id_str: str = Depends(get_admin_tenant_id),
-    session: AsyncSession = Depends(db_session),
+    session: AsyncSession = Depends(admin_db_session),
 ) -> None:
     """Delete an allowed origin. Enforces tenant isolation."""
     tenant_id = UUID(tenant_id_str)
@@ -320,7 +345,7 @@ async def delete_origin(
 @router.get("/widget", response_model=WidgetInfoOut)
 async def get_widget_info(
     tenant_id_str: str = Depends(get_admin_tenant_id),
-    session: AsyncSession = Depends(db_session),
+    session: AsyncSession = Depends(admin_db_session),
 ) -> WidgetInfoOut:
     """Get widget info (public_id) for the current tenant.
     
@@ -350,7 +375,7 @@ async def get_widget_info(
 @router.get("/escalations", response_model=list[EscalatedConversation])
 async def list_escalations(
     tenant_id_str: str = Depends(get_admin_tenant_id),
-    session: AsyncSession = Depends(db_session),
+    session: AsyncSession = Depends(admin_db_session),
 ) -> list[EscalatedConversation]:
     tenant_id = UUID(tenant_id_str)
     result = await session.execute(

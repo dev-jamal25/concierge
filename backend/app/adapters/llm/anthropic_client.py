@@ -12,6 +12,49 @@ import anthropic
 from app.use_cases.protocols.llm_client import LLMResponse, Message, ToolSpec
 
 
+def _build_sdk_messages(messages: list[Message]) -> list[dict]:
+    """Convert internal Message list to Anthropic SDK message format.
+
+    Handles three cases that the naive {"role": m.role, "content": m.content}
+    mapping misses:
+      1. Assistant messages with tool_calls → content array with tool_use blocks.
+      2. Messages with role="tool" → role="user" with tool_result blocks.
+      3. Consecutive tool messages → batched into a single user message.
+    """
+    sdk: list[dict] = []
+    i = 0
+    while i < len(messages):
+        m = messages[i]
+        if m.tool_calls:
+            content: list[dict] = []
+            if m.content:
+                content.append({"type": "text", "text": m.content})
+            for tc in m.tool_calls:
+                content.append({
+                    "type": "tool_use",
+                    "id": tc["id"],
+                    "name": tc["name"],
+                    "input": tc["input"],
+                })
+            sdk.append({"role": "assistant", "content": content})
+        elif m.role == "tool":
+            tool_results: list[dict] = []
+            while i < len(messages) and messages[i].role == "tool":
+                tr = messages[i]
+                tool_results.append({
+                    "type": "tool_result",
+                    "tool_use_id": tr.tool_call_id,
+                    "content": tr.content,
+                })
+                i += 1
+            sdk.append({"role": "user", "content": tool_results})
+            continue
+        else:
+            sdk.append({"role": m.role, "content": m.content})
+        i += 1
+    return sdk
+
+
 class AnthropicLLM:
     """Implements use_cases.protocols.llm_client.LLMClient."""
 
@@ -33,10 +76,7 @@ class AnthropicLLM:
         max_tokens: int = 2048,
         temperature: float = 0.0,
     ) -> LLMResponse:
-        sdk_messages = [
-            {"role": m.role, "content": m.content}
-            for m in messages
-        ]
+        sdk_messages = _build_sdk_messages(messages)
 
         sdk_tools = None
         if tools:

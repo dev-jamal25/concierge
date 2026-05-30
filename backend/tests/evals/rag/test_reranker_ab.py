@@ -74,7 +74,7 @@ async def reranker_tenant():
             text("INSERT INTO widgets (id, tenant_id, public_id) VALUES (:id, :tid, :pub)"),
             {"id": str(widget_id), "tid": str(tenant_id), "pub": f"pub-{widget_id.hex[:8]}"},
         )
-        for page_key, body in _PAGE_BODIES.items():
+        for idx, (page_key, body) in enumerate(_PAGE_BODIES.items()):
             pid = uuid.uuid4()
             page_ids[page_key] = pid
             await conn.execute(
@@ -82,8 +82,8 @@ async def reranker_tenant():
                     "INSERT INTO cms_pages (id, tenant_id, title, body, state, slug) "
                     "VALUES (:id, :tid, :title, :body, 'published', :slug)"
                 ),
-                {"id": str(pid), "tid": str(tenant_id), "title": f"Page {page_key[-4:]}",
-                 "body": body, "slug": f"rr-page-{page_key[-4:]}"},
+                {"id": str(pid), "tid": str(tenant_id), "title": f"Page {idx}",
+                 "body": body, "slug": f"rr-page-{idx}"},
             )
 
     async with AsyncSession(engine) as db_session:

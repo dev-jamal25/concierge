@@ -9,6 +9,8 @@ On LLM/embedding timeout: returns 503, auto-flags conversation as escalated.
 
 from __future__ import annotations
 
+import logging
+import re
 import time
 from pathlib import Path
 from typing import Literal
@@ -46,9 +48,38 @@ from app.use_cases.rag_search import RAGSearchUseCase
 from app.use_cases.session_memory import SessionMemory
 from app.frameworks.observability.logging import log_turn_cost
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(tags=["chat"])
 
 _SYSTEM_PROMPT_PATH = Path(__file__).parents[5] / "prompts" / "system_agent.md"
+
+# Regex of business-domain keywords that indicate a legitimate FAQ query.
+# When the ONNX classifier mislabels one of these as "spam", we override to "faq"
+# so the message reaches agent_turn instead of being silently dropped.
+_FAQ_KEYWORD_RE = re.compile(
+    # No trailing \b — plurals/compounds like "coffees", "wi-fi", "take-away" must match.
+    r"\b("
+    r"coffee|espresso|latte|cappuccino|americano|flat\s+white|pour[- ]?over|drip|brew|roast|blend|bean|origin|"
+    r"tea|cake|pastry|food|drink|beverage|menu|sandwich|milk|oat|almond|soy|decaf|"
+    r"open|close|hour|location|address|where|parking|wi[- ]?fi|internet|"
+    r"book|table|reservation|reserve|seat|catering|event|appointment|"
+    r"price|cost|discount|loyalty|stamp|reward|offer|deal|"
+    r"barista|service|staff|order|take[- ]?away|takeout|dine[- ]?in"
+    r")",
+    re.IGNORECASE,
+)
+
+_SPAM_REPLY = "I'm only able to help with questions about this business."
+
+
+def _looks_like_faq(message: str) -> bool:
+    """True when the message contains business-domain keywords.
+
+    Prevents the classifier from silently dropping legitimate FAQ questions
+    that happen to be misclassified as spam.
+    """
+    return bool(_FAQ_KEYWORD_RE.search(message))
 
 
 def _load_system_prompt(persona_summary: str = "") -> str:
@@ -210,7 +241,6 @@ async def chat(
     ctx = _build_context(session, settings, session_store)
     conv_repo: PostgresConversationRepository = ctx["conv_repo"]
     classify: ClassifyMessageUseCase = ctx["classify"]
-    rag: RAGSearchUseCase = ctx["rag"]
     escalate_uc: EscalateUseCase = ctx["escalate"]
     agent_turn_uc: AgentTurnUseCase = ctx["agent_turn"]
     memory: SessionMemory = ctx["memory"]
@@ -222,6 +252,7 @@ async def chat(
             tenant_id=tenant_id,
             widget_id=widget_id,
             visitor_session=str(body.conversation_id),
+            conversation_id=body.conversation_id,
         )
 
     # If already escalated, reject new turns
@@ -247,27 +278,66 @@ async def chat(
     # --- Route ---
 
     if label == "spam":
-        log_turn_cost(tenant_id=tenant_id, conversation_id=body.conversation_id,
-                      route="spam", ms_elapsed=(time.perf_counter() - _t0) * 1000)
-        return ChatTurnResponse(route="spam", reply=None)
+        # If the message contains business-domain keywords the classifier incorrectly
+        # labelled it spam — fall through to faq so agent_turn can handle it.
+        if _looks_like_faq(body.message):
+            label = "faq"
+        else:
+            log_turn_cost(tenant_id=tenant_id, conversation_id=body.conversation_id,
+                          route="spam", ms_elapsed=(time.perf_counter() - _t0) * 1000)
+            return ChatTurnResponse(route="spam", reply=_SPAM_REPLY)
 
     if label == "faq":
-        rag_result = await rag.execute(query=body.message, tenant_id=tenant_id)
-        reply = None  # agent_turn synthesises the reply; direct FAQ uses top chunk
+        # Route through agent_turn so it can call rag_search as a tool and
+        # synthesise a grounded reply from the tenant's knowledge base.
+        persona_summary = await _get_persona_summary(tenant_id, session)
+        system_prompt = _load_system_prompt(persona_summary)
+        history = [
+            Message(role=t["role"], content=t["content"]) for t in prior_turns
+        ] + [Message(role="user", content=body.message)]
+        try:
+            turn_result = await agent_turn_uc.execute(
+                system_prompt=system_prompt,
+                conversation_history=history,
+                tenant_id=tenant_id,
+                conversation_id=body.conversation_id,
+                visitor_session=str(body.conversation_id),
+            )
+        except Exception as _exc:
+            logger.warning("agent_turn failed (faq route): %s: %s", type(_exc).__name__, _exc)
+            try:
+                await escalate_uc.execute(
+                    conversation_id=body.conversation_id,
+                    tenant_id=tenant_id,
+                    reason="llm_unavailable",
+                )
+            except Exception:
+                pass
+            raise HTTPException(
+                status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail={
+                    "message": "Service temporarily unavailable. Please try again shortly.",
+                    "escalated": True,
+                },
+            )
         await memory.append_turn(
-            tenant_id, body.conversation_id, body.message, reply or ""
+            tenant_id, body.conversation_id, body.message, turn_result.reply or ""
         )
-        log_turn_cost(tenant_id=tenant_id, conversation_id=body.conversation_id,
-                      route="faq", embedding_calls=1,
-                      ms_elapsed=(time.perf_counter() - _t0) * 1000,
-                      embedding_provider=getattr(settings, "embedding_provider", "voyage"))
+        log_turn_cost(
+            tenant_id=tenant_id,
+            conversation_id=body.conversation_id,
+            route="faq",
+            embedding_calls=turn_result.iterations,
+            ms_elapsed=(time.perf_counter() - _t0) * 1000,
+            embedding_provider=getattr(settings, "embedding_provider", "voyage"),
+        )
         return ChatTurnResponse(
             route="faq",
-            reply=reply,
-            escalated=False,
+            reply=turn_result.reply or None,
+            escalated=turn_result.escalated,
             retrieved_chunks=[
                 RetrievedChunk(cms_page_id=c.cms_page_id, snippet=c.content[:300])
-                for c in rag_result.chunks
+                for c in turn_result.retrieved_chunks
             ],
         )
 
@@ -318,12 +388,16 @@ async def chat(
             conversation_id=body.conversation_id,
             visitor_session=str(body.conversation_id),
         )
-    except Exception:
-        await escalate_uc.execute(
-            conversation_id=body.conversation_id,
-            tenant_id=tenant_id,
-            reason="llm_unavailable",
-        )
+    except Exception as _exc:
+        logger.warning("agent_turn failed (agent route): %s: %s", type(_exc).__name__, _exc)
+        try:
+            await escalate_uc.execute(
+                conversation_id=body.conversation_id,
+                tenant_id=tenant_id,
+                reason="llm_unavailable",
+            )
+        except Exception:
+            pass  # best-effort — don't mask the 503
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE,
             detail={

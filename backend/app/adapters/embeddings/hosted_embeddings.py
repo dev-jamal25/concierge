@@ -7,9 +7,37 @@ Vector dimension is 1024 — documented in data-model.md and DECISIONS.md entry 
 
 from __future__ import annotations
 
+import asyncio
+
 import httpx
 
 from app.use_cases.protocols.embedding_client import EmbeddingClient
+
+# Retry only transient errors: rate-limit and server-side failures.
+_RETRYABLE_STATUSES = frozenset({429, 500, 502, 503, 504})
+_MAX_ATTEMPTS = 3
+_BACKOFF_SECONDS = (0.5, 1.5)
+
+
+async def _with_retry(call):  # type: ignore[no-untyped-def]
+    """Call an async callable up to _MAX_ATTEMPTS times, retrying on transient HTTP errors."""
+    last_exc: Exception | None = None
+    for attempt in range(_MAX_ATTEMPTS):
+        try:
+            return await call()
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code not in _RETRYABLE_STATUSES:
+                raise
+            last_exc = exc
+            if attempt < len(_BACKOFF_SECONDS):
+                retry_after = exc.response.headers.get("retry-after")
+                delay = float(retry_after) if retry_after else _BACKOFF_SECONDS[attempt]
+                await asyncio.sleep(delay)
+        except httpx.TransportError as exc:
+            last_exc = exc
+            if attempt < len(_BACKOFF_SECONDS):
+                await asyncio.sleep(_BACKOFF_SECONDS[attempt])
+    raise last_exc  # type: ignore[misc]
 
 
 class HostedEmbeddings:
@@ -29,16 +57,22 @@ class HostedEmbeddings:
         self._http = client or httpx.AsyncClient(timeout=30.0)
 
     async def embed(self, texts: list[str]) -> list[list[float]]:
-        if self._provider == "voyage":
-            return await self._embed_voyage(texts)
-        if self._provider == "cohere":
-            return await self._embed_cohere(texts)
-        if self._provider == "openai":
-            return await self._embed_openai(texts)
+        if self._provider == "voyage" or self._provider.startswith("voyage-"):
+            return await _with_retry(lambda: self._embed_voyage(texts))
+        if self._provider == "cohere" or self._provider.startswith("cohere-"):
+            return await _with_retry(lambda: self._embed_cohere(texts))
+        if self._provider == "openai" or self._provider.startswith("openai-"):
+            return await _with_retry(lambda: self._embed_openai(texts))
         raise ValueError(f"Unknown embedding provider: {self._provider!r}")
 
     async def _embed_voyage(self, texts: list[str]) -> list[list[float]]:
-        model = self._model or "voyage-3"
+        # If EMBEDDING_PROVIDER is a model name like "voyage-4-lite", use it as the model.
+        if self._model:
+            model = self._model
+        elif self._provider.startswith("voyage-"):
+            model = self._provider
+        else:
+            model = "voyage-3"
         resp = await self._http.post(
             "https://api.voyageai.com/v1/embeddings",
             json={"input": texts, "model": model},

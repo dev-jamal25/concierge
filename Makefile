@@ -6,7 +6,7 @@ endif
 BACKEND_DIR := backend
 UV ?= uv
 
-.PHONY: migrate bootstrap-manager lint test seed-demo-tenant serve-test-host smoke eval eval-classifier eval-agent eval-rag eval-redteam eval-modelserver
+.PHONY: migrate bootstrap-manager lint test seed-demo-tenant seed-demo-users serve-test-host smoke demo-seed-full eval eval-classifier eval-agent eval-rag eval-redteam eval-modelserver
 
 migrate:
 	cd $(BACKEND_DIR) && $(UV) run alembic -c app/frameworks/db/alembic.ini upgrade head
@@ -38,8 +38,20 @@ eval-rag:
 seed-demo-tenant:
 	cd $(BACKEND_DIR) && $(UV) run python -m app.frameworks.cli.seed_demo_tenants
 
-smoke: seed-demo-tenant
+seed-demo-users:
+	cd $(BACKEND_DIR) && $(UV) run python -m app.frameworks.cli.seed_demo_users
+
+seed-demo-chunks:
+	cd $(BACKEND_DIR) && $(UV) run python -m app.frameworks.cli.seed_demo_chunks
+
+smoke: seed-demo-tenant seed-demo-users
 	cd $(BACKEND_DIR) && $(UV) run --extra dev pytest ../tests/smoke_test.py -v
 
-serve-test-host eval:
-	@echo "$@ pending Owner C/D"
+# Full local demo seed including RAG embeddings (requires EMBEDDING_API_KEY).
+demo-seed-full: seed-demo-tenant seed-demo-users seed-demo-chunks
+
+serve-test-host:
+	python -m http.server 3001 --directory tests/widget-host-example
+
+eval:
+	@echo "eval pending Owner C/D"
