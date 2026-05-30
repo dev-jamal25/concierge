@@ -1,0 +1,135 @@
+name: Eval Gates
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  classifier-eval:
+    name: Classifier Eval (macro-F1 gate)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        run: python -m pip install uv
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: uv sync --extra dev --extra notebooks --locked
+
+      - name: Run classifier eval (macro-F1 gate)
+        working-directory: backend
+        run: uv run --extra dev --extra notebooks pytest ../tests/evals/classifier/ -v -s
+
+  redteam-eval:
+    name: Red-team / PII Canary Eval
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        run: python -m pip install uv
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: uv sync --extra dev --locked
+
+      - name: Run red-team / PII canary eval
+        working-directory: backend
+        run: uv run --extra dev pytest ../tests/evals/redteam/ -v -s
+
+  agent-eval:
+    name: Agent Tool-Selection Eval
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        run: python -m pip install uv
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: uv sync --extra dev --locked
+
+      - name: Run agent tool-selection eval
+        working-directory: backend
+        run: uv run --extra dev pytest tests/evals/agent_tool_selection/ -v -s -m eval
+
+  rag-eval:
+    name: RAG Quality Eval
+    runs-on: ubuntu-latest
+    # Uses _DeterministicEmbeddings (bag-of-words hash) when EMBEDDING_API_KEY is
+    # absent so the gate always runs in CI. Set EMBEDDING_API_KEY as a repo secret
+    # to run against real hosted embeddings instead.
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: concierge
+          POSTGRES_PASSWORD: concierge
+          POSTGRES_DB: concierge
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U concierge -d concierge"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 15
+
+    env:
+      MIGRATION_DATABASE_URL: postgresql+asyncpg://concierge:concierge@localhost:5432/concierge
+      SERVICE_TOKEN: test-service-token-ci
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        run: python -m pip install uv
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: uv sync --extra dev --locked
+
+      - name: Run Alembic migrations
+        working-directory: backend
+        run: uv run alembic -c app/frameworks/db/alembic.ini upgrade head
+
+      - name: Run RAG quality eval
+        working-directory: backend
+        run: uv run --extra dev pytest tests/evals/rag/test_rag_quality.py -v -s -m eval

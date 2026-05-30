@@ -11,6 +11,18 @@
 - Composition root remains in `backend/app/frameworks/api/deps.py` and wires
   Owner A adapters. B/C/D provider hooks are explicit `NotImplementedError`
   placeholders.
+- T129 complete (2026-05-29): `EraseTenantUseCase` now drives the full
+  four-store cascade in a fixed order — Postgres + pgvector (via
+  `TenantRepository.delete` cascade), Redis sessions
+  (`SessionStore.delete_by_tenant`), and MinIO objects under the tenant prefix
+  (`ObjectStorage.delete_prefix(tenant_id, "")`, which composes with the
+  adapter's existing `tenant-{tenant_id}/` prefixing). The `tenant_erase_start`
+  audit entry is written before any destructive work. The
+  `tenant_erase_complete` audit entry now carries
+  `details.stores_purged = ["pg", "vector", "redis", "minio"]` and a measured
+  `details.duration_ms` (purge work only, excluding the start-audit write).
+  `tests/integration/test_erasure_path.py` covers all four stores plus
+  cross-tenant isolation for both Redis and MinIO.
 
 ## Baseline CI Scaffold
 
@@ -43,6 +55,20 @@ sidecar build checks are configured in this baseline.
 | B | tenant/user/audit/vault protocols | T019-T021, T032 | done |
 | D | OriginCheck middleware stub | T034 | done |
 
+## Remaining Owner A Follow-ups
+
+T129 logic is fully wired across Postgres/pgvector, Redis, and MinIO. The
+remaining items are factual and tracked as separate work:
+
+- 1-hour erasure SLA load test (T129 SLA bullet) is not yet implemented as an
+  automated assertion — the use case measures and audit-logs `duration_ms`, but
+  there is no large-scale fixture that exercises the SLA budget. Track this as
+  a follow-up ticket; do not retroactively reopen T129 for it.
+- The MinIO adapter's underlying client wiring is owned by Owner D
+  (`backend/app/adapters/storage/minio_object_storage.py`). Owner A's erasure
+  path uses the `ObjectStorage` protocol and is unaffected by adapter-level
+  follow-ups.
+
 ## Still Owned Elsewhere
 
 - Structured logging is T040 and remains pending Owner C/shared work.
@@ -57,13 +83,3 @@ sidecar build checks are configured in this baseline.
 Do not add `backend/app/core/`. Shared settings stay in
 `backend/app/frameworks/config.py`; logging/redaction/security work belongs in
 the framework-layer files named by the Speckit tasks.
-
-## Day-1 Owner Checklist
-
-Owner B publishes its protocol interfaces and fakes for conversation, chunks,
-leads, LLM, embeddings, and sessions before building story logic.
-
-Owner C publishes classifier and guardrails protocols/adapters, plus
-redaction/logging/tracing surfaces.
-
-Owner D publishes token signing, object storage, CI, widget, and admin scaffolds.

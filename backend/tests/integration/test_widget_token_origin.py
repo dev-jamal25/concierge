@@ -125,3 +125,77 @@ async def test_widget_token_origin_gate_and_chat_origin_mismatch(
         json={"conversation_id": str(uuid4()), "message": "hello"},
     )
     assert chat_mismatch.status_code == 403, chat_mismatch.text
+
+
+@pytest.mark.asyncio
+async def test_missing_origin_rejected_for_protected_routes(
+    client: tuple[TestClient, FakeWidgetSigner],
+    owner_engine,
+) -> None:
+    """Missing Origin header returns 403 for /widget/config and /chat."""
+    test_client, _signer = client
+    tenant_id = uuid4()
+    widget_id = uuid4()
+    public_id = f"wgt_{widget_id.hex[:12]}"
+
+    async with owner_engine.begin() as conn:
+        await conn.execute(
+            text("INSERT INTO tenants (id, slug, display_name) VALUES (:id, :slug, :name)"),
+            {
+                "id": str(tenant_id),
+                "slug": f"missing-origin-{tenant_id.hex[:8]}",
+                "name": "Missing Origin Test",
+            },
+        )
+        await conn.execute(
+            text(
+                "INSERT INTO widgets (id, tenant_id, public_id, is_enabled) "
+                "VALUES (:id, :tenant_id, :public_id, true)"
+            ),
+            {
+                "id": str(widget_id),
+                "tenant_id": str(tenant_id),
+                "public_id": public_id,
+            },
+        )
+        await conn.execute(
+            text(
+                "INSERT INTO allowed_origins (tenant_id, origin) "
+                "VALUES (:tenant_id, :origin)"
+            ),
+            {"tenant_id": str(tenant_id), "origin": ALLOWED_ORIGIN},
+        )
+
+    # Token issuance does not require HTTP Origin header (body origin is used).
+    token_resp = test_client.post(
+        "/widget/token",
+        json={"widget_id": public_id, "origin": ALLOWED_ORIGIN},
+    )
+    assert token_resp.status_code == 200, token_resp.text
+    token = token_resp.json()["token"]
+
+    # /widget/config — missing Origin → 403
+    config_no_origin = test_client.get(
+        "/widget/config",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert config_no_origin.status_code == 403, config_no_origin.text
+
+    # /chat — missing Origin → 403
+    chat_no_origin = test_client.post(
+        "/chat",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"conversation_id": str(uuid4()), "message": "hello"},
+    )
+    assert chat_no_origin.status_code == 403, chat_no_origin.text
+
+    # /healthz — no Origin → 200 (health routes are never protected)
+    health = test_client.get("/healthz")
+    assert health.status_code == 200, health.text
+
+    # /widget/token — no HTTP Origin header → 200 (body origin already validated)
+    token_no_http_origin = test_client.post(
+        "/widget/token",
+        json={"widget_id": public_id, "origin": ALLOWED_ORIGIN},
+    )
+    assert token_no_http_origin.status_code == 200, token_no_http_origin.text

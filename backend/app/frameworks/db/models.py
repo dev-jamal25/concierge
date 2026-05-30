@@ -110,6 +110,18 @@ class AllowedOriginModel(Base):
     __table_args__ = (UniqueConstraint("tenant_id", "origin", name="uq_allowed_origin"),)
 
 
+class WidgetModel(Base):
+    __tablename__ = "widgets"
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=_UUID_PK)
+    tenant_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, unique=True
+    )
+    public_id: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    is_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("true"))
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, server_default=_NOW)
+
+
 class AuditEntryModel(Base):
     __tablename__ = "audit_entries"
 

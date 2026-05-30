@@ -27,7 +27,19 @@ eval-redteam:
 	cd $(BACKEND_DIR) && $(UV) run --extra dev pytest ../tests/evals/redteam/ -v -s
 
 eval-modelserver:
-	cd $(BACKEND_DIR) && $(UV) run --extra dev --extra notebooks pytest tests/integration/test_modelserver_service_token.py -v
+	cd $(BACKEND_DIR) && $(UV) run --extra dev pytest tests/integration/test_modelserver_service_token.py -v
 
-seed-demo-tenant serve-test-host smoke eval eval-agent eval-rag:
+eval-agent:
+	cd $(BACKEND_DIR) && $(UV) run --extra dev pytest tests/evals/agent_tool_selection/ -v -s -m eval
+
+eval-rag:
+	cd $(BACKEND_DIR) && $(UV) run --extra dev pytest tests/evals/rag/ -v -s -m eval
+
+seed-demo-tenant:
+	cd $(BACKEND_DIR) && $(UV) run python -m app.frameworks.cli.seed_demo_tenants
+
+smoke: seed-demo-tenant
+	cd $(BACKEND_DIR) && $(UV) run --extra dev pytest ../tests/smoke_test.py -v
+
+serve-test-host eval:
 	@echo "$@ pending Owner C/D"

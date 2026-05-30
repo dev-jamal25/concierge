@@ -10,12 +10,11 @@ On LLM/embedding timeout: returns 503, auto-flags conversation as escalated.
 from __future__ import annotations
 
 import time
-import uuid
 from pathlib import Path
 from typing import Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Response, status
 from jinja2 import Template
 from pydantic import BaseModel, Field
 from sqlalchemy import select
@@ -27,9 +26,12 @@ from app.adapters.repositories.chunk_repository import PostgresChunkRepository
 from app.adapters.repositories.conversation_repository import PostgresConversationRepository
 from app.adapters.repositories.lead_repository import PostgresLeadRepository
 from app.frameworks.api.deps import (
+    WidgetTokenContext,
     db_session,
     get_app_settings,
-    get_current_widget_tenant_id,
+    get_current_widget_context,
+    get_guardrails_client,
+    get_service_token,
     get_session_store,
 )
 from app.frameworks.config import Settings
@@ -94,6 +96,17 @@ class UpstreamUnavailableResponse(BaseModel):
     escalated: bool = True
 
 
+@router.options("/chat", include_in_schema=False)
+async def chat_options(origin: str | None = Header(default=None)) -> Response:
+    if origin is None:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "missing origin")
+    response = Response(status_code=status.HTTP_204_NO_CONTENT)
+    _allow_origin(response, origin)
+    response.headers["Access-Control-Allow-Methods"] = "POST,OPTIONS"
+    response.headers["Access-Control-Max-Age"] = "300"
+    return response
+
+
 # --- Dependency: build all B use cases per request ---
 
 
@@ -115,7 +128,7 @@ def _build_context(session: AsyncSession, settings: Settings, session_store: Ses
     )
     classifier = ModelserverClassifier(
         base_url=settings.classifier_url,
-        service_token=settings.service_token,
+        service_token=get_service_token(),
     )
     rag = RAGSearchUseCase(
         chunk_repo,
@@ -126,7 +139,10 @@ def _build_context(session: AsyncSession, settings: Settings, session_store: Ses
     )
     escalate = EscalateUseCase(conv_repo)
     capture_lead = CaptureLeadUseCase(lead_repo)
-    agent_turn = AgentTurnUseCase(llm_client, rag, capture_lead, escalate, embedding_client)
+    agent_turn = AgentTurnUseCase(
+        llm_client, rag, capture_lead, escalate, embedding_client,
+        guardrails=get_guardrails_client(),
+    )
     classify = ClassifyMessageUseCase(classifier)
     memory = SessionMemory(
         session_store,
@@ -182,12 +198,15 @@ def _build_context(session: AsyncSession, settings: Settings, session_store: Ses
 )
 async def chat(
     body: ChatRequest,
-    tenant_id_str: str = Depends(get_current_widget_tenant_id),
+    response: Response,
+    widget_context: WidgetTokenContext = Depends(get_current_widget_context),
     session: AsyncSession = Depends(db_session),
     settings: Settings = Depends(get_app_settings),
     session_store: SessionStore = Depends(get_session_store),
 ) -> ChatTurnResponse:
-    tenant_id = UUID(tenant_id_str)
+    tenant_id = UUID(widget_context.tenant_id)
+    widget_id = UUID(widget_context.widget_id)
+    _allow_origin(response, widget_context.origin)
     ctx = _build_context(session, settings, session_store)
     conv_repo: PostgresConversationRepository = ctx["conv_repo"]
     classify: ClassifyMessageUseCase = ctx["classify"]
@@ -199,10 +218,9 @@ async def chat(
     # Ensure conversation exists (create on first turn)
     conversation = await conv_repo.get(body.conversation_id, tenant_id)
     if conversation is None:
-        # widget_id stub: use a zero UUID until widget token carries widget_id
         conversation = await conv_repo.create(
             tenant_id=tenant_id,
-            widget_id=uuid.UUID(int=0),
+            widget_id=widget_id,
             visitor_session=str(body.conversation_id),
         )
 
@@ -346,3 +364,9 @@ async def chat(
         ],
         capture_lead_status=lead_status,
     )
+
+
+def _allow_origin(response: Response, origin: str) -> None:
+    response.headers["Access-Control-Allow-Origin"] = origin
+    response.headers["Access-Control-Allow-Headers"] = "authorization,content-type,origin"
+    response.headers["Vary"] = "Origin"

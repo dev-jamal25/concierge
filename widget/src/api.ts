@@ -1,6 +1,3 @@
-export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000"
-
 export type WidgetConfig = {
   theme_config: Record<string, unknown>
   greeting: string
@@ -8,8 +5,19 @@ export type WidgetConfig = {
   consent_notice: string
 }
 
-export async function fetchWidgetConfig(token: string): Promise<WidgetConfig> {
-  const response = await fetch(`${API_BASE_URL}/widget/config`, {
+export type ChatResponse = {
+  route: "spam" | "faq" | "lead_intent" | "escalate" | "agent" | "unavailable"
+  reply?: string | null
+  escalated: boolean
+  retrieved_chunks: Array<{ cms_page_id: string; snippet: string }>
+  capture_lead_status?: string | null
+}
+
+export async function fetchWidgetConfig(
+  apiBaseUrl: string,
+  token: string,
+): Promise<WidgetConfig> {
+  const response = await fetch(`${apiBaseUrl}/widget/config`, {
     headers: {
       authorization: `Bearer ${token}`,
     },
@@ -21,11 +29,12 @@ export async function fetchWidgetConfig(token: string): Promise<WidgetConfig> {
 }
 
 export async function sendChatMessage(
+  apiBaseUrl: string,
   token: string,
   conversationId: string,
   message: string,
-) {
-  const response = await fetch(`${API_BASE_URL}/chat`, {
+): Promise<ChatResponse> {
+  const response = await fetch(`${apiBaseUrl}/chat`, {
     method: "POST",
     headers: {
       authorization: `Bearer ${token}`,

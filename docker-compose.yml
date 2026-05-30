@@ -11,7 +11,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./db/init:/docker-entrypoint-initdb.d:ro
+      - ./db/init/01-roles.sh:/docker-entrypoint-initdb.d/01-roles.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -60,6 +60,17 @@ services:
       timeout: 5s
       retries: 20
 
+  migrate:
+    build:
+      context: ./backend
+    environment:
+      MIGRATION_DATABASE_URL: postgresql+asyncpg://concierge:${POSTGRES_PASSWORD:-concierge}@postgres:5432/${POSTGRES_DB:-concierge}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["alembic", "-c", "app/frameworks/db/alembic.ini", "upgrade", "head"]
+    restart: "no"
+
   api:
     build:
       context: ./backend
@@ -74,7 +85,7 @@ services:
       SESSION_SECRET: ${SESSION_SECRET:-change-me-in-prod}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
       GUARDRAILS_URL: http://guardrails:8002
-      MODELSERVER_URL: http://modelserver:8001
+      CLASSIFIER_URL: http://modelserver:8001
       # SERVICE_TOKEN is a dev-only fallback; api fetches it from Vault at
       # startup (T151). Leave unset in prod so Vault is the only source.
       SERVICE_TOKEN: ${SERVICE_TOKEN:-}
@@ -86,9 +97,22 @@ services:
       minio:
         condition: service_healthy
       vault:
-        condition: service_started
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     ports:
       - "8000:8000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2)",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   modelserver:
     build:
@@ -101,7 +125,7 @@ services:
       SERVICE_TOKEN: ${SERVICE_TOKEN:-}
     depends_on:
       vault:
-        condition: service_started
+        condition: service_healthy
     ports:
       - "8001:8001"
     healthcheck:
@@ -151,21 +175,49 @@ services:
       timeout: 3s
       retries: 20
 
-  # Owner D placeholder:
-  # admin:
-  #   profiles: ["owner-d"]
-  #   image: busybox
-  #   command: ["sh", "-c", "echo pending Owner D admin && sleep infinity"]
-  #   ports:
-  #     - "8501:8501"
+  admin:
+    build:
+      context: ./admin
+    environment:
+      ADMIN_API_BASE_URL: http://api:8000
+      ADMIN_PUBLIC_API_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
+    depends_on:
+      api:
+        condition: service_healthy
+    command:
+      [
+        "streamlit",
+        "run",
+        "app.py",
+        "--server.address=0.0.0.0",
+        "--server.port=8501",
+        "--server.headless=true",
+      ]
+    ports:
+      - "8501:8501"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=2)",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
-  # Owner D placeholder:
-  # widget-static:
-  #   profiles: ["owner-d"]
-  #   image: busybox
-  #   command: ["sh", "-c", "echo pending Owner D widget static && sleep infinity"]
-  #   ports:
-  #     - "8003:8003"
+  # Owner D stub — replace with widget bundle server when widget-static/ lands (T053).
+  widget-static:
+    image: busybox
+    command: ["sh", "-c", "echo 'pending Owner D widget-static (T053)' && sleep infinity"]
+    ports:
+      - "8003:8003"
+    healthcheck:
+      test: ["CMD", "true"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
 
 volumes:
   postgres_data:
