@@ -18,6 +18,7 @@ class ConversationRepository(Protocol):
         tenant_id: UUID,
         widget_id: UUID,
         visitor_session: str,
+        conversation_id: UUID | None = None,
     ) -> Conversation: ...
 
     async def get(self, conversation_id: UUID, tenant_id: UUID) -> Conversation | None: ...

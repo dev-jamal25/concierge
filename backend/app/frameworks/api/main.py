@@ -7,7 +7,36 @@ create_app() factory.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+from typing import Any
+
 from fastapi import FastAPI
+
+
+def _make_session_token_verifier():
+    """Return a token_verifier for TenantContextMiddleware that handles session JWTs.
+
+    Session tokens (HS256, issued by /auth/login) carry tenant_id for tenant_admin
+    principals. This lets TenantContextMiddleware set the tenant_id ContextVar for
+    all tenant-scoped routes (CMS, leads, chat) when called from the admin UI, not
+    just from the widget flow (which uses Ed25519 widget JWTs).
+
+    The verifier is intentionally lenient: any exception → returns None → middleware
+    sets no context. Widget JWTs (Ed25519) will fail HS256 decoding and return None,
+    which is correct because widget context is resolved separately in route deps.
+    """
+    from app.frameworks.api.session_auth import decode_session_token
+
+    def _verify(token: str) -> Mapping[str, Any] | None:
+        try:
+            principal = decode_session_token(token)
+        except Exception:
+            return None
+        if principal.tenant_id is None:
+            return {}
+        return {"tenant_id": principal.tenant_id, "sub": principal.user_id}
+
+    return _verify
 
 
 def create_app() -> FastAPI:
@@ -29,7 +58,11 @@ def create_app() -> FastAPI:
     from app.frameworks.api.middleware.tenant_context import TenantContextMiddleware
 
     app.add_middleware(PIIRedactionMiddleware, guardrails=get_guardrails_client())
-    app.add_middleware(TenantContextMiddleware)
+    # Pass a session-token verifier so the middleware sets tenant_id_ctx for
+    # admin-panel requests (session JWT) in addition to widget requests (widget JWT
+    # handled separately in get_current_widget_context). Without this the middleware
+    # was inert for admin routes, leaving tenant_id_ctx=None and RLS blocking queries.
+    app.add_middleware(TenantContextMiddleware, token_verifier=_make_session_token_verifier())
     # OriginCheckMiddleware is outermost: added last so it runs before TenantContext.
     # Route-level deps perform the tenant-aware DB lookup; the middleware enforces
     # that the Origin header is present at all for protected browser-facing routes.

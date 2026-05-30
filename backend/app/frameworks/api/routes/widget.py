@@ -115,9 +115,16 @@ async def widget_token_options(origin: str | None = Header(default=None)) -> Res
 async def issue_widget_token(
     body: WidgetTokenRequest,
     response: Response,
+    origin: str | None = Header(default=None),
     session: AsyncSession = Depends(manager_db_session),
     signer: PyJWTSigner = Depends(get_token_signer),
 ) -> WidgetTokenResponse:
+    # Set CORS before the use-case so error responses also carry Access-Control-Allow-Origin.
+    # The real origin gate is IssueWidgetTokenUseCase.execute (raises OriginNotAllowedError);
+    # CORS is defence-in-depth only, not authentication.
+    effective_origin = origin or body.origin
+    _allow_origin(response, effective_origin)
+
     use_case = IssueWidgetTokenUseCase(PostgresWidgetRepository(session), signer)
     try:
         issued = await use_case.execute(widget_public_id=body.widget_id, origin=body.origin)
@@ -126,7 +133,6 @@ async def issue_widget_token(
     except (DisabledWidgetError, OriginNotAllowedError) as exc:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "origin not allowed") from exc
 
-    _allow_origin(response, body.origin)
     return WidgetTokenResponse(token=issued.token, expires_in_seconds=issued.expires_in_seconds)
 
 
@@ -143,6 +149,10 @@ async def get_widget_config(
     session: AsyncSession = Depends(manager_db_session),
     signer: PyJWTSigner = Depends(get_token_signer),
 ) -> WidgetConfigResponse:
+    # Set CORS early so error responses also carry Access-Control-Allow-Origin.
+    if origin is not None:
+        _allow_origin(response, origin)
+
     if creds is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "missing widget token")
     try:

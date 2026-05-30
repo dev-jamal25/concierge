@@ -15,7 +15,12 @@ api_base = st.text_input("API base URL", value=default_api_base_url())
 access_token = st.session_state.get("access_token", "")
 
 with st.expander("Tenant admin login", expanded=not access_token):
-    st.caption("Uses the real `/auth/login` route. You can also paste a bearer token below.")
+    st.caption(
+        "Uses the real `/auth/login` route. "
+        "Demo accounts: `admin@lumiere-coffee.example.com` or `admin@helix-analytics.example.com` — "
+        "password is `DEMO_ADMIN_PASSWORD` from your `.env` (default: `demo-admin-2025`). "
+        "Run `make seed-demo-users` to create them."
+    )
     email = st.text_input("Email")
     password = st.text_input("Password", type="password")
     if st.button("Log in", disabled=not email or not password):
@@ -24,6 +29,10 @@ with st.expander("Tenant admin login", expanded=not access_token):
             access_token = str(login.data.get("access_token", ""))
             st.session_state["access_token"] = access_token
             st.success("Logged in.")
+        elif login.status_code == 401:
+            st.error("Invalid email or password. Run `make seed-demo-users` if you have not created demo accounts yet.")
+        elif login.status_code == 422:
+            st.error("Invalid request format — check that email and password fields are filled in correctly.")
         else:
             st.error(error_message(login, route_name="Auth login"))
 

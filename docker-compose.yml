@@ -89,6 +89,16 @@ services:
       # SERVICE_TOKEN is a dev-only fallback; api fetches it from Vault at
       # startup (T151). Leave unset in prod so Vault is the only source.
       SERVICE_TOKEN: ${SERVICE_TOKEN:-}
+      # LLM + embedding keys — passed from the host .env for local dev.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-claude-haiku-4-5-20251001}
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-voyage}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-voyage-3}
+      EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
+    volumes:
+      # Mount built widget assets so /widget.js, /widget/, /widget/assets/* are served
+      # by the API's existing static-file routes (widget.py _WIDGET_DIST_CANDIDATES).
+      - ./widget/dist:/app/widget/dist:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -207,10 +217,13 @@ services:
       timeout: 3s
       retries: 20
 
-  # Owner D stub — replace with widget bundle server when widget-static/ lands (T053).
+  # The widget is served directly by the API at /widget.js, /widget/, and
+  # /widget/assets/* via widget.py static-file routes (T053 resolved via volume
+  # mount on the api service above). This stub keeps port 8003 reserved so
+  # existing port mappings and smoke tests referencing :8003 don't break.
   widget-static:
     image: busybox
-    command: ["sh", "-c", "echo 'pending Owner D widget-static (T053)' && sleep infinity"]
+    command: ["sh", "-c", "echo 'widget served by api at :8000 — see /widget.js' && sleep infinity"]
     ports:
       - "8003:8003"
     healthcheck:

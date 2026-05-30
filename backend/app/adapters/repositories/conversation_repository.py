@@ -39,12 +39,16 @@ class PostgresConversationRepository:
         tenant_id: UUID,
         widget_id: UUID,
         visitor_session: str,
+        conversation_id: UUID | None = None,
     ) -> Conversation:
-        row = ConversationModel(
-            tenant_id=tenant_id,
-            widget_id=widget_id,
-            visitor_session=visitor_session,
-        )
+        model_kwargs: dict = {
+            "tenant_id": tenant_id,
+            "widget_id": widget_id,
+            "visitor_session": visitor_session,
+        }
+        if conversation_id is not None:
+            model_kwargs["id"] = conversation_id
+        row = ConversationModel(**model_kwargs)
         self._s.add(row)
         await self._s.flush()
         await self._s.refresh(row)
@@ -76,4 +80,8 @@ class PostgresConversationRepository:
             .values(escalated_at=now, escalation_reason=reason, last_turn_at=now)
         )
         row = await self._s.get(ConversationModel, conversation_id)
-        return _to_entity(row)  # type: ignore[arg-type]
+        if row is None:
+            raise LookupError(
+                f"Conversation {conversation_id} not found after escalation update"
+            )
+        return _to_entity(row)

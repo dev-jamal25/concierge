@@ -30,6 +30,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
 import pathlib
 import re
 import time
@@ -237,7 +238,7 @@ async def seeded_tenant(request):
 
     async with AsyncSession(engine) as db_session:
         chunk_repo = PostgresChunkRepository(db_session)
-        if settings.embedding_api_key:
+        if settings.embedding_api_key and os.getenv("EVAL_HOSTED_EMBED"):
             embedder = HostedEmbeddings(
                 provider=settings.embedding_provider,
                 api_key=settings.embedding_api_key,
@@ -291,7 +292,7 @@ async def test_rag_recall_mrr_grounding(seeded_tenant) -> None:
 
     async with AsyncSession(engine) as db_session:
         chunk_repo = PostgresChunkRepository(db_session)
-        if settings.embedding_api_key:
+        if settings.embedding_api_key and os.getenv("EVAL_HOSTED_EMBED"):
             embedder = HostedEmbeddings(
                 provider=settings.embedding_provider,
                 api_key=settings.embedding_api_key,

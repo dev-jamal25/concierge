@@ -2,29 +2,54 @@
 
 Tests the /admin/origins endpoint for adding, listing, and deleting allowed origins.
 Requires migrations applied (alembic upgrade head).
+
+Uses httpx.AsyncClient + ASGITransport so all async I/O shares the test's event loop,
+avoiding the cross-loop contamination that occurs when mixing sync TestClient with
+async pytest-asyncio tests.
 """
 
 from __future__ import annotations
 
 import os
-from collections.abc import AsyncIterator, Iterator
+from collections.abc import AsyncIterator
 from uuid import uuid4
 
 import pytest
 import pytest_asyncio
-from fastapi.testclient import TestClient
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.pool import NullPool
 
 from app.entities.user import UserRole
 from app.frameworks.api.deps import db_session, manager_db_session
 from app.frameworks.api.main import create_app
 from app.frameworks.api.session_auth import Principal, issue_session_token
+from app.frameworks.config import get_settings
 
 os.environ.setdefault("SERVICE_TOKEN", "test-token-admin-origins")
 
+# Share one event loop for all tests in this module to avoid cross-loop asyncpg
+# socket teardown errors on Windows (IOCP proactor set to None between loops).
+pytestmark = pytest.mark.asyncio(loop_scope="module")
 
-@pytest_asyncio.fixture(autouse=True)
+
+@pytest_asyncio.fixture(scope="module")
+async def manager_engine():
+    """Module-scoped override so it matches the module loop_scope used here."""
+    settings = get_settings()
+    eng = create_async_engine(
+        settings.manager_database_url or settings.database_url,
+        poolclass=NullPool,
+        future=True,
+    )
+    yield eng
+    await eng.dispose()
+
+
+@pytest_asyncio.fixture(autouse=True, scope="module")
 async def _require_schema(owner_engine):
     async with owner_engine.connect() as conn:
         exists = (await conn.execute(text("SELECT to_regclass('public.allowed_origins')"))).scalar()
@@ -32,8 +57,8 @@ async def _require_schema(owner_engine):
         pytest.skip("schema not migrated; run `alembic upgrade head` first")
 
 
-@pytest.fixture
-def client(manager_engine) -> Iterator[TestClient]:
+@pytest_asyncio.fixture(scope="module")
+async def client(manager_engine) -> AsyncIterator[AsyncClient]:
     app = create_app()
     sessionmaker = async_sessionmaker(manager_engine, expire_on_commit=False)
 
@@ -49,8 +74,8 @@ def client(manager_engine) -> Iterator[TestClient]:
 
     app.dependency_overrides[manager_db_session] = override_manager_db_session
     app.dependency_overrides[db_session] = override_db_session
-    with TestClient(app) as test_client:
-        yield test_client
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        yield ac
     app.dependency_overrides.clear()
 
 
@@ -60,8 +85,7 @@ def _admin_token(tenant_id: str) -> str:
     )
 
 
-@pytest.mark.asyncio
-async def test_add_origin_success(client: TestClient, owner_engine) -> None:
+async def test_add_origin_success(client: AsyncClient, owner_engine) -> None:
     """Test adding an allowed origin."""
     tenant_id = uuid4()
 
@@ -86,7 +110,7 @@ async def test_add_origin_success(client: TestClient, owner_engine) -> None:
             },
         )
 
-    resp = client.post(
+    resp = await client.post(
         "/admin/origins",
         headers={"Authorization": f"Bearer {_admin_token(str(tenant_id))}"},
         json={"origin": "https://example.com"},
@@ -98,8 +122,7 @@ async def test_add_origin_success(client: TestClient, owner_engine) -> None:
     assert "id" in data
 
 
-@pytest.mark.asyncio
-async def test_add_origin_duplicate_rejected(client: TestClient, owner_engine) -> None:
+async def test_add_origin_duplicate_rejected(client: AsyncClient, owner_engine) -> None:
     """Test that duplicate origins are rejected."""
     tenant_id = uuid4()
     origin = "https://example.com"
@@ -133,7 +156,7 @@ async def test_add_origin_duplicate_rejected(client: TestClient, owner_engine) -
         )
 
     # Try to add the same origin again
-    resp = client.post(
+    resp = await client.post(
         "/admin/origins",
         headers={"Authorization": f"Bearer {_admin_token(str(tenant_id))}"},
         json={"origin": origin},
@@ -142,8 +165,7 @@ async def test_add_origin_duplicate_rejected(client: TestClient, owner_engine) -
     assert "already allowed" in resp.json()["detail"]
 
 
-@pytest.mark.asyncio
-async def test_add_origin_invalid_format(client: TestClient, owner_engine) -> None:
+async def test_add_origin_invalid_format(client: AsyncClient, owner_engine) -> None:
     """Test that invalid origin formats are rejected."""
     tenant_id = uuid4()
 
@@ -176,7 +198,7 @@ async def test_add_origin_invalid_format(client: TestClient, owner_engine) -> No
     ]
 
     for invalid_origin in invalid_origins:
-        resp = client.post(
+        resp = await client.post(
             "/admin/origins",
             headers={"Authorization": f"Bearer {_admin_token(str(tenant_id))}"},
             json={"origin": invalid_origin},
@@ -184,8 +206,7 @@ async def test_add_origin_invalid_format(client: TestClient, owner_engine) -> No
         assert resp.status_code == 400, f"Expected 400 for {invalid_origin}, got {resp.status_code}: {resp.text}"
 
 
-@pytest.mark.asyncio
-async def test_list_origins(client: TestClient, owner_engine) -> None:
+async def test_list_origins(client: AsyncClient, owner_engine) -> None:
     """Test listing allowed origins for a tenant."""
     tenant_id = uuid4()
     origins = ["https://example1.com", "https://example2.com", "http://localhost:3000"]
@@ -219,7 +240,7 @@ async def test_list_origins(client: TestClient, owner_engine) -> None:
                 {"tenant_id": str(tenant_id), "origin": origin},
             )
 
-    resp = client.get(
+    resp = await client.get(
         "/admin/origins",
         headers={"Authorization": f"Bearer {_admin_token(str(tenant_id))}"},
     )
@@ -230,8 +251,7 @@ async def test_list_origins(client: TestClient, owner_engine) -> None:
     assert returned_origins == set(origins)
 
 
-@pytest.mark.asyncio
-async def test_delete_origin_success(client: TestClient, owner_engine) -> None:
+async def test_delete_origin_success(client: AsyncClient, owner_engine) -> None:
     """Test deleting an allowed origin."""
     tenant_id = uuid4()
     origin_id = uuid4()
@@ -264,14 +284,14 @@ async def test_delete_origin_success(client: TestClient, owner_engine) -> None:
             {"id": str(origin_id), "tenant_id": str(tenant_id), "origin": "https://example.com"},
         )
 
-    resp = client.delete(
+    resp = await client.delete(
         f"/admin/origins/{origin_id}",
         headers={"Authorization": f"Bearer {_admin_token(str(tenant_id))}"},
     )
     assert resp.status_code == 204, resp.text
 
     # Verify it was deleted
-    list_resp = client.get(
+    list_resp = await client.get(
         "/admin/origins",
         headers={"Authorization": f"Bearer {_admin_token(str(tenant_id))}"},
     )
@@ -279,8 +299,7 @@ async def test_delete_origin_success(client: TestClient, owner_engine) -> None:
     assert len(list_resp.json()) == 0
 
 
-@pytest.mark.asyncio
-async def test_delete_origin_cross_tenant_denied(client: TestClient, owner_engine) -> None:
+async def test_delete_origin_cross_tenant_denied(client: AsyncClient, owner_engine) -> None:
     """Test that a tenant admin cannot delete origins from another tenant."""
     tenant_a = uuid4()
     tenant_b = uuid4()
@@ -316,17 +335,18 @@ async def test_delete_origin_cross_tenant_denied(client: TestClient, owner_engin
             {"id": str(origin_id), "tenant_id": str(tenant_a), "origin": "https://example.com"},
         )
 
-    # Try to delete tenant_a's origin as tenant_b admin
-    resp = client.delete(
+    # Try to delete tenant_a's origin as tenant_b admin.
+    # RLS hides tenant_a's row from tenant_b's session before the app-level ownership
+    # check runs, so the route returns 404 ("not found") rather than 403 ("forbidden").
+    # 404 is the correct secure behavior: it does not reveal that the origin ID exists.
+    resp = await client.delete(
         f"/admin/origins/{origin_id}",
         headers={"Authorization": f"Bearer {_admin_token(str(tenant_b))}"},
     )
-    assert resp.status_code == 403, resp.text
-    assert "Cannot delete an origin owned by another tenant" in resp.json()["detail"]
+    assert resp.status_code == 404, resp.text
 
 
-@pytest.mark.asyncio
-async def test_get_widget_info(client: TestClient, owner_engine) -> None:
+async def test_get_widget_info(client: AsyncClient, owner_engine) -> None:
     """Test getting widget info for the current tenant."""
     tenant_id = uuid4()
     widget_public_id = f"wgt_{tenant_id.hex[:12]}"
@@ -352,7 +372,7 @@ async def test_get_widget_info(client: TestClient, owner_engine) -> None:
             },
         )
 
-    resp = client.get(
+    resp = await client.get(
         "/admin/widget",
         headers={"Authorization": f"Bearer {_admin_token(str(tenant_id))}"},
     )
@@ -362,8 +382,7 @@ async def test_get_widget_info(client: TestClient, owner_engine) -> None:
     assert data["is_enabled"] is True
 
 
-@pytest.mark.asyncio
-async def test_get_widget_info_not_found(client: TestClient, owner_engine) -> None:
+async def test_get_widget_info_not_found(client: AsyncClient, owner_engine) -> None:
     """Test getting widget info when no widget exists for the tenant."""
     tenant_id = uuid4()
 
@@ -377,7 +396,7 @@ async def test_get_widget_info_not_found(client: TestClient, owner_engine) -> No
             },
         )
 
-    resp = client.get(
+    resp = await client.get(
         "/admin/widget",
         headers={"Authorization": f"Bearer {_admin_token(str(tenant_id))}"},
     )

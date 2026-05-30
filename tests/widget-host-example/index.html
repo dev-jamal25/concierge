@@ -2,13 +2,35 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Concierge Widget Host Example</title>
+    <title>Concierge Widget Host Example — Lumière Coffee</title>
+    <style>
+      body { font-family: system-ui, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; }
+      h1 { color: #6B3A2A; }
+      .info { background: #f5f0ec; border-left: 4px solid #6B3A2A; padding: 12px 16px; margin: 16px 0; }
+      code { background: #eee; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
+    </style>
   </head>
   <body>
-    <h1>Widget Host Example</h1>
+    <h1>Lumière Coffee — Widget Demo Host</h1>
+    <p>This page is served on <code>http://localhost:3001</code>, which is in
+    Lumière Coffee's <code>allowed_origins</code>. The widget bubble should
+    appear in the bottom-right corner once the stack is running.</p>
+
+    <div class="info">
+      <strong>Widget ID:</strong> <code>lumiere-widget-v1</code><br>
+      <strong>API base:</strong> <code>http://localhost:8000</code><br>
+      <strong>Start stack:</strong> <code>docker compose up -d --wait</code><br>
+      <strong>Seed data:</strong> <code>make seed-demo-tenant &amp;&amp; make seed-demo-users</code><br>
+      <strong>Serve this page:</strong> <code>make serve-test-host</code>
+    </div>
+
+    <p>Try asking: <em>"What are your opening hours?"</em> or
+    <em>"I'd like to book a table for 4 tonight."</em></p>
+
     <script
       src="http://localhost:8000/widget.js"
-      data-widget-id="replace-with-widget-public-id"
+      data-widget-id="lumiere-widget-v1"
+      data-api-base="http://localhost:8000"
       data-position="bottom-right"
       async
     ></script>

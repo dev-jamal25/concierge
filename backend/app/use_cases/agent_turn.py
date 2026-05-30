@@ -215,34 +215,50 @@ class AgentTurnUseCase:
                         # allow → original query; redact → query with PII stripped
                         safe_query = ti_decision.content
 
-                        # Oscillation detection (T186): consecutive near-identical queries → force-escalate
+                        # Oscillation detection (T186): consecutive near-identical queries → force-escalate.
+                        # Wrapped in try/except: if the embedding API is transiently unavailable the
+                        # detection is advisory and should not block the search.
                         if self._embedder is not None and last_rag_embedding is not None:
-                            current_emb = (await self._embedder.embed([safe_query]))[0]
-                            if _cosine(last_rag_embedding, current_emb) >= _OSCILLATION_THRESHOLD:
-                                await self._escalate.execute(
-                                    conversation_id=conversation_id,
-                                    tenant_id=tenant_id,
-                                    reason="tool_loop_cap",
-                                )
-                                result.escalated = True
-                                result.escalation_reason = "tool_loop_cap"
-                                result.retrieved_chunks = all_chunks
-                                return result
-                            last_rag_embedding = current_emb
+                            try:
+                                current_emb = (await self._embedder.embed([safe_query]))[0]
+                                if _cosine(last_rag_embedding, current_emb) >= _OSCILLATION_THRESHOLD:
+                                    await self._escalate.execute(
+                                        conversation_id=conversation_id,
+                                        tenant_id=tenant_id,
+                                        reason="tool_loop_cap",
+                                    )
+                                    result.escalated = True
+                                    result.escalation_reason = "tool_loop_cap"
+                                    result.retrieved_chunks = all_chunks
+                                    return result
+                                last_rag_embedding = current_emb
+                            except Exception:
+                                pass  # Advisory check; skip on embedding failure
                         elif self._embedder is not None:
-                            last_rag_embedding = (await self._embedder.embed([safe_query]))[0]
+                            try:
+                                last_rag_embedding = (await self._embedder.embed([safe_query]))[0]
+                            except Exception:
+                                pass  # Advisory; skip on embedding failure
 
-                        rag_result = await self._rag.execute(
-                            query=safe_query, tenant_id=tenant_id
-                        )
-                        all_chunks.extend(rag_result.chunks)
-                        tool_results.append({
-                            "id": call_id,
-                            "content": json.dumps([
-                                {"content": c.content, "cms_page_id": str(c.cms_page_id)}
-                                for c in rag_result.chunks
-                            ]),
-                        })
+                        try:
+                            rag_result = await self._rag.execute(
+                                query=safe_query, tenant_id=tenant_id
+                            )
+                            all_chunks.extend(rag_result.chunks)
+                            tool_results.append({
+                                "id": call_id,
+                                "content": json.dumps([
+                                    {"content": c.content, "cms_page_id": str(c.cms_page_id)}
+                                    for c in rag_result.chunks
+                                ]),
+                            })
+                        except Exception:
+                            # Embedding or DB failure: return empty results so the LLM
+                            # can still produce a reply rather than causing a 503.
+                            tool_results.append({
+                                "id": call_id,
+                                "content": json.dumps({"chunks": [], "search_unavailable": True}),
+                            })
 
                 elif tool_name == "capture_lead":
                     # ── Tool input: check contact payload through guardrails (PII / policy)
