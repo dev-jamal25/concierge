@@ -6,7 +6,7 @@ endif
 BACKEND_DIR := backend
 UV ?= uv
 
-.PHONY: migrate bootstrap-manager lint test seed-demo-tenant seed-demo-users serve-test-host smoke demo-seed-full eval eval-classifier eval-agent eval-rag eval-redteam eval-modelserver
+.PHONY: migrate bootstrap-manager lint test seed-demo-tenant seed-demo-users seed-demo-analytics serve-test-host serve-test-host-helix smoke demo-seed-full eval eval-classifier eval-agent eval-rag eval-redteam eval-modelserver
 
 migrate:
 	cd $(BACKEND_DIR) && $(UV) run alembic -c app/frameworks/db/alembic.ini upgrade head
@@ -44,14 +44,20 @@ seed-demo-users:
 seed-demo-chunks:
 	cd $(BACKEND_DIR) && $(UV) run python -m app.frameworks.cli.seed_demo_chunks
 
+seed-demo-analytics:
+	cd $(BACKEND_DIR) && $(UV) run python -m app.frameworks.cli.seed_demo_analytics
+
 smoke: seed-demo-tenant seed-demo-users
 	cd $(BACKEND_DIR) && $(UV) run --extra dev pytest ../tests/smoke_test.py -v
 
 # Full local demo seed including RAG embeddings (requires EMBEDDING_API_KEY).
-demo-seed-full: seed-demo-tenant seed-demo-users seed-demo-chunks
+demo-seed-full: seed-demo-tenant seed-demo-users seed-demo-chunks seed-demo-analytics
 
 serve-test-host:
 	python -m http.server 3001 --directory tests/widget-host-example
+
+serve-test-host-helix:
+	python -m http.server 3002 --directory tests/widget-host-helix
 
 eval:
 	@echo "eval pending Owner C/D"

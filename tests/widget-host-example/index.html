@@ -1,38 +1,376 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>Concierge Widget Host Example — Lumière Coffee</title>
-    <style>
-      body { font-family: system-ui, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; }
-      h1 { color: #6B3A2A; }
-      .info { background: #f5f0ec; border-left: 4px solid #6B3A2A; padding: 12px 16px; margin: 16px 0; }
-      code { background: #eee; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
-    </style>
-  </head>
-  <body>
-    <h1>Lumière Coffee — Widget Demo Host</h1>
-    <p>This page is served on <code>http://localhost:3001</code>, which is in
-    Lumière Coffee's <code>allowed_origins</code>. The widget bubble should
-    appear in the bottom-right corner once the stack is running.</p>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lumière Coffee — Boutique Specialty Coffee</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    <div class="info">
-      <strong>Widget ID:</strong> <code>lumiere-widget-v1</code><br>
-      <strong>API base:</strong> <code>http://localhost:8000</code><br>
-      <strong>Start stack:</strong> <code>docker compose up -d --wait</code><br>
-      <strong>Seed data:</strong> <code>make seed-demo-tenant &amp;&amp; make seed-demo-users</code><br>
-      <strong>Serve this page:</strong> <code>make serve-test-host</code>
+    :root {
+      --brand:      #6B3A2A;
+      --brand-dark: #4A2218;
+      --brand-mid:  #8C5240;
+      --cream:      #FAF6F0;
+      --warm-white: #FDF9F4;
+      --card-bg:    #FFFFFF;
+      --text:       #2C1A12;
+      --muted:      #7A6358;
+      --border:     #E8DDD4;
+      --accent:     #C8956B;
+      --ff-serif:   'Playfair Display', Georgia, 'Times New Roman', serif;
+      --ff-sans:    'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+    body { background: var(--cream); color: var(--text); font-family: var(--ff-sans); font-size: 16px; line-height: 1.6; }
+
+    /* ── HEADER ──────────────────────────────────── */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(250, 246, 240, 0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+    }
+    .header-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px;
+    }
+    .logo {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none; color: var(--brand);
+    }
+    .logo-icon { font-size: 1.5rem; }
+    .logo-text {
+      font-family: var(--ff-serif); font-size: 1.25rem; font-weight: 700;
+      letter-spacing: 0.01em; color: var(--brand);
+    }
+    nav { display: flex; gap: 8px; }
+    nav a {
+      text-decoration: none; color: var(--muted); font-size: 0.875rem;
+      font-weight: 500; padding: 6px 14px; border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+    }
+    nav a:hover { color: var(--brand); background: rgba(107,58,42,0.07); }
+
+    /* ── HERO ────────────────────────────────────── */
+    .hero {
+      background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-mid) 100%);
+      color: #fff; padding: 96px 24px 80px;
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .hero-inner { max-width: 1100px; margin: 0 auto; position: relative; }
+    .hero-eyebrow {
+      font-size: 0.8rem; font-weight: 500; letter-spacing: 0.12em;
+      text-transform: uppercase; color: rgba(255,255,255,0.65); margin-bottom: 16px;
+    }
+    .hero h1 {
+      font-family: var(--ff-serif); font-size: clamp(2.2rem, 5vw, 3.8rem);
+      font-weight: 700; line-height: 1.15; max-width: 680px;
+      margin-bottom: 20px;
+    }
+    .hero h1 em { font-style: italic; color: rgba(255,255,255,0.85); }
+    .hero-sub {
+      font-size: 1.05rem; color: rgba(255,255,255,0.8);
+      max-width: 520px; margin-bottom: 36px; font-weight: 300;
+    }
+    .hero-cta {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #fff; color: var(--brand);
+      font-family: var(--ff-sans); font-size: 0.95rem; font-weight: 600;
+      padding: 13px 28px; border-radius: 8px; text-decoration: none;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      transition: transform 0.15s, box-shadow 0.15s;
+      cursor: pointer; border: none;
+    }
+    .hero-cta:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.28); }
+    .hero-badges {
+      margin-top: 40px; display: flex; gap: 20px; flex-wrap: wrap;
+    }
+    .badge {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 0.8rem; color: rgba(255,255,255,0.7); font-weight: 400;
+    }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+    /* ── SECTIONS ────────────────────────────────── */
+    section { padding: 72px 24px; }
+    .section-inner { max-width: 1100px; margin: 0 auto; }
+    .section-label {
+      font-size: 0.75rem; font-weight: 600; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--brand); margin-bottom: 8px;
+    }
+    .section-title {
+      font-family: var(--ff-serif); font-size: clamp(1.6rem, 3vw, 2.4rem);
+      color: var(--text); margin-bottom: 12px;
+    }
+    .section-sub { color: var(--muted); font-size: 1rem; max-width: 480px; }
+
+    /* ── MENU CARDS ──────────────────────────────── */
+    .menu-section { background: var(--warm-white); }
+    .menu-header { margin-bottom: 40px; }
+    .cards-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px; margin-top: 40px;
+    }
+    .card {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden;
+      transition: transform 0.18s, box-shadow 0.18s;
+    }
+    .card:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(107,58,42,0.12); }
+    .card-stripe { height: 5px; }
+    .card-body { padding: 24px 24px 28px; }
+    .card-icon { font-size: 1.8rem; margin-bottom: 12px; }
+    .card h3 {
+      font-family: var(--ff-serif); font-size: 1.2rem; color: var(--text);
+      margin-bottom: 8px;
+    }
+    .card p { color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
+    .card-tag {
+      display: inline-block; margin-top: 14px;
+      background: rgba(107,58,42,0.08); color: var(--brand);
+      font-size: 0.75rem; font-weight: 600; padding: 3px 10px; border-radius: 20px;
+    }
+
+    /* ── INFO STRIP ──────────────────────────────── */
+    .info-strip {
+      background: var(--brand);
+      color: rgba(255,255,255,0.92); padding: 48px 24px;
+    }
+    .info-grid {
+      max-width: 1100px; margin: 0 auto;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 32px;
+    }
+    .info-item h4 {
+      font-family: var(--ff-serif); font-size: 1rem; margin-bottom: 6px;
+      color: #fff;
+    }
+    .info-item p { font-size: 0.88rem; color: rgba(255,255,255,0.72); line-height: 1.5; }
+
+    /* ── TRY ASKING ──────────────────────────────── */
+    .try-section { background: var(--cream); }
+    .try-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 12px; margin-top: 32px;
+    }
+    .try-chip {
+      background: var(--card-bg); border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 14px 18px;
+      cursor: pointer; text-align: left; font-family: var(--ff-sans);
+      transition: border-color 0.15s, background 0.15s, transform 0.12s;
+    }
+    .try-chip:hover {
+      border-color: var(--brand); background: rgba(107,58,42,0.04);
+      transform: translateY(-1px);
+    }
+    .try-chip-label {
+      font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--brand); margin-bottom: 5px;
+    }
+    .try-chip-text { font-size: 0.9rem; color: var(--text); font-style: italic; }
+
+    /* ── FOOTER ──────────────────────────────────── */
+    footer {
+      background: var(--brand-dark); color: rgba(255,255,255,0.55);
+      padding: 32px 24px; font-size: 0.78rem;
+    }
+    footer .footer-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: flex; gap: 16px; flex-wrap: wrap; justify-content: space-between;
+      align-items: flex-start;
+    }
+    footer strong { color: rgba(255,255,255,0.85); }
+    code {
+      background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.8);
+      padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;
+      font-family: 'Menlo', 'Consolas', monospace;
+    }
+    .footer-meta { line-height: 2; }
+    .footer-brand {
+      font-family: var(--ff-serif); font-size: 1.1rem;
+      color: rgba(255,255,255,0.8); margin-bottom: 6px;
+    }
+
+    @media (max-width: 600px) {
+      nav { display: none; }
+      .hero { padding: 64px 20px 56px; }
+      .hero-badges { gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="header-inner">
+    <a class="logo" href="#">
+      <span class="logo-icon">☕</span>
+      <span class="logo-text">Lumière Coffee</span>
+    </a>
+    <nav>
+      <a href="#menu">Menu</a>
+      <a href="#visit">Visit</a>
+      <a href="#reservations">Reservations</a>
+      <a href="#catering">Catering</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="hero-inner">
+    <p class="hero-eyebrow">Boutique specialty coffee · Est. 2019</p>
+    <h1>Where every cup<br>is a <em>small ritual</em></h1>
+    <p class="hero-sub">
+      Single-origin roasts sourced from Ethiopia, Colombia, and beyond.
+      Served in the heart of the city — seven days a week.
+    </p>
+    <button class="hero-cta" onclick="document.querySelector('concierge-widget')?.shadowRoot?.querySelector?.('.trigger')?.click()">
+      ☕ &nbsp;Chat with Café
+    </button>
+    <div class="hero-badges">
+      <span class="badge"><span class="badge-dot"></span>Free Wi-Fi</span>
+      <span class="badge"><span class="badge-dot"></span>Table reservations</span>
+      <span class="badge"><span class="badge-dot"></span>Catering available</span>
+      <span class="badge"><span class="badge-dot"></span>42 Rue de la Paix</span>
     </div>
+  </div>
+</section>
 
-    <p>Try asking: <em>"What are your opening hours?"</em> or
-    <em>"I'd like to book a table for 4 tonight."</em></p>
+<!-- ── MENU ── -->
+<section class="menu-section" id="menu">
+  <div class="section-inner">
+    <div class="menu-header">
+      <p class="section-label">Our Blends</p>
+      <h2 class="section-title">Coffee crafted for every palate</h2>
+      <p class="section-sub">Three core blends year-round, plus a rotating seasonal roast — ask Café which one is on today.</p>
+    </div>
+    <div class="cards-grid">
+      <div class="card">
+        <div class="card-stripe" style="background: linear-gradient(90deg, #8B4513, #C8956B);"></div>
+        <div class="card-body">
+          <div class="card-icon">🌿</div>
+          <h3>Single-Origin Ethiopian</h3>
+          <p>Bright and fruity with a natural process finish. Grown in the high altitudes of Yirgacheffe, with notes of blueberry and jasmine.</p>
+          <span class="card-tag">Light roast</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-stripe" style="background: linear-gradient(90deg, #6B3A2A, #A0522D);"></div>
+        <div class="card-body">
+          <div class="card-icon">🍮</div>
+          <h3>Colombian Blend</h3>
+          <p>Balanced and approachable with warm caramel notes and a smooth medium roast. Our best-seller — perfect for a morning flat white.</p>
+          <span class="card-tag">Medium roast</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-stripe" style="background: linear-gradient(90deg, #4A2218, #6B3A2A);"></div>
+        <div class="card-body">
+          <div class="card-icon">🗓️</div>
+          <h3>Seasonal Rotating Roast</h3>
+          <p>Changes quarterly. Ask the barista — or ask Café — for today's origin. Retail bags available in-store and online (free shipping over $40).</p>
+          <span class="card-tag">Rotating origin</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
-    <script
-      src="http://localhost:8000/widget.js"
-      data-widget-id="lumiere-widget-v1"
-      data-api-base="http://localhost:8000"
-      data-position="bottom-right"
-      async
-    ></script>
-  </body>
+<!-- ── INFO STRIP ── -->
+<div class="info-strip" id="visit">
+  <div class="info-grid">
+    <div class="info-item">
+      <h4>🕐 Opening Hours</h4>
+      <p>Mon – Fri: 7 am – 8 pm<br>Saturday: 8 am – 9 pm<br>Sunday: 9 am – 6 pm</p>
+    </div>
+    <div class="info-item">
+      <h4>📍 Location</h4>
+      <p>42 Rue de la Paix, Ground Floor<br>Free Wi-Fi throughout<br>Parking: adjacent multi-storey (2 hr validation)</p>
+    </div>
+    <div class="info-item" id="reservations">
+      <h4>📅 Reservations</h4>
+      <p>Groups of 4+ via our booking page.<br>Same-day bookings of 8+? Call us directly.<br>Table held 15 min past booking.</p>
+    </div>
+    <div class="info-item" id="catering">
+      <h4>🎉 Catering</h4>
+      <p>Groups under 30: 48 h notice.<br>Groups 30+: 5 business days.<br>20% deposit to confirm.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ── TRY ASKING ── -->
+<section class="try-section">
+  <div class="section-inner">
+    <p class="section-label">Powered by AI</p>
+    <h2 class="section-title">Ask Café anything</h2>
+    <p class="section-sub">Café knows our full menu, hours, reservation policy, catering, and loyalty programme — just ask.</p>
+    <div class="try-grid">
+      <button class="try-chip">
+        <div class="try-chip-label">Hours &amp; Location</div>
+        <div class="try-chip-text">"What are your opening hours?"</div>
+      </button>
+      <button class="try-chip">
+        <div class="try-chip-label">Reservations</div>
+        <div class="try-chip-text">"Can I book a table for 4 tonight?"</div>
+      </button>
+      <button class="try-chip">
+        <div class="try-chip-label">Coffee Menu</div>
+        <div class="try-chip-text">"What blends do you have right now?"</div>
+      </button>
+      <button class="try-chip">
+        <div class="try-chip-label">Loyalty</div>
+        <div class="try-chip-text">"How does the stamp card work?"</div>
+      </button>
+      <button class="try-chip">
+        <div class="try-chip-label">Catering</div>
+        <div class="try-chip-text">"I need catering for 25 people — how much notice?"</div>
+      </button>
+      <button class="try-chip">
+        <div class="try-chip-label">Retail</div>
+        <div class="try-chip-text">"Can I buy bags of coffee online?"</div>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">☕ Lumière Coffee</div>
+      <div>Demo host · <code>http://localhost:3001</code></div>
+    </div>
+    <div class="footer-meta">
+      <strong>Widget:</strong> <code>lumiere-widget-v1</code> &nbsp;
+      <strong>API:</strong> <code>http://localhost:8000</code><br>
+      <strong>Start:</strong> <code>docker compose up -d --wait</code><br>
+      <strong>Seed:</strong> <code>make seed-demo-tenant &amp;&amp; make seed-demo-users</code><br>
+      <strong>Serve:</strong> <code>make serve-test-host</code>
+    </div>
+  </div>
+</footer>
+
+<!-- ── WIDGET EMBED ── -->
+<script
+  src="http://localhost:8000/widget.js"
+  data-widget-id="lumiere-widget-v1"
+  data-api-base="http://localhost:8000"
+  data-position="bottom-right"
+  async
+></script>
+
+</body>
 </html>

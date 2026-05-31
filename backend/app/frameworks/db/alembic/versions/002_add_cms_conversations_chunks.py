@@ -7,8 +7,9 @@ Create Date: 2026-05-27
 Owner B (T088). Creates the Agent/RAG tables with tenant_id RLS, pgvector
 HNSW index on chunks.embedding, and B-tree indexes for query-time filtering.
 
-down_revision is 001. Migration 003 (Owner A) also branches from 001.
-A merge revision will reconcile the two heads when slices integrate.
+down_revision is 001. Migration 003 (Owner A) also branches from 001; this
+revision depends_on 003 so Alembic guarantees widgets exists before
+conversations references it on a fresh database.
 """
 
 from __future__ import annotations
@@ -18,7 +19,7 @@ from alembic import op
 revision = "002"
 down_revision = "001"
 branch_labels = None
-depends_on = None
+depends_on = ("003",)
 
 
 def upgrade() -> None:

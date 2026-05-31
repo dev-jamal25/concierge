@@ -72,6 +72,35 @@ _FAQ_KEYWORD_RE = re.compile(
 
 _SPAM_REPLY = "I'm only able to help with questions about this business."
 
+# Deterministic contact extraction for the lead_intent fast path (no LLM cost).
+_EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}", re.IGNORECASE)
+_PHONE_RE = re.compile(r"(?:\+?[\d()\-\s]{7,})", re.IGNORECASE)
+_NAME_RE = re.compile(
+    # Inline flag (?i:...) scopes case-insensitivity to the trigger phrase only;
+    # the capture group remains case-sensitive so "and" doesn't match a second name word.
+    r"(?i:my name is|i am|i'm|this is)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)"
+)
+
+
+def _extract_contact(message: str) -> str | None:
+    """Return the first email address found, or a phone number if no email."""
+    m = _EMAIL_RE.search(message)
+    if m:
+        return m.group(0)
+    m = _PHONE_RE.search(message)
+    if m:
+        candidate = m.group(0).strip()
+        # Require at least 7 digits to avoid matching single numbers like "4"
+        if sum(c.isdigit() for c in candidate) >= 7:
+            return candidate
+    return None
+
+
+def _extract_name(message: str) -> str | None:
+    """Return a best-effort name from common intro phrases, or None."""
+    m = _NAME_RE.search(message)
+    return m.group(1).strip() if m else None
+
 
 def _looks_like_faq(message: str) -> bool:
     """True when the message contains business-domain keywords.
@@ -241,6 +270,7 @@ async def chat(
     ctx = _build_context(session, settings, session_store)
     conv_repo: PostgresConversationRepository = ctx["conv_repo"]
     classify: ClassifyMessageUseCase = ctx["classify"]
+    capture_lead_uc: CaptureLeadUseCase = ctx["capture_lead"]
     escalate_uc: EscalateUseCase = ctx["escalate"]
     agent_turn_uc: AgentTurnUseCase = ctx["agent_turn"]
     memory: SessionMemory = ctx["memory"]
@@ -342,7 +372,35 @@ async def chat(
         )
 
     if label == "lead_intent":
-        reply = "Thanks! We've noted your interest and will be in touch."
+        contact = _extract_contact(body.message)
+        if contact:
+            name = _extract_name(body.message)
+            capture_result = await capture_lead_uc.execute(
+                tenant_id=tenant_id,
+                conversation_id=body.conversation_id,
+                visitor_session=str(body.conversation_id),
+                name=name,
+                contact=contact,
+                intent=body.message[:500],
+            )
+            if capture_result.success:
+                reply = (
+                    f"Thanks{f', {name}' if name else ''}! "
+                    "We've noted your details and our team will be in touch."
+                )
+                lead_status: str = "captured"
+            elif capture_result.status.startswith("rate_limited"):
+                reply = "Thanks! We already have your details and will be in touch shortly."
+                lead_status = capture_result.status
+            else:
+                reply = "Could you share an email or phone number so our team can reach you?"
+                lead_status = "not_captured"
+        else:
+            reply = (
+                "I'd be glad to pass this along — could you share your name and an email "
+                "or phone number so our team can follow up?"
+            )
+            lead_status = "not_captured"
         await memory.append_turn(
             tenant_id, body.conversation_id, body.message, reply
         )
@@ -351,7 +409,7 @@ async def chat(
         return ChatTurnResponse(
             route="lead_intent",
             reply=reply,
-            capture_lead_status="not_captured",  # tool call via agent_turn captures
+            capture_lead_status=lead_status,
         )
 
     if label == "escalate":
