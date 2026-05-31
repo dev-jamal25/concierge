@@ -1,16 +1,11 @@
 import streamlit as st
 
-from api_client import AdminAPI, error_message, require_token
-from config import default_api_base_url
+from api_client import AdminAPI, error_message
+from auth import require_auth
 
 st.title("CMS")
 
-api_base = st.session_state.get("api_base", default_api_base_url())
-token = st.session_state.get("access_token", "")
-
-if not require_token(token):
-    st.info("Add a tenant admin bearer token on the main page.")
-    st.stop()
+api_base, token = require_auth()
 
 api = AdminAPI(api_base, token)
 pages_result = api.get("/cms/pages")

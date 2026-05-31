@@ -20,6 +20,7 @@ from app.entities.user import UserRole
 from app.frameworks.api.deps import ManagerContext, get_manager_context
 from app.frameworks.api.session_auth import (
     Principal,
+    get_principal,
     hash_password,
     issue_session_token,
     verify_password,
@@ -37,6 +38,13 @@ class LoginRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class MeResponse(BaseModel):
+    user_id: str
+    email: str
+    role: str
+    tenant_id: str | None = None
 
 
 class AcceptInvitationRequest(BaseModel):
@@ -99,3 +107,24 @@ async def accept_invitation(
         user_id=str(user_id), role=UserRole.TENANT_ADMIN, tenant_id=str(invitation.tenant_id)
     )
     return TokenResponse(access_token=issue_session_token(principal))
+
+
+@router.get("/me", response_model=MeResponse)
+async def me(
+    principal: Principal = Depends(get_principal),
+    ctx: ManagerContext = Depends(get_manager_context),
+) -> MeResponse:
+    """Return the identity of the authenticated session token.
+
+    Safe fields only: user_id, email, role, tenant_id. No password hash or secrets.
+    Returns 401 if the token is invalid, expired, or the user no longer exists.
+    """
+    user = await ctx.users.get(UUID(principal.user_id))
+    if user is None:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "user not found")
+    return MeResponse(
+        user_id=str(user.id),
+        email=user.email,
+        role=principal.role.value,
+        tenant_id=principal.tenant_id,
+    )
