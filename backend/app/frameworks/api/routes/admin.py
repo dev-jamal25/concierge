@@ -14,18 +14,26 @@ from __future__ import annotations
 
 import re
 from collections.abc import AsyncIterator
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.entities.user import UserRole
 from app.frameworks.api.session_auth import get_principal
-from app.frameworks.db.models import AllowedOriginModel, ConversationModel, TenantModel, WidgetModel
+from app.frameworks.db.models import (
+    AllowedOriginModel,
+    CMSPageModel,
+    ConversationModel,
+    LeadModel,
+    MessageModel,
+    TenantModel,
+    WidgetModel,
+)
 from app.frameworks.db.session import get_session, reset_tenant_id, reset_user_id, set_tenant_id, set_user_id
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -106,6 +114,84 @@ class EscalatedConversation(BaseModel):
     conversation_id: UUID
     escalated_at: datetime | None = None
     escalation_reason: str | None = None
+
+
+# --- /admin/analytics response models ---
+
+
+class _IntentCount(BaseModel):
+    intent: str
+    count: int
+
+
+class _DailyCount(BaseModel):
+    date: str
+    count: int
+
+
+class _RouteCount(BaseModel):
+    label: str
+    count: int
+
+
+class _ReasonCount(BaseModel):
+    reason: str
+    count: int
+
+
+class _RecentLead(BaseModel):
+    created_at: str | None
+    name: str | None
+    contact: str
+    intent: str
+    conversation_id: str
+
+
+class _RecentEscalation(BaseModel):
+    conversation_id: str
+    escalated_at: str | None
+    reason: str | None
+
+
+class LeadAnalytics(BaseModel):
+    total: int
+    today: int
+    this_week: int
+    by_intent: list[_IntentCount]
+    daily: list[_DailyCount]
+    recent: list[_RecentLead]
+
+
+class ConversationAnalytics(BaseModel):
+    total: int
+    escalated_open: int
+    daily: list[_DailyCount]
+    by_route: list[_RouteCount]
+
+
+class EscalationAnalytics(BaseModel):
+    total: int
+    by_reason: list[_ReasonCount]
+    recent: list[_RecentEscalation]
+
+
+class CMSAnalytics(BaseModel):
+    published: int
+    draft: int
+    unpublished: int
+
+
+class WidgetAnalytics(BaseModel):
+    is_enabled: bool
+    allowed_origins: int
+
+
+class DashboardAnalytics(BaseModel):
+    leads: LeadAnalytics
+    conversations: ConversationAnalytics
+    escalations: EscalationAnalytics
+    cms: CMSAnalytics
+    widget: WidgetAnalytics
 
 
 class WidgetInfoOut(BaseModel):
@@ -394,3 +480,153 @@ async def list_escalations(
         )
         for row in result.scalars().all()
     ]
+
+
+# --- /admin/analytics ---
+
+
+@router.get("/analytics", response_model=DashboardAnalytics)
+async def get_analytics(
+    tenant_id_str: str = Depends(get_admin_tenant_id),
+    session: AsyncSession = Depends(admin_db_session),
+) -> DashboardAnalytics:
+    """Tenant-scoped aggregate analytics for the admin dashboard."""
+    tenant_id = UUID(tenant_id_str)
+    now = datetime.now(timezone.utc)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_start = now - timedelta(days=7)
+    fourteen_ago = now - timedelta(days=14)
+
+    # ── Leads ─────────────────────────────────────────────────────────────────
+    leads_total = await session.scalar(
+        select(func.count()).select_from(LeadModel).where(LeadModel.tenant_id == tenant_id)
+    ) or 0
+    leads_today = await session.scalar(
+        select(func.count()).select_from(LeadModel).where(
+            LeadModel.tenant_id == tenant_id,
+            LeadModel.created_at >= today_start,
+        )
+    ) or 0
+    leads_week = await session.scalar(
+        select(func.count()).select_from(LeadModel).where(
+            LeadModel.tenant_id == tenant_id,
+            LeadModel.created_at >= week_start,
+        )
+    ) or 0
+    intent_rows = (await session.execute(
+        select(LeadModel.intent, func.count().label("cnt"))
+        .where(LeadModel.tenant_id == tenant_id)
+        .group_by(LeadModel.intent)
+        .order_by(func.count().desc())
+    )).all()
+    daily_leads_rows = (await session.execute(
+        select(func.date(LeadModel.created_at).label("day"), func.count().label("cnt"))
+        .where(LeadModel.tenant_id == tenant_id, LeadModel.created_at >= fourteen_ago)
+        .group_by(func.date(LeadModel.created_at))
+        .order_by(func.date(LeadModel.created_at))
+    )).all()
+    recent_lead_rows = (await session.execute(
+        select(LeadModel)
+        .where(LeadModel.tenant_id == tenant_id)
+        .order_by(LeadModel.created_at.desc())
+        .limit(5)
+    )).scalars().all()
+
+    # ── Conversations ─────────────────────────────────────────────────────────
+    conv_total = await session.scalar(
+        select(func.count()).select_from(ConversationModel).where(ConversationModel.tenant_id == tenant_id)
+    ) or 0
+    conv_escalated = await session.scalar(
+        select(func.count()).select_from(ConversationModel).where(
+            ConversationModel.tenant_id == tenant_id,
+            ConversationModel.escalated_at.isnot(None),
+        )
+    ) or 0
+    daily_conv_rows = (await session.execute(
+        select(func.date(ConversationModel.started_at).label("day"), func.count().label("cnt"))
+        .where(ConversationModel.tenant_id == tenant_id, ConversationModel.started_at >= fourteen_ago)
+        .group_by(func.date(ConversationModel.started_at))
+        .order_by(func.date(ConversationModel.started_at))
+    )).all()
+    route_rows = (await session.execute(
+        select(MessageModel.router_label, func.count().label("cnt"))
+        .where(MessageModel.tenant_id == tenant_id, MessageModel.router_label.isnot(None))
+        .group_by(MessageModel.router_label)
+        .order_by(func.count().desc())
+    )).all()
+
+    # ── Escalations ──────────────────────────────────────────────────────────
+    reason_rows = (await session.execute(
+        select(ConversationModel.escalation_reason, func.count().label("cnt"))
+        .where(ConversationModel.tenant_id == tenant_id, ConversationModel.escalated_at.isnot(None))
+        .group_by(ConversationModel.escalation_reason)
+    )).all()
+    recent_esc_rows = (await session.execute(
+        select(ConversationModel)
+        .where(ConversationModel.tenant_id == tenant_id, ConversationModel.escalated_at.isnot(None))
+        .order_by(ConversationModel.escalated_at.desc())
+        .limit(5)
+    )).scalars().all()
+
+    # ── CMS ──────────────────────────────────────────────────────────────────
+    cms_rows = (await session.execute(
+        select(CMSPageModel.state, func.count().label("cnt"))
+        .where(CMSPageModel.tenant_id == tenant_id)
+        .group_by(CMSPageModel.state)
+    )).all()
+    cms_counts = {r.state: r.cnt for r in cms_rows}
+
+    # ── Widget & Origins ─────────────────────────────────────────────────────
+    widget_row = (await session.execute(
+        select(WidgetModel).where(WidgetModel.tenant_id == tenant_id)
+    )).scalar_one_or_none()
+    origins_count = await session.scalar(
+        select(func.count()).select_from(AllowedOriginModel).where(AllowedOriginModel.tenant_id == tenant_id)
+    ) or 0
+
+    return DashboardAnalytics(
+        leads=LeadAnalytics(
+            total=leads_total,
+            today=leads_today,
+            this_week=leads_week,
+            by_intent=[_IntentCount(intent=r.intent, count=r.cnt) for r in intent_rows],
+            daily=[_DailyCount(date=str(r.day), count=r.cnt) for r in daily_leads_rows],
+            recent=[
+                _RecentLead(
+                    created_at=row.created_at.isoformat() if row.created_at else None,
+                    name=row.name,
+                    contact=row.contact,
+                    intent=row.intent,
+                    conversation_id=str(row.conversation_id),
+                )
+                for row in recent_lead_rows
+            ],
+        ),
+        conversations=ConversationAnalytics(
+            total=conv_total,
+            escalated_open=conv_escalated,
+            daily=[_DailyCount(date=str(r.day), count=r.cnt) for r in daily_conv_rows],
+            by_route=[_RouteCount(label=r.router_label, count=r.cnt) for r in route_rows],
+        ),
+        escalations=EscalationAnalytics(
+            total=conv_escalated,
+            by_reason=[_ReasonCount(reason=r.escalation_reason or "unknown", count=r.cnt) for r in reason_rows],
+            recent=[
+                _RecentEscalation(
+                    conversation_id=str(row.id),
+                    escalated_at=row.escalated_at.isoformat() if row.escalated_at else None,
+                    reason=row.escalation_reason,
+                )
+                for row in recent_esc_rows
+            ],
+        ),
+        cms=CMSAnalytics(
+            published=cms_counts.get("published", 0),
+            draft=cms_counts.get("draft", 0),
+            unpublished=cms_counts.get("unpublished", 0),
+        ),
+        widget=WidgetAnalytics(
+            is_enabled=widget_row.is_enabled if widget_row else False,
+            allowed_origins=origins_count,
+        ),
+    )

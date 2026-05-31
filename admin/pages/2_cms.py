@@ -1,16 +1,11 @@
 import streamlit as st
 
-from api_client import AdminAPI, error_message, require_token
-from config import default_api_base_url
+from api_client import AdminAPI, error_message
+from auth import require_auth
 
 st.title("CMS")
 
-api_base = st.session_state.get("api_base", default_api_base_url())
-token = st.session_state.get("access_token", "")
-
-if not require_token(token):
-    st.info("Add a tenant admin bearer token on the main page.")
-    st.stop()
+api_base, token = require_auth()
 
 api = AdminAPI(api_base, token)
 pages_result = api.get("/cms/pages")
@@ -48,14 +43,17 @@ with st.form("create-cms-page"):
     title = st.text_input("Title")
     slug = st.text_input("Slug")
     body = st.text_area("Body", height=220)
-    create = st.form_submit_button("Create draft", disabled=not title or not slug or not body)
+    create = st.form_submit_button("Create draft")
 
 if create:
-    result = api.post("/cms/pages", {"title": title, "slug": slug, "body": body})
-    if result.ok:
-        st.success("Draft page created. Refresh the page to see it in the list.")
+    if not title or not slug or not body:
+        st.warning("Title, slug, and body are all required.")
     else:
-        st.error(error_message(result, route_name="Create CMS page"))
+        result = api.post("/cms/pages", {"title": title, "slug": slug, "body": body})
+        if result.ok:
+            st.success("Draft page created. Refresh the page to see it in the list.")
+        else:
+            st.error(error_message(result, route_name="Create CMS page"))
 
 st.subheader("Edit Existing Page")
 if not pages:
